@@ -75,6 +75,14 @@ func GetUserWithEmail(db *mgo.Database, person *Person) (Person, error) {
 	return *person, nil
 }
 
+func GetPostWithTitle(db *mgo.Database, post *Post) (Post, error) {
+	err := db.C("posts").Find(bson.M{"title": post.Title}).One(post)
+	if err != nil {
+		return *post, err
+	}
+	return *post, nil
+}
+
 func RemoveUserBySession(db *mgo.Database, session sessions.Session) error {
 	data := session.Get("user")
 	email, exists := data.(string)

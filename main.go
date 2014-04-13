@@ -9,6 +9,7 @@ import (
 	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Person struct {
@@ -22,10 +23,10 @@ type Person struct {
 }
 
 type Post struct {
-	Date int64
-	Title string
-	Image string
-	Content string
+	Date int32
+	Title string `form:"title" binding:"required"`
+	Author string
+	Content string `form:"content" binding:"required"`
 }
 
 func (ps Person) Validate(errors *binding.Errors, req *http.Request) {
@@ -81,6 +82,30 @@ func main() {
 	m.Get("/users", func(r render.Render, db *mgo.Database) {
 		r.HTML(200, "users", GetAll(db))
 	})
+
+	m.Get("/post/new", ProtectedPage, func(r render.Render, db *mgo.Database) {
+		r.HTML(200, "post/new", nil)
+	})
+
+	m.Get("/post/:title", func(params martini.Params, r render.Render, db *mgo.Database) {
+		var post Post
+		post.Title = params["title"]
+		post, err := GetPostWithTitle(db, &post)
+		if err != nil {
+			r.HTML(500, "error", err)
+		}
+		r.HTML(200, "post/display", post)
+	})
+
+	m.Post("/post/new", ProtectedPage, binding.Form(Post{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, post Post) {
+		person, err := GetUserFromSession(db, session)
+		if err != nil {
+			r.HTML(500, "error", err)
+		}
+		post.Date = int32(time.Now().Unix())
+		post.Author = person.Email
+		db.C("posts").Insert(post)
+	}, SessionRedirect)
 
 	m.Get("/user", ProtectedPage, func(session sessions.Session, r render.Render, db *mgo.Database) {
 		person, err := GetUserFromSession(db, session)
