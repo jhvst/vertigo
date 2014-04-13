@@ -25,6 +25,7 @@ type Person struct {
 type Post struct {
 	Date int32
 	Title string `form:"title" binding:"required"`
+	//author filed is email of Person struct
 	Author string
 	Content string `form:"content" binding:"required"`
 }
@@ -111,8 +112,15 @@ func main() {
 		person, err := GetUserFromSession(db, session)
 		if err != nil {
 			r.HTML(500, "error", err)
+			return
+		}
+		posts, err := GetPostsFromAuthor(db, person)
+		if err != nil {
+			r.HTML(500, "error", err)
+			return
 		}
 		r.HTML(200, "user/index", person)
+		r.HTML(200, "user/listPost", posts)
 	})
 
 	m.Get("/user/register", SessionRedirect, func(r render.Render) {

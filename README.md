@@ -20,3 +20,17 @@ Since there is so much still to do, I'd rather list some things that are current
 
 - User CRUD options
 - Basic session control
+- Creating new posts, listing them on each user page
+
+
+##Known bugs
+
+There are some known bugs or other quirks which would need resolving:
+
+- In Martini, how you require field but do not insert it into database - does it require seperate structures? Currently saving a user will leave a empty field password field into database
+- In Martini, how you render multiple layouts without calling r.HTML multiple times?
+
+
+##License
+
+MIT

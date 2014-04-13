@@ -102,6 +102,14 @@ func RemoveUserBySession(db *mgo.Database, session sessions.Session) error {
 	return errors.New("Session could not be retrieved.")
 }
 
+func GetPostsFromAuthor(db *mgo.Database, person Person) (posts []Post, err error) {
+	err = db.C("posts").Find(bson.M{"author": person.Email}).All(&posts)
+	if err != nil {
+		return posts, err
+	}
+	return posts, nil
+}
+
 func UpdateUserBySession(db *mgo.Database, session sessions.Session, person Person) error {
 	data := session.Get("user")
 	email, exists := data.(string)
