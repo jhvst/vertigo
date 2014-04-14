@@ -1,33 +1,35 @@
 package main
 
 import (
+	"bufio"
+	rdb "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"labix.org/v2/mgo"
-	"labix.org/v2/mgo/bson"
 	"log"
 	"net/http"
-	"time"
+	//"rethink"
+	"strings"
+	//"time"
 )
 
 type Person struct {
-	Id       bson.ObjectId `json:"id" bson:"_id,omitempty"`
-	Name     string        `json:"name" form:"name" binding:"required"`
-	Digest   []byte
-	//the password field should not be saved to database - should there be seperate structures for forms and actual db objects?
-	Password string `form:"password"`
-	Email    string `json:"email" form:"email" binding:"required"`
-	Posts Post
+	Id       string `json:"id"`
+	Name     string `json:"name" form:"name" binding:"required"`
+	Digest   []byte `json:"-"`
+	Password string `form:"password" json:"-"`
+	Email    string `json:"-" form:"email" binding:"required"`
+	Posts    []Post `json:"posts"`
 }
 
 type Post struct {
-	Date int32
-	Title string `form:"title" binding:"required"`
-	//author filed is email of Person struct
-	Author string
-	Content string `form:"content" binding:"required"`
+	Date    int32  `json:"date"`
+	Title   string `form:"title" json:"title" binding:"required"`
+	Author  string `json:"author" bson:"_id,omitempty"`
+	Content string `form:"content" binding:"required" json:"-"`
+	Excerpt string `json:"excerpt"`
 }
 
 func (ps Person) Validate(errors *binding.Errors, req *http.Request) {
@@ -51,19 +53,23 @@ func SessionRedirect(c martini.Context, res http.ResponseWriter, req *http.Reque
 	}
 }
 
-func HomeRedirect(res http.ResponseWriter, req *http.Request) {
-	http.Redirect(res, req, "/", 302)
-}
-
-func ClearSessionCookies(session sessions.Session) {
-	session.Clear()
-}
-
 func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.Session) {
 	if !SessionIsAlive(session) {
-		session.Clear()
+		session.Delete("user")
 		http.Redirect(res, req, "/", 302)
 	}
+}
+
+func Excerpt(input string) string {
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	scanner.Split(bufio.ScanWords)
+	count := 0
+	excerpt := ""
+	for scanner.Scan() && count < 15 {
+		count++
+		excerpt = excerpt + scanner.Text() + " "
+	}
+	return excerpt
 }
 
 func main() {
@@ -72,11 +78,12 @@ func main() {
 	m.Use(sessions.Sessions("user", store))
 	m.Use(render.Renderer())
 	m.Use(MongoMiddleware())
+	m.Use(Middleware())
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
 	}))
 
-	m.Get("/", func(r render.Render) {
+	m.Get("/", func(r render.Render, db *rdb.Session) {
 		r.HTML(200, "home", nil)
 	})
 
@@ -88,40 +95,27 @@ func main() {
 		r.HTML(200, "post/new", nil)
 	})
 
-	m.Get("/post/:title", func(params martini.Params, r render.Render, db *mgo.Database) {
-		var post Post
-		post.Title = params["title"]
-		post, err := GetPostWithTitle(db, &post)
+	m.Get("/post/:title", func(params martini.Params, r render.Render, db *rdb.Session) {
+		data, err := Get(db, "posts", params["title"], Post{})
+		log.Println(err, data)
 		if err != nil {
 			r.HTML(500, "error", err)
 		}
-		r.HTML(200, "post/display", post)
+		r.HTML(200, "post/display", data)
 	})
 
-	m.Post("/post/new", ProtectedPage, binding.Form(Post{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, post Post) {
-		person, err := GetUserFromSession(db, session)
-		if err != nil {
-			r.HTML(500, "error", err)
-		}
-		post.Date = int32(time.Now().Unix())
-		post.Author = person.Email
-		db.C("posts").Insert(post)
-	}, SessionRedirect)
+	// m.Post("/post/new", ProtectedPage, binding.Form(Post{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, post Post) {
+	// 	person, err := GetUserFromSession(db, session)
+	// 	if err != nil {
+	// 		r.HTML(500, "error", err)
+	// 	}
+	// 	post.Date = int32(time.Now().Unix())
+	// 	//post.Author = person.Id
+	// 	post.Excerpt = Excerpt(post.Content)
+	// 	db.C("posts").Insert(post)
+	// }, SessionRedirect)
 
-	m.Get("/user", ProtectedPage, func(session sessions.Session, r render.Render, db *mgo.Database) {
-		person, err := GetUserFromSession(db, session)
-		if err != nil {
-			r.HTML(500, "error", err)
-			return
-		}
-		posts, err := GetPostsFromAuthor(db, person)
-		if err != nil {
-			r.HTML(500, "error", err)
-			return
-		}
-		r.HTML(200, "user/index", person)
-		r.HTML(200, "user/listPost", posts)
-	})
+	m.Get("/user", ProtectedPage, RoutesUser)
 
 	m.Get("/user/register", SessionRedirect, func(r render.Render) {
 		r.HTML(200, "user/register", nil)
@@ -138,7 +132,6 @@ func main() {
 
 	m.Post("/user/register", binding.Form(Person{}), binding.ErrorHandler, func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
 		person.Digest = GenerateHash(person.Password)
-		person.Password = ""
 		s.Set("user", person.Email)
 		db.C("users").Insert(person)
 	}, SessionRedirect)
@@ -147,7 +140,10 @@ func main() {
 		r.HTML(200, "user/login", nil)
 	})
 
-	m.Get("/user/logout", ClearSessionCookies, HomeRedirect)
+	m.Get("/user/logout", func(s sessions.Session, r render.Render) {
+		s.Delete("user")
+		r.Redirect("/", 302)
+	})
 
 	m.Post("/user/login", binding.Form(Person{}), func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
 		submittedPassword := person.Password
@@ -178,18 +174,31 @@ func main() {
 				r.HTML(401, "user/index", person)
 				return
 			}
-			session.Clear()
+			session.Delete("user")
 		}
-	//this should probably lead to somewhere where you can check whether the response actually succeeded...
-	}, SessionRedirect)
-
-	m.Get("/api/users", func(r render.Render, db *mgo.Database) {
-		r.JSON(200, GetAll(db))
+		r.Redirect("/", 302)
 	})
 
-	m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *mgo.Database) {
-		r.JSON(200, GetUserByID(db, params["id"]))
+	m.Get("/api/users", func(r render.Render, db *rdb.Session) {
+		users, err := rGetAll(db, "users")
+		if err != nil {
+			r.JSON(500, err)
+			return
+		}
+		r.JSON(200, users)
 	})
+
+	m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
+
+	// m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *mgo.Database) {
+	// 	data := GetUserByID(db, params["id"])
+	// 	posts, err := GetPostsFromAuthor(db, data)
+	// 	if err != nil {
+	// 		r.JSON(500, err)
+	// 	}
+	// 	data.Posts = posts
+	// 	r.JSON(200, data)
+	// })
 
 	m.Run()
 
