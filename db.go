@@ -1,14 +1,13 @@
 package main
 
 import (
+	"errors"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
 	"labix.org/v2/mgo"
 	"labix.org/v2/mgo/bson"
-	"errors"
 	"os"
 )
-
 
 //Returns a martini context to handle middleware calls.
 func MongoMiddleware() martini.Handler {
@@ -44,12 +43,12 @@ func GetUser(db *mgo.Database, person Person) Person {
 	return person
 }
 
-func GetUserByID(db *mgo.Database, id string) Person {
-	var person Person
-	person.Id = bson.ObjectIdHex(id)
-	db.C("users").Find(bson.M{"_id": person.Id}).One(&person)
-	return person
-}
+// func GetUserByID(db *mgo.Database, id string) Person {
+// 	var person Person
+// 	person.Id = bson.ObjectIdHex(id)
+// 	db.C("users").Find(bson.M{"_id": person.Id}).One(&person)
+// 	return person
+// }
 
 func RemoveUserByID(db *mgo.Database, person *Person) error {
 	err := db.C("users").Remove(bson.M{"_id": person.Id})
@@ -103,7 +102,7 @@ func RemoveUserBySession(db *mgo.Database, session sessions.Session) error {
 }
 
 func GetPostsFromAuthor(db *mgo.Database, person Person) (posts []Post, err error) {
-	err = db.C("posts").Find(bson.M{"author": person.Email}).All(&posts)
+	err = db.C("posts").Find(bson.M{"_id": person.Id}).All(&posts)
 	if err != nil {
 		return posts, err
 	}
