@@ -10,7 +10,6 @@ import (
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
-	//"rethink"
 	"strings"
 	//"time"
 )
@@ -95,14 +94,14 @@ func main() {
 		r.HTML(200, "post/new", nil)
 	})
 
-	m.Get("/post/:title", func(params martini.Params, r render.Render, db *rdb.Session) {
-		data, err := Get(db, "posts", params["title"], Post{})
-		log.Println(err, data)
-		if err != nil {
-			r.HTML(500, "error", err)
-		}
-		r.HTML(200, "post/display", data)
-	})
+	// m.Get("/post/:title", func(params martini.Params, r render.Render, db *rdb.Session) {
+	// 	data, err := rethink.Get(db, "posts", params["title"], Post{})
+	// 	log.Println(err, data)
+	// 	if err != nil {
+	// 		r.HTML(500, "error", err)
+	// 	}
+	// 	r.HTML(200, "post/display", data)
+	// })
 
 	// m.Post("/post/new", ProtectedPage, binding.Form(Post{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, post Post) {
 	// 	person, err := GetUserFromSession(db, session)
@@ -180,7 +179,8 @@ func main() {
 	})
 
 	m.Get("/api/users", func(r render.Render, db *rdb.Session) {
-		users, err := rGetAll(db, "users")
+		var person Person
+		users, err := person.GetAll(db)
 		if err != nil {
 			r.JSON(500, err)
 			return
@@ -188,17 +188,27 @@ func main() {
 		r.JSON(200, users)
 	})
 
-	m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
-
-	// m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *mgo.Database) {
-	// 	data := GetUserByID(db, params["id"])
-	// 	posts, err := GetPostsFromAuthor(db, data)
+	// m.Get("/api/posts", func(r render.Render, db *rdb.Session) {
+	// 	posts, err := rethink.GetAll(db, "posts", Post{})
 	// 	if err != nil {
 	// 		r.JSON(500, err)
+	// 		return
 	// 	}
-	// 	data.Posts = posts
-	// 	r.JSON(200, data)
+	// 	r.JSON(200, posts)
 	// })
+
+	m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
+
+	m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *rdb.Session) {
+		var person Person
+		person.Id = params["id"]
+		user, err := person.Get(db)
+		if err != nil {
+			log.Println(err)
+			r.JSON(500, err)
+		}
+		r.JSON(200, user)
+	})
 
 	m.Run()
 
