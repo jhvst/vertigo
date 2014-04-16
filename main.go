@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	rdb "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
@@ -10,31 +9,22 @@ import (
 	"labix.org/v2/mgo"
 	"log"
 	"net/http"
-	"strings"
 	//"time"
 )
 
 type Person struct {
-	Id       string `json:"id"`
-	Name     string `json:"name" form:"name" binding:"required"`
-	//Password string `form:"password" json:"-"`
-	//Digest []byte `json:"-"`
-	Email    string `json:"-" form:"email" binding:"required"`
-	Posts    []Post `json:"posts"`
-}
-
-type Post struct {
-	//Date    int32  `json:"date"`
-	Title   string `form:"title" json:"title" binding:"required"`
-	Author  string `json:"author"`
-	Content string `form:"content" binding:"required" json:"-"`
-	//Excerpt string `json:"excerpt"`
+	Id       string `json:"id" gorethink:",omitempty"`
+	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
+	Password string `form:"password" json:"-" gorethink:",omitempty"`
+	Digest []byte `json:"-" gorethink:"digest"`
+	Email    string `json:"-" form:"email" binding:"required" gorethink:"email"`
+	Posts    []Post `json:"posts" gorethink:"posts"`
 }
 
 func (ps Person) Validate(errors *binding.Errors, req *http.Request) {
-	if EmailIsUnique(ps) != true {
-		errors.Fields["email"] = "Email is already in use."
-	}
+	// if EmailIsUnique(ps) != true {
+	// 	errors.Fields["email"] = "Email is already in use."
+	// }
 }
 
 func SessionIsAlive(session sessions.Session) bool {
@@ -59,24 +49,11 @@ func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.
 	}
 }
 
-func Excerpt(input string) string {
-	scanner := bufio.NewScanner(strings.NewReader(input))
-	scanner.Split(bufio.ScanWords)
-	count := 0
-	excerpt := ""
-	for scanner.Scan() && count < 15 {
-		count++
-		excerpt = excerpt + scanner.Text() + " "
-	}
-	return excerpt
-}
-
 func main() {
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte("heartbleed"))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(render.Renderer())
-	m.Use(MongoMiddleware())
 	m.Use(Middleware())
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
@@ -86,9 +63,9 @@ func main() {
 		r.HTML(200, "home", nil)
 	})
 
-	m.Get("/users", func(r render.Render, db *mgo.Database) {
-		r.HTML(200, "users", GetAll(db))
-	})
+	// m.Get("/users", func(r render.Render, db *mgo.Database) {
+	// 	r.HTML(200, "users", GetAll(db))
+	// })
 
 	m.Get("/post/new", ProtectedPage, func(r render.Render, db *mgo.Database) {
 		r.HTML(200, "post/new", nil)
@@ -120,14 +97,14 @@ func main() {
 		r.HTML(200, "user/register", nil)
 	})
 
-	m.Post("/user", ProtectedPage, binding.Form(Person{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, person Person) {
-		err := UpdateUserBySession(db, session, person)
-		if err != nil {
-			session.Clear()
-			r.HTML(500, "error", err)
-			return
-		}
-	}, SessionRedirect)
+	// m.Post("/user", ProtectedPage, binding.Form(Person{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, person Person) {
+	// 	err := UpdateUserBySession(db, session, person)
+	// 	if err != nil {
+	// 		session.Clear()
+	// 		r.HTML(500, "error", err)
+	// 		return
+	// 	}
+	// }, SessionRedirect)
 
 	// m.Post("/user/register", binding.Form(Person{}), binding.ErrorHandler, func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
 	// 	person.Digest = GenerateHash(person.Password)
@@ -178,37 +155,15 @@ func main() {
 	// 	r.Redirect("/", 302)
 	// })
 
-	m.Get("/api/users", func(r render.Render, db *rdb.Session) {
-		var person Person
-		users, err := person.GetAll(db)
-		if err != nil {
-			r.JSON(500, err)
-			return
-		}
-		r.JSON(200, users)
-	})
+	m.Group("/api", func(r martini.Router) {
 
-	// m.Get("/api/posts", func(r render.Render, db *rdb.Session) {
-	// 	posts, err := rethink.GetAll(db, "posts", Post{})
-	// 	if err != nil {
-	// 		r.JSON(500, err)
-	// 		return
-	// 	}
-	// 	r.JSON(200, posts)
-	// })
+		r.Get("/users", GetUsers)
+	    r.Get("/user/:id", GetUser)
+	    r.Post("/user", binding.Json(Person{}), RegisterUser)
 
-	// m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
+	    r.Get("/posts", GetPosts)
+	    r.Get("/post/:title", GetPost)
 
-	m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *rdb.Session) {
-		person := new(Person)
-		person.Id = params["id"]
-		user, err := person.Get(db)
-		if err != nil {
-			log.Println(err)
-			r.JSON(500, map[string]interface{}{"error": "Internal server error"})
-			return
-		}
-		r.JSON(200, user)
 	})
 
 	m.Run()
