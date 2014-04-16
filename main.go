@@ -17,18 +17,18 @@ import (
 type Person struct {
 	Id       string `json:"id"`
 	Name     string `json:"name" form:"name" binding:"required"`
-	Digest   []byte `json:"-"`
-	Password string `form:"password" json:"-"`
+	//Password string `form:"password" json:"-"`
+	//Digest []byte `json:"-"`
 	Email    string `json:"-" form:"email" binding:"required"`
 	Posts    []Post `json:"posts"`
 }
 
 type Post struct {
-	Date    int32  `json:"date"`
+	//Date    int32  `json:"date"`
 	Title   string `form:"title" json:"title" binding:"required"`
-	Author  string `json:"author" bson:"_id,omitempty"`
+	Author  string `json:"author"`
 	Content string `form:"content" binding:"required" json:"-"`
-	Excerpt string `json:"excerpt"`
+	//Excerpt string `json:"excerpt"`
 }
 
 func (ps Person) Validate(errors *binding.Errors, req *http.Request) {
@@ -114,7 +114,7 @@ func main() {
 	// 	db.C("posts").Insert(post)
 	// }, SessionRedirect)
 
-	m.Get("/user", ProtectedPage, RoutesUser)
+	// m.Get("/user", ProtectedPage, RoutesUser)
 
 	m.Get("/user/register", SessionRedirect, func(r render.Render) {
 		r.HTML(200, "user/register", nil)
@@ -129,11 +129,11 @@ func main() {
 		}
 	}, SessionRedirect)
 
-	m.Post("/user/register", binding.Form(Person{}), binding.ErrorHandler, func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
-		person.Digest = GenerateHash(person.Password)
-		s.Set("user", person.Email)
-		db.C("users").Insert(person)
-	}, SessionRedirect)
+	// m.Post("/user/register", binding.Form(Person{}), binding.ErrorHandler, func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
+	// 	person.Digest = GenerateHash(person.Password)
+	// 	s.Set("user", person.Email)
+	// 	db.C("users").Insert(person)
+	// }, SessionRedirect)
 
 	m.Get("/user/login", SessionRedirect, func(r render.Render) {
 		r.HTML(200, "user/login", nil)
@@ -144,39 +144,39 @@ func main() {
 		r.Redirect("/", 302)
 	})
 
-	m.Post("/user/login", binding.Form(Person{}), func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
-		submittedPassword := person.Password
-		person, err := GetUserWithEmail(db, &person)
-		if err != nil {
-			r.HTML(401, "user/login", "Wrong username or password.")
-			return
-		}
-		if CompareHash(person.Digest, submittedPassword) {
-			s.Set("user", person.Email)
-			return
-		}
-		r.HTML(401, "user/login", "Wrong username or password.")
-	}, SessionRedirect)
+	// m.Post("/user/login", binding.Form(Person{}), func(s sessions.Session, r render.Render, db *mgo.Database, person Person) {
+	// 	submittedPassword := person.Password
+	// 	person, err := GetUserWithEmail(db, &person)
+	// 	if err != nil {
+	// 		r.HTML(401, "user/login", "Wrong username or password.")
+	// 		return
+	// 	}
+	// 	if CompareHash(person.Digest, submittedPassword) {
+	// 		s.Set("user", person.Email)
+	// 		return
+	// 	}
+	// 	r.HTML(401, "user/login", "Wrong username or password.")
+	// }, SessionRedirect)
 
-	m.Post("/user/delete", ProtectedPage, binding.Form(Person{}), func(session sessions.Session, r render.Render, db *mgo.Database, person Person) {
-		submittedPassword := person.Password
-		person, err := GetUserFromSession(db, session)
-		if err != nil {
-			r.HTML(500, "error", "Database connection error. Please try again later.")
-			r.HTML(500, "user/index", person)
-			return
-		}
-		if CompareHash(person.Digest, submittedPassword) {
-			err := RemoveUserByID(db, &person)
-			if err != nil {
-				r.HTML(401, "error", "Wrong username or password.")
-				r.HTML(401, "user/index", person)
-				return
-			}
-			session.Delete("user")
-		}
-		r.Redirect("/", 302)
-	})
+	// m.Post("/user/delete", ProtectedPage, binding.Form(Person{}), func(session sessions.Session, r render.Render, db *mgo.Database, person Person) {
+	// 	submittedPassword := person.Password
+	// 	person, err := GetUserFromSession(db, session)
+	// 	if err != nil {
+	// 		r.HTML(500, "error", "Database connection error. Please try again later.")
+	// 		r.HTML(500, "user/index", person)
+	// 		return
+	// 	}
+	// 	if CompareHash(person.Digest, submittedPassword) {
+	// 		err := RemoveUserByID(db, &person)
+	// 		if err != nil {
+	// 			r.HTML(401, "error", "Wrong username or password.")
+	// 			r.HTML(401, "user/index", person)
+	// 			return
+	// 		}
+	// 		session.Delete("user")
+	// 	}
+	// 	r.Redirect("/", 302)
+	// })
 
 	m.Get("/api/users", func(r render.Render, db *rdb.Session) {
 		var person Person
@@ -197,10 +197,10 @@ func main() {
 	// 	r.JSON(200, posts)
 	// })
 
-	m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
+	// m.Post("/api/user", binding.Json(Person{}), binding.ErrorHandler, Register)
 
 	m.Get("/api/user/:id", func(params martini.Params, r render.Render, db *rdb.Session) {
-		var person Person
+		person := new(Person)
 		person.Id = params["id"]
 		user, err := person.Get(db)
 		if err != nil {
