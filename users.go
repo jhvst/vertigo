@@ -5,10 +5,11 @@ import (
 	//"github.com/go-martini/martini"
 	//"time"
 	"errors"
+	"os"
 )
 
 func (person Person) Get(s *r.Session) (Person, error) {
-	row, err := r.Db("workki").Table("users").Get(person.Id).Merge(map[string]interface{}{"posts":r.Db("workki").Table("posts").Filter(func (post r.RqlTerm) r.RqlTerm {
+	row, err := r.Db(os.Getenv("rNAME")).Table("users").Get(person.Id).Merge(map[string]interface{}{"posts":r.Db(os.Getenv("rNAME")).Table("posts").Filter(func (post r.RqlTerm) r.RqlTerm {
     	return post.Field("author").Eq(person.Id)
 	}).CoerceTo("ARRAY")}).RunRow(s)
 	if err != nil {
