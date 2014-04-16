@@ -205,7 +205,8 @@ func main() {
 		user, err := person.Get(db)
 		if err != nil {
 			log.Println(err)
-			r.JSON(500, err)
+			r.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
 		}
 		r.JSON(200, user)
 	})
