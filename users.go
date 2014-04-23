@@ -21,7 +21,6 @@ func GetUsers(res render.Render, db *r.Session) {
 }
 
 func RegisterUser(res render.Render, db *r.Session, s sessions.Session, person Person) {
-	log.Println(person)
 	user, err := person.Register(db)
 	if err != nil {
 		log.Println(err)
@@ -43,23 +42,24 @@ func GetUser(params martini.Params, res render.Render, db *r.Session) {
 	res.JSON(200, user)
 }
 
-func (person Person) IsEmailUnique(s *r.Session) (bool, error) {
+func EmailIsUnique(s *r.Session, person Person) (unique bool) {
+	log.Println(person)
 	row, err := r.Table("users").Filter(func (user r.RqlTerm) r.RqlTerm {
     	return user.Field("email").Eq(person.Email)
 	}).RunRow(s)
 	if err != nil {
-		return false, err
+		unique = false
 	}
 	if row.IsNil() {
-		return true, err
+		unique = true
 	}
-	return false, err
+	return unique
 }
 
 func (person Person) Get(s *r.Session) (Person, error) {
 	row, err := r.Table("users").Get(person.Id).Merge(map[string]interface{}{"posts":r.Table("posts").Filter(func (post r.RqlTerm) r.RqlTerm {
     	return post.Field("author").Eq(person.Id)
-	}).CoerceTo("ARRAY").Without("author")}).RunRow(s)
+	}).CoerceTo("ARRAY").Without("author")}).Without("digest","email").RunRow(s)
 	if err != nil {
 		return person, err
 	}
@@ -75,7 +75,8 @@ func (person Person) Get(s *r.Session) (Person, error) {
 
 func (person Person) Register(s *r.Session) (Person, error) {
 	person.Digest = GenerateHash(person.Password)
-	row, err := r.Table("users").Insert(person).Without(person.Password).RunRow(s)
+	person.Password = ""
+	row, err := r.Table("users").Insert(person).RunRow(s)
 	if err != nil {
 		return person, err
 	}
@@ -88,7 +89,7 @@ func (person Person) Register(s *r.Session) (Person, error) {
 
 func (person Person) GetAll(s *r.Session) ([]Person, error) {
 	var persons []Person
-	rows, err := r.Table("users").Run(s)
+	rows, err := r.Table("users").Without("digest","email").Run(s)
 	if err != nil {
 		return nil, err
 	}

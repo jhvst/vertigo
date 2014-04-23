@@ -15,16 +15,14 @@ import (
 type Person struct {
 	Id       string `json:"id" gorethink:",omitempty"`
 	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
-	Password string `form:"password" json:"-" gorethink:",omitempty"`
-	Digest []byte `json:"-" gorethink:"digest"`
-	Email    string `json:"-" form:"email" binding:"required" gorethink:"email"`
+	Password string `form:"password" json:"password,omitempty" gorethink:"-,omitempty"`
+	Digest []byte `json:"digest,omitempty" gorethink:"digest"`
+	Email    string `json:"email,omitempty" form:"email" binding:"required" gorethink:"email"`
 	Posts    []Post `json:"posts" gorethink:"posts"`
 }
 
-func (ps Person) Validate(errors *binding.Errors, req *http.Request) {
-	// if EmailIsUnique(ps) != true {
-	// 	errors.Fields["email"] = "Email is already in use."
-	// }
+func (person Person) Validate(db *rdb.Session, errors *binding.Errors, req *http.Request) {
+	log.Println("kk")
 }
 
 func SessionIsAlive(session sessions.Session) bool {
@@ -159,7 +157,7 @@ func main() {
 
 		r.Get("/users", GetUsers)
 	    r.Get("/user/:id", GetUser)
-	    r.Post("/user", binding.Json(Person{}), RegisterUser)
+	    r.Post("/user", binding.Json(Person{}), binding.ErrorHandler, RegisterUser)
 
 	    r.Get("/posts", GetPosts)
 	    r.Get("/post/:title", GetPost)
