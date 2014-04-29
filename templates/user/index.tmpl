@@ -9,3 +9,10 @@
         <button type="submit" id="delete" class="pure-button pure-button-primary">Delete your account</button>
     </fieldset>
 </form>
+
+{{if .Posts}}
+<h2>Posts</h2>
+{{range .Posts}}
+<li><a href="/post/{{.Title}}">{{.Title}}</a> – {{.Date}}</li>
+{{end}}
+{{end}}
