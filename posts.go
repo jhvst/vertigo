@@ -7,8 +7,8 @@ import (
 	//"time"
 	"errors"
 	//"log"
-	"os"
 	"bufio"
+	"os"
 	"strings"
 )
 
@@ -32,7 +32,11 @@ func Excerpt(input string) string {
 	return excerpt
 }
 
-func GetPosts(res render.Render, db *r.Session) {
+func CreatePost() {
+	
+}
+
+func ReadPosts(res render.Render, db *r.Session) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
@@ -42,7 +46,7 @@ func GetPosts(res render.Render, db *r.Session) {
 	res.JSON(200, posts)
 }
 
-func GetPost(params martini.Params, res render.Render, db *r.Session) {
+func ReadPost(params martini.Params, res render.Render, db *r.Session) {
 	var post Post
 	post.Title = params["title"]
 	post, err := post.Get(db)
@@ -74,13 +78,13 @@ func (post Post) GetAll(s *r.Session) ([]Post, error) {
 	if err != nil {
 		return nil, err
 	}
-    for rows.Next() {
-        err := rows.Scan(&post)
-        post, err := post.Get(s)
-        if err != nil {
-            return nil, err
-        }
-        posts = append(posts, post)
-    }
-    return posts, nil
+	for rows.Next() {
+		err := rows.Scan(&post)
+		post, err := post.Get(s)
+		if err != nil {
+			return nil, err
+		}
+		posts = append(posts, post)
+	}
+	return posts, nil
 }
