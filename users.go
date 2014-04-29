@@ -10,18 +10,22 @@ import (
 	"log"
 )
 
-func GetUsers(res render.Render, db *r.Session) {
+func RoutesUser(res render.Render, db *r.Session, s sessions.Session) {
 	var person Person
-	users, err := person.GetAll(db)
+	user, err := person.Session(db, s)
 	if err != nil {
-		res.JSON(500, err)
+		res.HTML(500, "error", err)
 		return
 	}
-	res.JSON(200, users)
+	res.HTML(200, "user/index", user)
 }
 
-func RegisterUser(res render.Render, db *r.Session, s sessions.Session, person Person) {
-	user, err := person.Register(db)
+func CreateUser(res render.Render, db *r.Session, s sessions.Session, person Person) {
+	if !EmailIsUnique(db, person) {
+		res.JSON(422, map[string]interface{}{"error": "Email already in use."})
+		return
+	}
+	user, err := person.Insert(db)
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -31,7 +35,7 @@ func RegisterUser(res render.Render, db *r.Session, s sessions.Session, person P
 	res.JSON(200, user)
 }
 
-func GetUser(params martini.Params, res render.Render, db *r.Session) {
+func ReadUser(params martini.Params, res render.Render, db *r.Session) {
 	var person Person
 	person.Id = params["id"]
 	user, err := person.Get(db)
@@ -42,24 +46,50 @@ func GetUser(params martini.Params, res render.Render, db *r.Session) {
 	res.JSON(200, user)
 }
 
+func ReadUsers(res render.Render, db *r.Session) {
+	var person Person
+	users, err := person.GetAll(db)
+	if err != nil {
+		res.JSON(500, err)
+		return
+	}
+	res.JSON(200, users)
+}
+
 func EmailIsUnique(s *r.Session, person Person) (unique bool) {
-	log.Println(person)
-	row, err := r.Table("users").Filter(func (user r.RqlTerm) r.RqlTerm {
-    	return user.Field("email").Eq(person.Email)
+	row, err := r.Table("users").Filter(func(user r.RqlTerm) r.RqlTerm {
+		return user.Field("email").Eq(person.Email)
+	}).RunRow(s)
+	if err != nil || !row.IsNil() {
+		return false
+	}
+	return true
+}
+
+func (person Person) Login(s *r.Session, password string) (Person, error) {
+	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
+		return post.Field("email").Eq(person.Email)
 	}).RunRow(s)
 	if err != nil {
-		unique = false
+		return person, err
 	}
 	if row.IsNil() {
-		unique = true
+		return person, errors.New("Nothing was found.")
 	}
-	return unique
+	err = row.Scan(&person)
+	if err != nil {
+		return person, err
+	}
+	if !CompareHash(person.Digest, password) {
+		return person, errors.New("Wrong username or password.")
+	}
+	return person, nil
 }
 
 func (person Person) Get(s *r.Session) (Person, error) {
-	row, err := r.Table("users").Get(person.Id).Merge(map[string]interface{}{"posts":r.Table("posts").Filter(func (post r.RqlTerm) r.RqlTerm {
-    	return post.Field("author").Eq(person.Id)
-	}).CoerceTo("ARRAY").Without("author")}).Without("digest","email").RunRow(s)
+	row, err := r.Table("users").Get(person.Id).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
+		return post.Field("author").Eq(person.Id)
+	}).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(s)
 	if err != nil {
 		return person, err
 	}
@@ -73,7 +103,22 @@ func (person Person) Get(s *r.Session) (Person, error) {
 	return person, err
 }
 
-func (person Person) Register(s *r.Session) (Person, error) {
+func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) {
+	data := s.Get("user")
+	id, exists := data.(string)
+	if exists {
+		var person Person
+		person.Id = id
+		person, err := person.Get(db)
+		if err != nil {
+			return person, err
+		}
+		return person, nil
+	}
+	return person, errors.New("Session could not be retrieved.")
+}
+
+func (person Person) Insert(s *r.Session) (Person, error) {
 	person.Digest = GenerateHash(person.Password)
 	person.Password = ""
 	row, err := r.Table("users").Insert(person).RunRow(s)
@@ -89,17 +134,17 @@ func (person Person) Register(s *r.Session) (Person, error) {
 
 func (person Person) GetAll(s *r.Session) ([]Person, error) {
 	var persons []Person
-	rows, err := r.Table("users").Without("digest","email").Run(s)
+	rows, err := r.Table("users").Without("digest", "email").Run(s)
 	if err != nil {
 		return nil, err
 	}
-    for rows.Next() {
-        err := rows.Scan(&person)
-        person, err := person.Get(s)
-        if err != nil {
-            return nil, err
-        }
-        persons = append(persons, person)
-    }
-    return persons, nil
+	for rows.Next() {
+		err := rows.Scan(&person)
+		person, err := person.Get(s)
+		if err != nil {
+			return nil, err
+		}
+		persons = append(persons, person)
+	}
+	return persons, nil
 }
