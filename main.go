@@ -7,7 +7,6 @@ import (
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/gzip"
-	"labix.org/v2/mgo"
 	"log"
 	"net/http"
 	"time"
@@ -60,10 +59,6 @@ func main() {
 		r.HTML(200, "home", nil)
 	})
 
-	m.Get("/post/new", ProtectedPage, func(r render.Render, db *mgo.Database) {
-		r.HTML(200, "post/new", nil)
-	})
-
 	// m.Get("/post/:title", func(params martini.Params, r render.Render, db *rdb.Session) {
 	// 	data, err := rethink.Get(db, "posts", params["title"], Post{})
 	// 	log.Println(err, data)
@@ -73,18 +68,15 @@ func main() {
 	// 	r.HTML(200, "post/display", data)
 	// })
 
-	// m.Post("/post/new", ProtectedPage, binding.Form(Post{}), binding.ErrorHandler, func(session sessions.Session, r render.Render, db *mgo.Database, post Post) {
-	// 	person, err := GetUserFromSession(db, session)
-	// 	if err != nil {
-	// 		r.HTML(500, "error", err)
-	// 	}
-	// 	post.Date = int32(time.Now().Unix())
-	// 	//post.Author = person.Id
-	// 	post.Excerpt = Excerpt(post.Content)
-	// 	db.C("posts").Insert(post)
-	// }, SessionRedirect)
-
-	m.Get("/user", ProtectedPage, RoutesUser)
+	m.Get("/user", ProtectedPage, func(r render.Render, db *rdb.Session, s sessions.Session) {
+		var person Person
+		user, err := person.Session(db, s)
+		if err != nil {
+			r.HTML(500, "error", err)
+			return
+		}
+		r.HTML(200, "user/index", user)
+	})
 
 	m.Get("/user/register", SessionRedirect, func(r render.Render) {
 		r.HTML(200, "user/register", nil)
@@ -115,7 +107,7 @@ func main() {
 	})
 
 	m.Post("/user/login", binding.Form(Person{}), func(s sessions.Session, r render.Render, db *rdb.Session, person Person) {
-		person, err := person.Login(db, person.Password)
+		person, err := person.Login(db)
 		if err != nil {
 			r.HTML(401, "user/login", "Wrong username or password.")
 			return
@@ -148,6 +140,7 @@ func main() {
 
 		r.Get("/users", ReadUsers)
 		r.Get("/user/:id", ReadUser)
+		r.Delete("/user", DeleteUser)
 		r.Post("/user", binding.Json(Person{}), binding.ErrorHandler, CreateUser)
 
 		r.Get("/posts", ReadPosts)
