@@ -4,11 +4,11 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
-	//"time"
+	"github.com/martini-contrib/sessions"
+	"time"
 	"errors"
 	//"log"
 	"bufio"
-	"os"
 	"strings"
 )
 
@@ -32,15 +32,21 @@ func Excerpt(input string) string {
 	return excerpt
 }
 
-func CreatePost() {
-	
+func CreatePost(s sessions.Session, db *r.Session, res render.Render) {
+	var post Post
+	post, err := post.Insert(db, s)
+	if err != nil {
+		res.JSON(500, err)
+		return
+	}
+	res.JSON(200, post)
 }
 
 func ReadPosts(res render.Render, db *r.Session) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
-		res.JSON(500, err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	res.JSON(200, posts)
@@ -57,8 +63,28 @@ func ReadPost(params martini.Params, res render.Render, db *r.Session) {
 	res.JSON(200, post)
 }
 
+func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
+	var person Person
+	person, err := person.Session(db, s)
+	if err != nil {
+		return post, err
+	}
+	post.Author = person.Id
+	post.Date = int32(time.Now().Unix())
+	post.Excerpt = Excerpt(post.Content)
+	row, err := r.Table("posts").Insert(post).RunRow(db)
+	if err != nil {
+		return post, err
+	}
+	err = row.Scan(&post)
+	if err != nil {
+		return post, err
+	}
+	return post, err
+}
+
 func (post Post) Get(s *r.Session) (Post, error) {
-	row, err := r.Db(os.Getenv("rNAME")).Table("posts").Get(post.Title).RunRow(s)
+	row, err := r.Table("posts").Get(post.Title).RunRow(s)
 	if err != nil {
 		return post, err
 	}
