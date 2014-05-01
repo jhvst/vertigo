@@ -10,19 +10,9 @@ import (
 	"log"
 )
 
-func RoutesUser(res render.Render, db *r.Session, s sessions.Session) {
-	var person Person
-	user, err := person.Session(db, s)
-	if err != nil {
-		res.HTML(500, "error", err)
-		return
-	}
-	res.HTML(200, "user/index", user)
-}
-
 func CreateUser(res render.Render, db *r.Session, s sessions.Session, person Person) {
 	if !EmailIsUnique(db, person) {
-		res.JSON(422, map[string]interface{}{"error": "Email already in use."})
+		res.JSON(422, map[string]interface{}{"error": "Email already in use"})
 		return
 	}
 	user, err := person.Insert(db)
@@ -33,6 +23,20 @@ func CreateUser(res render.Render, db *r.Session, s sessions.Session, person Per
 	}
 	s.Set("user", user.Id)
 	res.JSON(200, user)
+}
+
+func DeleteUser(res render.Render, db *r.Session, s sessions.Session, person Person) {
+	person, err := person.Login(db)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	err = person.Delete(db, s)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	res.JSON(200, map[string]interface{}{"status": "User successfully deleted"})
 }
 
 func ReadUser(params martini.Params, res render.Render, db *r.Session) {
@@ -66,22 +70,16 @@ func EmailIsUnique(s *r.Session, person Person) (unique bool) {
 	return true
 }
 
-func (person Person) Login(s *r.Session, password string) (Person, error) {
+func (person Person) Login(s *r.Session) (Person, error) {
 	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
 		return post.Field("email").Eq(person.Email)
 	}).RunRow(s)
-	if err != nil {
+	if err != nil || row.IsNil() {
 		return person, err
-	}
-	if row.IsNil() {
-		return person, errors.New("Nothing was found.")
 	}
 	err = row.Scan(&person)
-	if err != nil {
+	if err != nil || !CompareHash(person.Digest, person.Password) {
 		return person, err
-	}
-	if !CompareHash(person.Digest, password) {
-		return person, errors.New("Wrong username or password.")
 	}
 	return person, nil
 }
@@ -116,6 +114,18 @@ func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) 
 		return person, nil
 	}
 	return person, errors.New("Session could not be retrieved.")
+}
+
+func (person Person) Delete(db *r.Session, s sessions.Session) error {
+	person, err := person.Session(db, s)
+	if err != nil {
+		return err
+	}
+	_, err = r.Table("users").Get(person.Id).Delete().RunRow(db)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (person Person) Insert(s *r.Session) (Person, error) {
