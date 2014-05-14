@@ -1,45 +1,59 @@
 package main
 
+// This file contains about everything related to posts. At the top you will find routes
+// and at the bottom you can find CRUD options. The functions in this file are analogous
+// to the ones in users.go, although some differences exist.
+
 import (
+	"bufio"
+	"bytes"
+	"errors"
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	"time"
-	"errors"
-	//"log"
-	"bufio"
+	"log"
+	"net/http"
 	"strings"
+	"time"
 )
 
 type Post struct {
-	Date    int32  `json:"date"`
-	Title   string `form:"title" json:"title" binding:"required"`
-	Author  string `json:"author,omitempty"`
-	Content string `form:"content" binding:"required" json:"-"`
-	Excerpt string `json:"excerpt"`
+	Date    int32  `json:"date" gorethink:"date"`
+	Title   string `json:"title"form:"title" binding:"required" gorethink:"title"`
+	Author  string `json:"author,omitempty" gorethink:"author"`
+	Content string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
+	Excerpt string `json:"excerpt" gorethink:"excerpt"`
 }
 
+// Generates 15 word excerpt from given input.
 func Excerpt(input string) string {
 	scanner := bufio.NewScanner(strings.NewReader(input))
 	scanner.Split(bufio.ScanWords)
 	count := 0
-	excerpt := ""
+	var excerpt bytes.Buffer
 	for scanner.Scan() && count < 15 {
 		count++
-		excerpt = excerpt + scanner.Text() + " "
+		excerpt.WriteString(scanner.Text() + " ")
 	}
-	return excerpt
+	return strings.TrimSuffix(excerpt.String(), " ")
 }
 
-func CreatePost(s sessions.Session, db *r.Session, res render.Render) {
-	var post Post
-	post, err := post.Insert(db, s)
+func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render.Render, post Post) {
+	entry, err := post.Insert(db, s)
 	if err != nil {
-		res.JSON(500, err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	res.JSON(200, post)
+	switch root(req) {
+	case "api":
+		res.JSON(200, entry)
+		return
+	case "post":
+		res.Redirect("/post/"+entry.Title, 302)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 func ReadPosts(res render.Render, db *r.Session) {
@@ -52,17 +66,32 @@ func ReadPosts(res render.Render, db *r.Session) {
 	res.JSON(200, posts)
 }
 
-func ReadPost(params martini.Params, res render.Render, db *r.Session) {
+func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
 	var post Post
+	if params["title"] == "new" {
+		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
+		return
+	}
 	post.Title = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
-	res.JSON(200, post)
+	switch root(req) {
+	case "api":
+		res.JSON(200, post)
+		return
+	case "post":
+		res.HTML(200, "post/display", post)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// Inserts Post object to database. The function fetches user data from session and
+// after that it fills Author, Date and Excerpt fields.
 func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
@@ -84,7 +113,9 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 }
 
 func (post Post) Get(s *r.Session) (Post, error) {
-	row, err := r.Table("posts").Get(post.Title).RunRow(s)
+	row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
+		return this.Field("title").Eq(post.Title)
+	}).RunRow(s)
 	if err != nil {
 		return post, err
 	}
