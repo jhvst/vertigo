@@ -1,8 +1,6 @@
 vertigo
 =======
 
-Just another blog engine in Go.
-
 Currently under heavy development!
 
 Vertigo aims to bring simpler way to publish simple websites or blogs, which are normally done with heavy content management systems like Wordpress. Basic ideaology is that functionality could be added with JavaScript even without touching the backend source code. Theme development should be distinct from backend code so that knowledge in Go would not be needed when developing themes.
@@ -21,10 +19,6 @@ Since there is so much to do, I'd rather list some things that are currently wor
 - Create, read posts
 - Basic session control
 - Creating new posts, listing them on each user page
-
-##Known bugs
-
-- Currently, blog posts do not render HTML right. It seems like martini's render package is sanitizing everything with brute force. So if you add HTML to a post, the text will not render in HTML, but in sanitized format.
 
 ##License
 
