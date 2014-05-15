@@ -1,7 +1,13 @@
-<h2>Hello World!</h2>
-<p>{{.}}</p>
-<a href="/users">Users</a>
+{{range .}}
+{{range .Posts}}
+<h2><a href="/post/{{.Title}}">{{.Title}}</a></h2>
+<time>{{.Date}}</time>
+<p>{{unescape .Excerpt}} ... </p><a href="/post/{{.Title}}">Read more</a>
+{{end}}
+{{end}}
+<p></p>
+<hr>
 <a href="/user/login">Log in</a>
 <a href="/user/register">Register</a>
 <hr>
-<a href="/api/users">json users</a>
+<a href="/api">JSON API</a>
