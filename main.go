@@ -8,23 +8,29 @@ import (
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"log"
+	"html/template"
 )
 
 func main() {
+
+	helpers := template.FuncMap{
+		"unescape": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+	}
+
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte("heartbleed"))
 	m.Use(sessions.Sessions("user", store))
-	m.Use(render.Renderer())
 	m.Use(middleware())
 	m.Use(strict.Strict)
 	m.Use(gzip.All())
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
+		Funcs: []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
 	}))
 
-	m.Get("/", func(r render.Render) {
-		r.HTML(200, "home", nil)
-	})
+	m.Get("/", Homepage)
 
 	m.Group("/post", func(r martini.Router) {
 
@@ -63,6 +69,9 @@ func main() {
 
 	m.Group("/api", func(r martini.Router) {
 
+		r.Get("", func(res render.Render) {
+			res.HTML(200, "api/index", nil)
+		})
 		r.Get("/users", ReadUsers)
 		r.Get("/user/:id", ReadUser)
 		//r.Delete("/user", DeleteUser)
