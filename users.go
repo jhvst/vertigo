@@ -19,6 +19,16 @@ type Person struct {
 	Posts    []Post `json:"posts" gorethink:"posts"`
 }
 
+func Homepage(res render.Render, db *r.Session) {
+	var person Person
+	users, err := person.GetAll(db)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	res.HTML(200, "home", users)
+}
+
 func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.Session, person Person) {
 	if !EmailIsUnique(db, person) {
 		res.JSON(422, map[string]interface{}{"error": "Email already in use"})
@@ -117,12 +127,13 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	s.Set("user", person.Id)
 	switch root(req) {
 	case "api":
+		s.Set("user", person.Id)
 		res.JSON(200, person)
 		return
 	case "user":
+		s.Set("user", person.Id)
 		res.Redirect("/user", 302)
 		return
 	}
