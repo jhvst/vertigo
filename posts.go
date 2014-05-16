@@ -12,6 +12,7 @@ import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	"github.com/gosimple/slug"
 	"log"
 	"net/http"
 	"strings"
@@ -24,6 +25,7 @@ type Post struct {
 	Author  string `json:"author,omitempty" gorethink:"author"`
 	Content string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
 	Excerpt string `json:"excerpt" gorethink:"excerpt"`
+	Slug string `json:"slug" gorethink:"slug"`
 }
 
 // Generates 15 word excerpt from given input.
@@ -72,7 +74,7 @@ func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r
 		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
 		return
 	}
-	post.Title = params["title"]
+	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -101,6 +103,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Author = person.Id
 	post.Date = int32(time.Now().Unix())
 	post.Excerpt = Excerpt(post.Content)
+	post.Slug = slug.Make(post.Title)
 	row, err := r.Table("posts").Insert(post).RunRow(db)
 	if err != nil {
 		return post, err
@@ -114,7 +117,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 
 func (post Post) Get(s *r.Session) (Post, error) {
 	row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
-		return this.Field("title").Eq(post.Title)
+		return this.Field("slug").Eq(post.Slug)
 	}).RunRow(s)
 	if err != nil {
 		return post, err
