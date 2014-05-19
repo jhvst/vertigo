@@ -52,7 +52,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render
 		res.JSON(200, entry)
 		return
 	case "post":
-		res.Redirect("/post/"+entry.Title, 302)
+		res.Redirect("/post/"+entry.Slug, 302)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
