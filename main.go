@@ -7,8 +7,8 @@ import (
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	"log"
 	"html/template"
+	"log"
 )
 
 func main() {
@@ -27,7 +27,7 @@ func main() {
 	m.Use(gzip.All())
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
-		Funcs: []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
+		Funcs:  []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
 	}))
 
 	m.Get("/", Homepage)

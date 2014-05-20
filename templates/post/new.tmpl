@@ -41,15 +41,15 @@
 <!-- Include the Quill editor library -->
 <script src="http://quilljs.com/js/quill.js"></script>
 <script>
-  editor = new Quill('.editor', {
-    modules: {
-      'toolbar': {
-        container: '#toolbar'
-      },
-      'link-tooltip': true,
-      'image-tooltip': true
-    }
-  });
+	editor = new Quill('.editor', {
+	modules: {
+		'toolbar': {
+			container: '#toolbar'
+		},
+		'link-tooltip': true,
+		'image-tooltip': true
+	}
+	});
 	function fillContent() {
 		var html = editor.getHTML();
 		document.new.content.value = html;
