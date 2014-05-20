@@ -10,9 +10,9 @@ import (
 	"errors"
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
+	"github.com/gosimple/slug"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	"github.com/gosimple/slug"
 	"log"
 	"net/http"
 	"strings"
@@ -25,7 +25,7 @@ type Post struct {
 	Author  string `json:"author,omitempty" gorethink:"author"`
 	Content string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
 	Excerpt string `json:"excerpt" gorethink:"excerpt"`
-	Slug string `json:"slug" gorethink:"slug"`
+	Slug    string `json:"slug" gorethink:"slug"`
 }
 
 // Generates 15 word excerpt from given input.
@@ -38,7 +38,7 @@ func Excerpt(input string) string {
 		count++
 		excerpt.WriteString(scanner.Text() + " ")
 	}
-	return strings.TrimSuffix(excerpt.String(), " ")
+	return strings.TrimSpace(excerpt.String())
 }
 
 func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render.Render, post Post) {
@@ -134,7 +134,7 @@ func (post Post) Get(s *r.Session) (Post, error) {
 
 func (post Post) GetAll(s *r.Session) ([]Post, error) {
 	var posts []Post
-	rows, err := r.Table("posts").Run(s)
+	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(s)
 	if err != nil {
 		return nil, err
 	}
