@@ -15,10 +15,12 @@ On the backend the server makes a heavy use of [Martini](http://martini.codegang
 
 Since there is so much to do, I'd rather list some things that are currently working:
 
-- User CRUD options
-- Create, read posts
-- Basic session control
-- Creating new posts, listing them on each user page
+- Create and read users
+- Create, read, update and delete posts
+- Session control
+- Password protected user page with CRUD options for each post
+- Basic homepage which lists all posts from all users
+- JSON API
 
 ##License
 
