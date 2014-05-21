@@ -1,9 +1,8 @@
 package main
 
 import (
-	rdb "github.com/dancannon/gorethink"
+	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"net/http"
 	"os"
@@ -17,7 +16,7 @@ import (
 //		Address: "localhost:28015"
 //		Database: "test"
 func middleware() martini.Handler {
-	session, err := rdb.Connect(rdb.ConnectOpts{
+	session, err := r.Connect(r.ConnectOpts{
 		Address:     os.Getenv("rDB"),
 		Database:    os.Getenv("rNAME"),
 		MaxIdle:     10,
@@ -47,7 +46,7 @@ func sessionIsAlive(session sessions.Session) bool {
 // If true, redirects to user's profile root.
 // Useful for redirecting from pages which are only visible when logged out,
 // for example login and register pages.
-func SessionRedirect(c martini.Context, res http.ResponseWriter, req *http.Request, r render.Render, session sessions.Session) {
+func SessionRedirect(res http.ResponseWriter, req *http.Request, session sessions.Session) {
 	if sessionIsAlive(session) {
 		http.Redirect(res, req, "/user", 302)
 	}
