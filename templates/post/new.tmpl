@@ -1,58 +1,10 @@
-<form class="pure-form" method="post" name="new" onsubmit="fillContent()">
+<form class="pure-form" method="post">
     <fieldset>
         <legend>Create new post</legend>
 
         <input name="title" placeholder="Title">
-        <!-- Include the Quill editor library -->
-        <textarea name="content" style="display: none"></textarea>
+        <textarea name="content"></textarea>
 
         <button type="submit" class="pure-button pure-button-primary">Post</button>
     </fieldset>
 </form>
-
-
-<!-- Create the toolbar container -->
-<div id="toolbar">
-	<select class="sc-size">
-		<option value="small">Small</option>
-		<option value="normal" selected>Normal</option>
-		<option value="large">Large</option>
-		<option value="huge">Huge</option>
-	</select>
-	<button class="sc-bold">Bold</button>
-	<button class="sc-italic">Italic</button>
-	<button class="sc-strike">Striketrough</button>
-	<button class="sc-underline">Underline</button>
-	<button class="sc-format-button sc-link">Link</button>
-	<button class="sc-format-button sc-image">Image</button>
-	<select title="Text Alignment" class="sc-align">
-		<option value="left" label="Left" selected="">Left</option>
-		<option value="center" label="Center">Center</option>
-		<option value="right" label="Right">Right</option>
-		<option value="justify" label="Justify">Justify</option>
-	</select>
-</div>
-
-<!-- Include the Quill editor library -->
-<div class="editor" style="height: 65vh">
-	<p>Enter content here</p>
-</div>
-
-<!-- Include the Quill editor library -->
-<script src="http://quilljs.com/js/quill.js"></script>
-<script>
-	editor = new Quill('.editor', {
-	modules: {
-		'toolbar': {
-			container: '#toolbar'
-		},
-		'link-tooltip': true,
-		'image-tooltip': true
-	}
-	});
-	function fillContent() {
-		var html = editor.getHTML();
-		document.new.content.value = html;
-		return
-	}
-</script>

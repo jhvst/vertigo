@@ -8,10 +8,10 @@
 <p>Displays data of a single user.</p>
 
 <h3>POST /api/user</h3>
-<p>Creates a new user. Required fields are email and password.</p>
+<p>Creates a new user. Required parameters are email and password.</p>
 
 <h3>POST /api/user/login</h3>
-<p>Logins a user and if successful, returns session cookie. Required fields are email and password.</p>
+<p>Logins a user and if successful, returns session cookie. Required parameters are email and password.</p>
 
 <h2>Posts</h2>
 
@@ -21,5 +21,11 @@
 <h3>GET /api/posts/:id</h3>
 <p>Displays a single post</p>
 
+<h3>POST /api/posts/:id/edit</h3>
+<p>Updates a post. Requires active session. Required parameters are slug, content and title.</p>
+
+<h3>POST /api/posts/:id/delete</h3>
+<p>Deletes a post. Requires active session. Requires post slug as parameter.</p>
+
 <h3>POST /api/post</h3>
-<p>Creates a new post. You must make this request with session cookie in place.</p>
+<p>Creates a new post. Requires active session.</p>

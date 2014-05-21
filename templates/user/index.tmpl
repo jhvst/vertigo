@@ -13,8 +13,8 @@
 {{if .Posts}}
 <h2>Posts</h2>
 {{range .Posts}}
-<section>
-	<li><a href="/post/{{.Slug}}">{{.Title}}</a> – {{.Date}}</li>
-</section>
+<ul>
+	<li><a href="/post/{{.Slug}}">{{.Title}}</a> <a href="/post/{{.Slug}}/edit">[edit]</a> <a href="/post/{{.Slug}}/delete">[delete]</a></li>
+</ul>
 {{end}}
 {{end}}
