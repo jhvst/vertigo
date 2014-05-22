@@ -21,11 +21,14 @@
 <h3>GET /api/posts/:id</h3>
 <p>Displays a single post</p>
 
+<h3>POST /api/post</h3>
+<p>Creates a new post. Requires active session.</p>
+
+<h3>GET /api/posts/:id/publish</h3>
+<p>Publishes a post. Requires active session. Requires post slug as parameter.</p>
+
 <h3>POST /api/posts/:id/edit</h3>
 <p>Updates a post. Requires active session. Required parameters are slug, content and title.</p>
 
-<h3>POST /api/posts/:id/delete</h3>
+<h3>GET /api/posts/:id/delete</h3>
 <p>Deletes a post. Requires active session. Requires post slug as parameter.</p>
-
-<h3>POST /api/post</h3>
-<p>Creates a new post. Requires active session.</p>

@@ -20,12 +20,13 @@ import (
 )
 
 type Post struct {
-	Date    int32  `json:"date" gorethink:"date"`
-	Title   string `json:"title"form:"title" binding:"required" gorethink:"title"`
-	Author  string `json:"author,omitempty" gorethink:"author"`
-	Content string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
-	Excerpt string `json:"excerpt" gorethink:"excerpt"`
-	Slug    string `json:"slug" gorethink:"slug"`
+	Date      int32  `json:"date" gorethink:"date"`
+	Title     string `json:"title"form:"title" binding:"required" gorethink:"title"`
+	Author    string `json:"author,omitempty" gorethink:"author"`
+	Content   string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
+	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
+	Slug      string `json:"slug" gorethink:"slug"`
+	Published bool   `json:",omitempty" gorethink:"published"`
 }
 
 // Generates 15 word excerpt from given input.
@@ -135,6 +136,33 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 		res.JSON(200, post)
 		return
 	case "post":
+		res.Redirect("/user", 302)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+}
+
+func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session) {
+	var post Post
+	post.Slug = params["title"]
+	post, err := post.Get(db)
+	post.Published = true
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
+		return
+	}
+	post, err = post.Update(db, s, post)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
+		return
+	}
+	switch root(req) {
+	case "api":
+		res.JSON(200, map[string]interface{}{"success": "Post published"})
+		return
+	case "post":
 		res.Redirect("/post/"+post.Slug, 302)
 		return
 	}
@@ -179,6 +207,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Date = int32(time.Now().Unix())
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
+	post.Published = false
 	row, err := r.Table("posts").Insert(post).RunRow(db)
 	if err != nil {
 		return post, err
@@ -217,7 +246,7 @@ func (entry Post) Update(db *r.Session, s sessions.Session, post Post) (Post, er
 	if entry.Author == person.Id {
 		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
 			return this.Field("slug").Eq(entry.Slug)
-		}).Update(map[string]interface{}{"content": post.Content, "slug": slug.Make(post.Title), "title": post.Title, "excerpt": Excerpt(post.Content)}).RunRow(db)
+		}).Update(map[string]interface{}{"published": post.Published, "content": post.Content, "slug": slug.Make(post.Title), "title": post.Title, "excerpt": Excerpt(post.Content)}).RunRow(db)
 		if err != nil {
 			return post, err
 		}

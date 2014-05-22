@@ -43,6 +43,7 @@ func main() {
 		r.Get("/:title", ReadPost)
 		r.Get("/:title/edit", EditPost)
 		r.Get("/:title/delete", DeletePost)
+		r.Get("/:title/publish", PublishPost)
 		r.Post("/:title/edit", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Post("/new", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
 
@@ -83,6 +84,7 @@ func main() {
 
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:title", ReadPost)
+		r.Get("/post/:title/publish")
 		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/post/:title/delete", DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, CreatePost)
