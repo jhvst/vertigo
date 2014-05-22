@@ -1,0 +1,32 @@
+fieldset {
+	border: 0;
+}
+
+a.homepage-link {
+	display: none;
+}
+
+input {
+	width: 100%;
+	font-size: 2.5em;
+	border: 0;
+	margin-bottom: .5em;
+}
+
+textarea {
+	width: 100%;
+	height: 70vh;
+	resize: none;
+	overflow: auto;
+	font-size: 2em;
+	border: 0;
+}
+
+*:focus {
+	outline: 0;
+}
+
+button {
+	float: right;
+	margin-bottom: 1em;
+}

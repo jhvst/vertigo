@@ -1,3 +1,6 @@
 body {
+	width: 960px;
+	margin: auto;
 	padding: 20px;
+	font-family: 'PT Serif', serif;
 }
