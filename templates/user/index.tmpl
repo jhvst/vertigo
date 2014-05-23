@@ -1,4 +1,5 @@
 <h2>Hello {{.Name}}</h2>
+<p>We have no idea how long it has been since your last visit, because we don't track that.</p>
 <a href="/post/new">Create new blog post</a>
 <a href="/user/logout">Logout</a>
 
@@ -11,7 +12,7 @@
 </form> -->
 
 {{if .Posts}}
-<h2>Posts</h2>
+<h2>Your posts</h2>
 {{range .Posts}}
 <ul>
 	<li><a href="/post/{{.Slug}}">{{.Title}}</a> <a href="/post/{{.Slug}}/edit">[edit]</a> <a href="/post/{{.Slug}}/delete">[delete]</a> {{if not .Published}}<a href="/post/{{.Slug}}/publish">[publish]</a>{{end}}</li>
