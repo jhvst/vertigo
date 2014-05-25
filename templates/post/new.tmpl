@@ -1,10 +1,54 @@
 <link rel="stylesheet" href="/css/writing.css">
-<form class="pure-form" method="post">
+<form method="post" name="new" onsubmit="copy()">
     <fieldset>
 
-        <h1><input autocomplete="off" name="title" placeholder="Title"></h1>
+        <h1><input id="title" autocomplete="off" name="title" placeholder="Title"></h1>
         <textarea name="content" style="display: none"></textarea>
-    	<div name="div" contenteditable="true"></div>
+    	<div id="text" contenteditable="true"></div>
 
     </fieldset>
 </form>
+<script type="text/javascript">
+
+	// LocalStorage loops(?) to save both post title and content to cache.
+	// Looks ugly, but better than AJAX based failover, right?
+	// Modified version of this: https://gist.github.com/addyosmani/d1f3ca715ac902788c2d
+	with({
+		l: localStorage // Alias for localStorage, where we'll store text content
+	// This is some sort of variable initialization. It also checks whether there is anything in cache already.
+	}) with(document.getElementById("text")) if (l.getItem("c") != null) {
+		innerHTML = [l.c], // Replace placeholder text with localstorage content.
+		oninput = function () {
+			l.c = innerHTML // Save HTML context to localStorage.
+		}
+	} else {
+		oninput = function () {
+			l.c = innerHTML
+		}
+	}
+
+	// For a yet another unknown reason we need two instances of localstorage.
+	// Fundamentally analogous to the loop above.
+	with({
+		l2: localStorage
+	}) with(document.getElementById("title")) if (l2.getItem("t") != null) {
+		document.new.title.value = [l2.t],
+		oninput = function () {
+			l2.t = document.new.title.value
+		}
+	} else {
+		oninput = function () {
+			l2.t = document.new.title.value
+		}
+	}
+
+	// Copy data from contenteditable to textarea for POST to gather the data correctly.
+	// Also clear localstorage.
+	function copy() {
+		localStorage.removeItem("t");
+		localStorage.removeItem("c");
+		var html = document.getElementById("text").innerHTML;
+		document.new.content.value = html;
+		return
+	}
+</script>

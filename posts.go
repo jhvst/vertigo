@@ -26,7 +26,7 @@ type Post struct {
 	Content   string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
 	Slug      string `json:"slug" gorethink:"slug"`
-	Published bool   `json:",omitempty" gorethink:"published"`
+	Published bool   `json:"-" gorethink:"published"`
 }
 
 // Generates 15 word excerpt from given input.
@@ -53,7 +53,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render
 		res.JSON(200, entry)
 		return
 	case "post":
-		res.Redirect("/post/"+entry.Slug, 302)
+		res.Redirect("/user", 302)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -208,6 +208,10 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
+	post.Content = strings.TrimPrefix(post.Content, "<p></p>")
+	post.Content = strings.TrimSuffix(post.Content, "<p></p>")
+	post.Content = strings.Replace(post.Content, "<div><br></div>", "", -1)
+	post.Content = strings.Replace(post.Content, "<br>", "", -1)
 	row, err := r.Table("posts").Insert(post).RunRow(db)
 	if err != nil {
 		return post, err
@@ -302,7 +306,9 @@ func (post Post) GetAll(s *r.Session) ([]Post, error) {
 		if err != nil {
 			return nil, err
 		}
-		posts = append(posts, post)
+		if post.Published {
+			posts = append(posts, post)
+		}
 	}
 	return posts, nil
 }

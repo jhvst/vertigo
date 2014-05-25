@@ -7,6 +7,7 @@ import (
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	"html"
 	"html/template"
 	"log"
 )
@@ -15,7 +16,7 @@ func main() {
 
 	helpers := template.FuncMap{
 		"unescape": func(s string) template.HTML {
-			return template.HTML(s)
+			return template.HTML(html.UnescapeString(s))
 		},
 	}
 
