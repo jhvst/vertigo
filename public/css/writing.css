@@ -2,7 +2,7 @@ fieldset {
 	border: 0;
 }
 
-a.homepage-link {
+a.homepage-link, fieldset.search {
 	display: none;
 }
 
