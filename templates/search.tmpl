@@ -1,0 +1,10 @@
+{{if nothing .}}
+<h2>Nothing found.</h2>
+{{else}}
+{{range .}}
+{{if .}}
+<h1><a href="/post/{{.Slug}}">{{.Title}}</a></h1>
+<p>{{unescape .Excerpt}} [...] </p><a href="/post/{{.Slug}}">Read more</a>
+{{end}}
+{{end}}
+{{end}}

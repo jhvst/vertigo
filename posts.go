@@ -29,6 +29,10 @@ type Post struct {
 	Published bool   `json:"-" gorethink:"published"`
 }
 
+type Search struct {
+	Query string `json:"query" form:"query" binding:"required"`
+}
+
 // Generates 15 word excerpt from given input.
 func Excerpt(input string) string {
 	scanner := bufio.NewScanner(strings.NewReader(input))
@@ -40,6 +44,24 @@ func Excerpt(input string) string {
 		excerpt.WriteString(scanner.Text() + " ")
 	}
 	return strings.TrimSpace(excerpt.String())
+}
+
+func SearchPost(req *http.Request, params martini.Params, s sessions.Session, db *r.Session, res render.Render, search Search) {
+	posts, err := search.Get(db)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	switch root(req) {
+	case "api":
+		res.JSON(200, posts)
+		return
+	case "post":
+		log.Println(posts)
+		res.HTML(200, "search", posts)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render.Render, post Post) {
@@ -261,6 +283,22 @@ func (entry Post) Update(db *r.Session, s sessions.Session, post Post) (Post, er
 		return post, errors.New("Unauthorized.")
 	}
 	return post, err
+}
+
+func (search Search) Get(db *r.Session) ([]Post, error) {
+	var matched []Post
+	var post Post
+	posts, err := post.GetAll(db)
+	if err != nil {
+		return matched, err
+	}
+	for _, post := range posts {
+		// Entry content is search query.
+		if strings.Contains(post.Content, search.Query) || strings.Contains(post.Title, search.Query) {
+			matched = append(matched, post)
+		}
+	}
+	return matched, nil
 }
 
 // Delete deletes a post.

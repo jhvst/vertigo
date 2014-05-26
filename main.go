@@ -18,6 +18,12 @@ func main() {
 		"unescape": func(s string) template.HTML {
 			return template.HTML(html.UnescapeString(s))
 		},
+		"nothing": func(p []Post) bool {
+			if len(p) <= 0 {
+				return true
+			}
+			return false
+		},
 	}
 
 	m := martini.Classic()
@@ -47,6 +53,7 @@ func main() {
 		r.Get("/:title/publish", PublishPost)
 		r.Post("/:title/edit", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Post("/new", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
+		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
 	})
 
@@ -91,6 +98,7 @@ func main() {
 		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/post/:title/delete", DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, CreatePost)
+		r.Post("/post/search/:query", strict.ContentType("application/json"), binding.Json(Search{}), binding.ErrorHandler, SearchPost)
 
 	})
 

@@ -4,3 +4,8 @@ body {
 	padding: 20px;
 	font-family: 'PT Serif', serif;
 }
+
+fieldset.search {
+	width: 3em;
+	float: right;
+}

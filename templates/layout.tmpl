@@ -9,6 +9,11 @@
   	</head>
   <body>
   	<a class="homepage-link" href="/">Home</a>
+    <form method="post" action="/post/search">
+        <fieldset class="search">
+            <input name="query" placeholder="Search...">
+        </fieldset>
+    </form>
     {{ yield }}
   </body>
 </html>
