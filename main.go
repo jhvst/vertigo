@@ -63,6 +63,7 @@ func main() {
 		r.Get("/login", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/login", nil)
 		})
+		r.Get("/logout", LogoutUser)
 		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), LoginUser)
 
 		r.Get("/logout", func(s sessions.Session, res render.Render) {
@@ -82,6 +83,7 @@ func main() {
 		//r.Delete("/user", DeleteUser)
 		r.Post("/user", strict.ContentType("application/json"), binding.Json(Person{}), binding.ErrorHandler, CreateUser)
 		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(Person{}), binding.ErrorHandler, LoginUser)
+		r.Get("/user/logout", LogoutUser)
 
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:title", ReadPost)

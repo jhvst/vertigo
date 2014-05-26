@@ -140,6 +140,19 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+func LogoutUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
+	s.Delete("user")
+	switch root(req) {
+	case "api":
+		res.JSON(200, map[string]interface{}{"success": "You've been logged out."})
+		return
+	case "user":
+		res.Redirect("/", 302)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+}
+
 func (person Person) Login(s *r.Session) (Person, error) {
 	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
 		return post.Field("email").Eq(person.Email)
