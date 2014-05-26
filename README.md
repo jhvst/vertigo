@@ -23,6 +23,7 @@ Since there is so much to do, I'd rather list some things that are currently wor
 - JSON API
 - Produce HTML5 compliant code with text editor
 - Auto-saving of posts to LocalStorage
+- Search
 
 ##License
 
