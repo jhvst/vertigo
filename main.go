@@ -15,9 +15,14 @@ import (
 func main() {
 
 	helpers := template.FuncMap{
+		// Unescape unescapes and parses HTML from database objects.
+		// Used in templates such as "/post/display.tmpl"
 		"unescape": func(s string) template.HTML {
 			return template.HTML(html.UnescapeString(s))
 		},
+		// Nothing returns bool according to whether data object length
+		// is less or equal to zero. Same as calling `if len {{.}} le 0`,
+		// but I hope this helper function is easier to read.
 		"nothing": func(p []Post) bool {
 			if len(p) <= 0 {
 				return true
@@ -49,9 +54,9 @@ func main() {
 		})
 		r.Get("/:title", ReadPost)
 		r.Get("/:title/edit", EditPost)
+		r.Post("/:title/edit", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/:title/delete", DeletePost)
 		r.Get("/:title/publish", PublishPost)
-		r.Post("/:title/edit", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Post("/new", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
 		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
@@ -70,13 +75,8 @@ func main() {
 		r.Get("/login", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/login", nil)
 		})
-		r.Get("/logout", LogoutUser)
 		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), LoginUser)
-
-		r.Get("/logout", func(s sessions.Session, res render.Render) {
-			s.Delete("user")
-			res.Redirect("/", 302)
-		})
+		r.Get("/logout", LogoutUser)
 
 	})
 
@@ -94,6 +94,7 @@ func main() {
 
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:title", ReadPost)
+		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, CreatePost)
 		r.Get("/post/:title/publish")
 		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/post/:title/delete", DeletePost)
