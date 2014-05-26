@@ -208,10 +208,6 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
-	post.Content = strings.TrimPrefix(post.Content, "<p></p>")
-	post.Content = strings.TrimSuffix(post.Content, "<p></p>")
-	post.Content = strings.Replace(post.Content, "<div><br></div>", "", -1)
-	post.Content = strings.Replace(post.Content, "<br>", "", -1)
 	row, err := r.Table("posts").Insert(post).RunRow(db)
 	if err != nil {
 		return post, err
