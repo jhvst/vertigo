@@ -1,8 +1,8 @@
 package main
 
 // This file contains about everything related to posts. At the top you will find routes
-// and at the bottom you can find CRUD options. The functions in this file are analogous
-// to the ones in users.go, although some differences exist.
+// and at the bottom you can find CRUD options. Some functions in this file are analogous
+// to the ones in users.go.
 
 import (
 	"bufio"
@@ -19,9 +19,15 @@ import (
 	"time"
 )
 
+// Post struct contains all relevant data when it comes to posts. Most fields
+// are automatically filled inserting a new object into the database.
+// JSON field after type refer to JSON key which martini will use to render data.
+// Form field refers to frontend POST form `name` fields which martini uses to read data from.
+// Binding defines whether the field is required when inserting or updating the object.
+// Gorethink field defines which name the variable gets once inserted to database.
 type Post struct {
 	Date      int32  `json:"date" gorethink:"date"`
-	Title     string `json:"title"form:"title" binding:"required" gorethink:"title"`
+	Title     string `json:"title" form:"title" binding:"required" gorethink:"title"`
 	Author    string `json:"author,omitempty" gorethink:"author"`
 	Content   string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
@@ -29,11 +35,14 @@ type Post struct {
 	Published bool   `json:"-" gorethink:"published"`
 }
 
+// Search struct is basically just a type check to make sure people don't add anything nasty to
+// on-site search queries.
 type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
 }
 
-// Generates 15 word excerpt from given input.
+// Excerpt generates 15 word excerpt from given input.
+// Used to make shorter summaries from blog posts.
 func Excerpt(input string) string {
 	scanner := bufio.NewScanner(strings.NewReader(input))
 	scanner.Split(bufio.ScanWords)
@@ -46,6 +55,8 @@ func Excerpt(input string) string {
 	return strings.TrimSpace(excerpt.String())
 }
 
+// SearchPost is a route which returns all posts and aggregates the ones which contain
+// the POSTed search query in either Title or Content field.
 func SearchPost(req *http.Request, params martini.Params, s sessions.Session, db *r.Session, res render.Render, search Search) {
 	posts, err := search.Get(db)
 	if err != nil {
@@ -57,13 +68,33 @@ func SearchPost(req *http.Request, params martini.Params, s sessions.Session, db
 		res.JSON(200, posts)
 		return
 	case "post":
-		log.Println(posts)
 		res.HTML(200, "search", posts)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// Get or search.Get returns all posts which contain parameter search.Query in either
+// post.Title or post.Content.
+// Returns []Post and error object.
+func (search Search) Get(db *r.Session) ([]Post, error) {
+	var matched []Post
+	var post Post
+	posts, err := post.GetAll(db)
+	if err != nil {
+		return matched, err
+	}
+	for _, post := range posts {
+		if strings.Contains(post.Content, search.Query) || strings.Contains(post.Title, search.Query) {
+			matched = append(matched, post)
+		}
+	}
+	return matched, nil
+}
+
+// CreatePost is a route which creates a new post according to the posted data.
+// API response contains the created post object and normal request redirects to "/user" page.
+// Does not publish the post automatically. See PublishPost for more.
 func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render.Render, post Post) {
 	entry, err := post.Insert(db, s)
 	if err != nil {
@@ -81,6 +112,8 @@ func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// ReadPosts is a route which returns all posts without merged owner data (although the object does include author field)
+// Not available on frontend, so therefore it only returns a JSON response.
 func ReadPosts(res render.Render, db *r.Session) {
 	var post Post
 	posts, err := post.GetAll(db)
@@ -91,6 +124,9 @@ func ReadPosts(res render.Render, db *r.Session) {
 	res.JSON(200, posts)
 }
 
+// ReadPost is a route which returns post with fiven martini parameter "title".
+// The function defines Slug property automatically.
+// Returns post data on JSON call and displays a formatted page on frontend.
 func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
 	var post Post
 	if params["title"] == "new" {
@@ -115,12 +151,11 @@ func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// EditPost is a route which returns a post object to be displayed and edited on frontend.
+// Not available for JSON API.
+// Analogous to ReadPost. Could be replaced at some point.
 func EditPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
 	var post Post
-	if params["title"] == "new" {
-		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
-		return
-	}
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
@@ -130,7 +165,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *r
 	}
 	switch root(req) {
 	case "api":
-		res.JSON(200, post)
+		res.JSON(403, map[string]interface{}{"error": "To edit a post POST to /api/post/:title/edit instead."})
 		return
 	case "post":
 		res.HTML(200, "post/edit", post)
@@ -139,6 +174,8 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *r
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
+// Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
 func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session, post Post) {
 	post.Slug = params["title"]
 	entry, err := post.Get(db)
@@ -164,6 +201,10 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// PublishPost is a route which publishes a post and therefore making it appear on frontpage and search.
+// JSON request returns `HTTP 200 {"success": "Post published"}` on success. Frontend call will redirect to
+// published page.
+// Requires active session cookie.
 func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session) {
 	var post Post
 	post.Slug = params["title"]
@@ -191,6 +232,10 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
+// DeletePost is a route which deletes a post according to martini parameter "title".
+// JSON request returns `HTTP 200 {"success": "Post deleted"}` on success. Frontend call will redirect to
+// "/user" page on successful request.
+// Requires active session cookie.
 func DeletePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session) {
 	var post Post
 	post.Slug = params["title"]
@@ -217,8 +262,10 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
-// Insert inserts Post object into database. The function fetches user data from session and
-// after that it fills Author, Date and Excerpt fields. Returns created Post object.
+// Insert or post.Insert inserts Post object into database.
+// Requires active session cookie
+// Fills post.Author, post.Date, post.Excerpt, post.Slug and post.Published automatically.
+// Returns Post and error object.
 func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
@@ -241,6 +288,9 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	return post, err
 }
 
+// Get or post.Get returns post according to given post.Slug.
+// Requires db session as a parameter.
+// Returns Post and error object.
 func (post Post) Get(s *r.Session) (Post, error) {
 	row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
 		return this.Field("slug").Eq(post.Slug)
@@ -258,7 +308,9 @@ func (post Post) Get(s *r.Session) (Post, error) {
 	return post, err
 }
 
-// Update updates a `entry` paramter with `post` parameter. Returns updated Post object.
+// Update or post.Update updates parameter "entry" with data given in parameter "post".
+// Requires active session cookie.
+// Returns updated Post object and an error object.
 func (entry Post) Update(db *r.Session, s sessions.Session, post Post) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
@@ -285,23 +337,9 @@ func (entry Post) Update(db *r.Session, s sessions.Session, post Post) (Post, er
 	return post, err
 }
 
-func (search Search) Get(db *r.Session) ([]Post, error) {
-	var matched []Post
-	var post Post
-	posts, err := post.GetAll(db)
-	if err != nil {
-		return matched, err
-	}
-	for _, post := range posts {
-		// Entry content is search query.
-		if strings.Contains(post.Content, search.Query) || strings.Contains(post.Title, search.Query) {
-			matched = append(matched, post)
-		}
-	}
-	return matched, nil
-}
-
-// Delete deletes a post.
+// Delete or post.Delete deletes a post according to post.Slug.
+// Requires session cookie.
+// Returns error object.
 func (post Post) Delete(db *r.Session, s sessions.Session) error {
 	var person Person
 	person, err := person.Session(db, s)
@@ -328,6 +366,8 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 	return err
 }
 
+// GetAll or post.GetAll returns all posts in database.
+// Returns []Post and error object.
 func (post Post) GetAll(s *r.Session) ([]Post, error) {
 	var posts []Post
 	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(s)

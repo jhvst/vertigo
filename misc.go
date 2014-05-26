@@ -1,5 +1,10 @@
 package main
 
+// This file contains bunch of miscful helper functions.
+// The functions here are either too rare to be assiociated to some known file
+// or are met more or less everywhere across the code.
+// So they are basically orphans and heroes at the same time.
+
 import (
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
@@ -32,7 +37,7 @@ func middleware() martini.Handler {
 	}
 }
 
-// Checks that session cookie with label "user" exists and is valid.
+// sessionIsAlive checks that session cookie with label "user" exists and is valid.
 func sessionIsAlive(session sessions.Session) bool {
 	data := session.Get("user")
 	_, exists := data.(string)
@@ -42,9 +47,8 @@ func sessionIsAlive(session sessions.Session) bool {
 	return false
 }
 
-// Checks whther session cookie with label "user" exists and is valid.
-// If true, redirects to user's profile root.
-// Useful for redirecting from pages which are only visible when logged out,
+// In addition to sessionIsAlive, SessionRedirect makes HTTP redirection to user home.
+// SessionRedirect is useful for redirecting from pages which are only visible when logged out,
 // for example login and register pages.
 func SessionRedirect(res http.ResponseWriter, req *http.Request, session sessions.Session) {
 	if sessionIsAlive(session) {
@@ -52,7 +56,7 @@ func SessionRedirect(res http.ResponseWriter, req *http.Request, session session
 	}
 }
 
-// Makes sure that the user is logged in. Use on pages which need authentication
+// ProtectedPage makes sure that the user is logged in. Use on pages which need authentication
 // or which have to deal with user structure later on.
 func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.Session) {
 	if !sessionIsAlive(session) {
@@ -61,7 +65,7 @@ func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.
 	}
 }
 
-// Returns request "root".
+// root returns request "root".
 // For example, calling it with http.Request which has URL of /api/user/5348482a2142dfb84ca41085
 // would return "api". This function is used to route both JSON API and frontend requests in the same function.
 func root(req *http.Request) string {
