@@ -1,4 +1,4 @@
-package main
+package vertigo
 
 // This file contains bunch of miscful helper functions.
 // The functions here are either too rare to be assiociated to some known file
