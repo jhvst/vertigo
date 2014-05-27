@@ -1,4 +1,4 @@
-vertigo
+vertigo [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.png)](https://godoc.org/github.com/9uuso/vertigo)
 =======
 
 Currently under heavy development!
