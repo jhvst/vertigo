@@ -41,6 +41,18 @@ type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
 }
 
+// Homepage route fetches all posts from database and renders them according to "home.tmpl".
+// Normally you'd use this function as your "/" route.
+func Homepage(res render.Render, db *r.Session) {
+	var post Post
+	posts, err := post.GetAll(db)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	res.HTML(200, "home", posts)
+}
+
 // Excerpt generates 15 word excerpt from given input.
 // Used to make shorter summaries from blog posts.
 func Excerpt(input string) string {
