@@ -122,10 +122,10 @@ func ReadUsers(res render.Render, db *r.Session) {
 // EmailIsUnique returns bool value acoording to whether user email already exists in database with called user struct.
 // The function is used to make sure two persons do not register under the same email. This limitation could however be removed,
 // as by default primary key for tables used by Vertigo is ID, not email.
-func EmailIsUnique(s *r.Session, person Person) bool {
+func EmailIsUnique(db *r.Session, person Person) bool {
 	row, err := r.Table("users").Filter(func(user r.RqlTerm) r.RqlTerm {
 		return user.Field("email").Eq(person.Email)
-	}).RunRow(s)
+	}).RunRow(db)
 	if err != nil || !row.IsNil() {
 		return false
 	}
@@ -174,10 +174,10 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render, db *r.
 // Login or person.Login is a function which retrieves user according to given .Email field.
 // The function then compares the retrieved object's .Digest field with given .Password field.
 // If the .Password and .Hash match, the function returns the requested Person struct.
-func (person Person) Login(s *r.Session) (Person, error) {
+func (person Person) Login(db *r.Session) (Person, error) {
 	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
 		return post.Field("email").Eq(person.Email)
-	}).RunRow(s)
+	}).RunRow(db)
 	if err != nil || row.IsNil() {
 		return person, err
 	}
@@ -194,10 +194,10 @@ func (person Person) Login(s *r.Session) (Person, error) {
 
 // Get or person.Get returns Person object according to given .Id
 // with post information merged, but without the .Digest and .Email field.
-func (person Person) Get(s *r.Session) (Person, error) {
+func (person Person) Get(db *r.Session) (Person, error) {
 	row, err := r.Table("users").Get(person.Id).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
 		return post.Field("author").Eq(person.Id)
-	}).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(s)
+	}).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
 	if err != nil {
 		return person, err
 	}
@@ -243,13 +243,13 @@ func (person Person) Delete(db *r.Session, s sessions.Session) error {
 
 // Insert or person.Insert inserts a new Person struct into the database.
 // The function creates .Digest hash from .Password.
-func (person Person) Insert(s *r.Session) (Person, error) {
+func (person Person) Insert(db *r.Session) (Person, error) {
 	person.Digest = GenerateHash(person.Password)
 	// We dont want to store plaintext password.
 	// Options given in Person struct will omit the field
 	// from being written to database at all.
 	person.Password = ""
-	row, err := r.Table("users").Insert(person).RunRow(s)
+	row, err := r.Table("users").Insert(person).RunRow(db)
 	if err != nil {
 		return person, err
 	}
@@ -261,15 +261,15 @@ func (person Person) Insert(s *r.Session) (Person, error) {
 }
 
 // GetAll or person.GetAll fetches all persons with post data merged from the database.
-func (person Person) GetAll(s *r.Session) ([]Person, error) {
+func (person Person) GetAll(db *r.Session) ([]Person, error) {
 	var persons []Person
-	rows, err := r.Table("users").Without("digest", "email").Run(s)
+	rows, err := r.Table("users").Without("digest", "email").Run(db)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		err := rows.Scan(&person)
-		person, err := person.Get(s)
+		person, err := person.Get(db)
 		if err != nil {
 			return nil, err
 		}

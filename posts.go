@@ -303,10 +303,10 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 // Get or post.Get returns post according to given post.Slug.
 // Requires db session as a parameter.
 // Returns Post and error object.
-func (post Post) Get(s *r.Session) (Post, error) {
+func (post Post) Get(db *r.Session) (Post, error) {
 	row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
 		return this.Field("slug").Eq(post.Slug)
-	}).RunRow(s)
+	}).RunRow(db)
 	if err != nil {
 		return post, err
 	}
@@ -380,15 +380,15 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 
 // GetAll or post.GetAll returns all posts in database.
 // Returns []Post and error object.
-func (post Post) GetAll(s *r.Session) ([]Post, error) {
+func (post Post) GetAll(db *r.Session) ([]Post, error) {
 	var posts []Post
-	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(s)
+	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(db)
 	if err != nil {
 		return nil, err
 	}
 	for rows.Next() {
 		err := rows.Scan(&post)
-		post, err := post.Get(s)
+		post, err := post.Get(db)
 		if err != nil {
 			return nil, err
 		}
