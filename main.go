@@ -1,4 +1,4 @@
-package vertigo
+package main
 
 import (
 	"github.com/attilaolah/strict"

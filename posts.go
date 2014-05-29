@@ -1,4 +1,4 @@
-package vertigo
+package main
 
 // This file contains about everything related to posts. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
