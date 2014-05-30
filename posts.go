@@ -33,6 +33,8 @@ type Post struct {
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
 	Slug      string `json:"slug" gorethink:"slug"`
 	Published bool   `json:"-" gorethink:"published"`
+	Viewcount int32  `json:"viewcount" gorethink:"viewcount"`
+	ID        string `json:"id" gorethink:",omitempty"`
 }
 
 // Search struct is basically just a type check to make sure people don't add anything nasty to
@@ -136,8 +138,7 @@ func ReadPosts(res render.Render, db *r.Session) {
 	res.JSON(200, posts)
 }
 
-// ReadPost is a route which returns post with fiven martini parameter "title".
-// The function defines Slug property automatically.
+// ReadPost is a route which returns post with given post.Slug.
 // Returns post data on JSON call and displays a formatted page on frontend.
 func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
 	var post Post
@@ -147,6 +148,7 @@ func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r
 	}
 	post.Slug = params["title"]
 	post, err := post.Get(db)
+	go post.Increment(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
@@ -397,4 +399,13 @@ func (post Post) GetAll(db *r.Session) ([]Post, error) {
 		}
 	}
 	return posts, nil
+}
+
+// Increment or post.Increment increases viewcount of a post by one according to post.Id.
+func (post Post) Increment(db *r.Session) error {
+	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).RunRow(db)
+	if err != nil {
+		log.Println("analytics:", err)
+	}
+	return nil
 }
