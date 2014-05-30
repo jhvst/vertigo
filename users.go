@@ -158,7 +158,7 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 
 // LogoutUser is a route which deletes session cookie "user", from the given client.
 // On API call responds with HTTP 200 body and on frontend the client is redirected to homepage "/".
-func LogoutUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
+func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 	s.Delete("user")
 	switch root(req) {
 	case "api":
