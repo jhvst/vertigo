@@ -284,7 +284,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	if err != nil {
 		return post, err
 	}
-	post.Author = person.Id
+	post.Author = person.ID
 	post.Date = int32(time.Now().Unix())
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
@@ -311,7 +311,7 @@ func (post Post) Get(db *r.Session) (Post, error) {
 		return post, err
 	}
 	if row.IsNil() {
-		return post, errors.New("Nothing was found.")
+		return post, errors.New("nothing was found")
 	}
 	err = row.Scan(&post)
 	if err != nil {
@@ -323,28 +323,28 @@ func (post Post) Get(db *r.Session) (Post, error) {
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (entry Post) Update(db *r.Session, s sessions.Session, post Post) (Post, error) {
+func (post Post) Update(db *r.Session, s sessions.Session, post Post) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
 	if err != nil {
 		return post, err
 	}
-	if entry.Author == person.Id {
+	if post.Author == person.ID {
 		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
-			return this.Field("slug").Eq(entry.Slug)
-		}).Update(map[string]interface{}{"published": post.Published, "content": post.Content, "slug": slug.Make(post.Title), "title": post.Title, "excerpt": Excerpt(post.Content)}).RunRow(db)
+			return this.Field("slug").Eq(post.Slug)
+		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).RunRow(db)
 		if err != nil {
 			return post, err
 		}
 		if row.IsNil() {
-			return post, errors.New("Nothing was found.")
+			return post, errors.New("nothing was found")
 		}
 		err = row.Scan(&post)
 		if err != nil {
 			return post, err
 		}
 	} else {
-		return post, errors.New("Unauthorized.")
+		return post, errors.New("unauthorized")
 	}
 	return post, err
 }
@@ -358,7 +358,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 	if err != nil {
 		return err
 	}
-	if post.Author == person.Id {
+	if post.Author == person.ID {
 		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
 			return this.Field("slug").Eq(post.Slug)
 		}).Delete().RunRow(db)
@@ -366,14 +366,14 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 			return err
 		}
 		if row.IsNil() {
-			return errors.New("Nothing was found.")
+			return errors.New("nothing was found")
 		}
 		err = row.Scan(&post)
 		if err != nil {
 			return err
 		}
 	} else {
-		return errors.New("Unauthorized.")
+		return errors.New("unauthorized")
 	}
 	return err
 }

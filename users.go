@@ -18,7 +18,7 @@ import (
 // A complete Person struct also includes Posts field (type []Post) which includes
 // all posts made by the user.
 type Person struct {
-	Id       string `json:"id" gorethink:",omitempty"`
+	ID       string `json:"id" gorethink:",omitempty"`
 	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
 	Password string `form:"password" json:"password,omitempty" gorethink:"-,omitempty"`
 	Digest   []byte `json:"digest,omitempty" gorethink:"digest"`
@@ -42,11 +42,11 @@ func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 	}
 	switch root(req) {
 	case "api":
-		s.Set("user", user.Id)
+		s.Set("user", user.ID)
 		res.JSON(200, user)
 		return
 	case "user":
-		s.Set("user", user.Id)
+		s.Set("user", user.ID)
 		res.Redirect("/user", 302)
 		return
 	}
@@ -87,7 +87,7 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 	var person Person
 	switch root(req) {
 	case "api":
-		person.Id = params["id"]
+		person.ID = params["id"]
 		user, err := person.Get(db)
 		if err != nil {
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -145,11 +145,11 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 	}
 	switch root(req) {
 	case "api":
-		s.Set("user", person.Id)
+		s.Set("user", person.ID)
 		res.JSON(200, person)
 		return
 	case "user":
-		s.Set("user", person.Id)
+		s.Set("user", person.ID)
 		res.Redirect("/user", 302)
 		return
 	}
@@ -187,22 +187,21 @@ func (person Person) Login(db *r.Session) (Person, error) {
 	}
 	if CompareHash(person.Digest, person.Password) {
 		return person, nil
-	} else {
-		return person, errors.New("Wrong username or password.")
 	}
+	return person, errors.New("wrong username or password")
 }
 
 // Get or person.Get returns Person object according to given .Id
 // with post information merged, but without the .Digest and .Email field.
 func (person Person) Get(db *r.Session) (Person, error) {
-	row, err := r.Table("users").Get(person.Id).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
-		return post.Field("author").Eq(person.Id)
+	row, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
+		return post.Field("author").Eq(person.ID)
 	}).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
 	if err != nil {
 		return person, err
 	}
 	if row.IsNil() {
-		return person, errors.New("Nothing was found.")
+		return person, errors.New("nothing was found")
 	}
 	err = row.Scan(&person)
 	if err != nil {
@@ -218,14 +217,14 @@ func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) 
 	id, exists := data.(string)
 	if exists {
 		var person Person
-		person.Id = id
+		person.ID = id
 		person, err := person.Get(db)
 		if err != nil {
 			return person, err
 		}
 		return person, nil
 	}
-	return person, errors.New("Session could not be retrieved.")
+	return person, errors.New("session could not be retrieved")
 }
 
 // Delete or person.Delete deletes the user with given .Id from the database.
@@ -234,7 +233,7 @@ func (person Person) Delete(db *r.Session, s sessions.Session) error {
 	if err != nil {
 		return err
 	}
-	_, err = r.Table("users").Get(person.Id).Delete().RunRow(db)
+	_, err = r.Table("users").Get(person.ID).Delete().RunRow(db)
 	if err != nil {
 		return err
 	}

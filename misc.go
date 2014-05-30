@@ -47,7 +47,7 @@ func sessionIsAlive(session sessions.Session) bool {
 	return false
 }
 
-// In addition to sessionIsAlive, SessionRedirect makes HTTP redirection to user home.
+// SessionRedirect in addition to sessionIsAlive makes HTTP redirection to user home.
 // SessionRedirect is useful for redirecting from pages which are only visible when logged out,
 // for example login and register pages.
 func SessionRedirect(res http.ResponseWriter, req *http.Request, session sessions.Session) {
@@ -65,7 +65,7 @@ func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.
 	}
 }
 
-// root returns request "root".
+// root returns HTTP request "root".
 // For example, calling it with http.Request which has URL of /api/user/5348482a2142dfb84ca41085
 // would return "api". This function is used to route both JSON API and frontend requests in the same function.
 func root(req *http.Request) string {

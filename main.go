@@ -106,5 +106,5 @@ func main() {
 	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
 	m.Run()
 
-	log.Println("Server started.")
+	log.Println("Vertigo started")
 }
