@@ -1,11 +1,11 @@
-<form class="pure-form" action="/user/login" method="post">
+<form action="/user/login" method="post">
     <fieldset>
-        <legend>A compact inline form</legend>
+        <legend>Login to Vertigo</legend>
 
-        <input type="email" name="email" placeholder="Email">
-        <input type="password" name="password" placeholder="Password">
+        <input type="email" name="email" placeholder="Email" required="required">
+        <input type="password" name="password" placeholder="Password" required="required">
 
-        <button type="submit" class="pure-button pure-button-primary">Sign in</button>
+        <button type="submit">Submit</button>
     </fieldset>
 </form>
 {{if .}}<h2>{{.}}</h2>{{end}}
