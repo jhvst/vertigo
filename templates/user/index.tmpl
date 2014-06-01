@@ -7,7 +7,15 @@
 <h2>Your posts</h2>
 {{range .Posts}}
 <ul>
-	<li><a href="/post/{{.Slug}}">{{.Title}}</a> <a href="/post/{{.Slug}}/edit">[edit]</a> <a href="/post/{{.Slug}}/delete">[delete]</a> {{if not .Published}}<a href="/post/{{.Slug}}/publish">[publish]</a>{{end}}</li>
+	<li>
+		<a href="/post/{{.Slug}}">{{.Title}}</a>
+		<a href="/post/{{.Slug}}/edit">[edit]</a>
+		<a href="/post/{{.Slug}}/delete">[delete]</a>
+		{{if not .Published}}
+			<a href="/post/{{.Slug}}/publish">[publish]</a>
+		{{end}}
+		<span>[views: {{.Viewcount}}]</span>
+	</li>
 </ul>
 {{end}}
 {{end}}
