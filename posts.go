@@ -71,7 +71,7 @@ func Excerpt(input string) string {
 
 // SearchPost is a route which returns all posts and aggregates the ones which contain
 // the POSTed search query in either Title or Content field.
-func SearchPost(req *http.Request, params martini.Params, s sessions.Session, db *r.Session, res render.Render, search Search) {
+func SearchPost(req *http.Request, db *r.Session, res render.Render, search Search) {
 	posts, err := search.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -140,7 +140,7 @@ func ReadPosts(res render.Render, db *r.Session) {
 
 // ReadPost is a route which returns post with given post.Slug.
 // Returns post data on JSON call and displays a formatted page on frontend.
-func ReadPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
+func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render, db *r.Session) {
 	var post Post
 	if params["title"] == "new" {
 		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
@@ -325,7 +325,7 @@ func (post Post) Get(db *r.Session) (Post, error) {
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (post Post) Update(db *r.Session, s sessions.Session, post Post) (Post, error) {
+func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
 	if err != nil {
