@@ -8,6 +8,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"github.com/9uuso/go-jaro-winkler-distance"
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/gosimple/slug"
@@ -99,9 +100,25 @@ func (search Search) Get(db *r.Session) ([]Post, error) {
 		return matched, err
 	}
 	for _, post := range posts {
-		if strings.Contains(post.Content, search.Query) || strings.Contains(post.Title, search.Query) {
-			matched = append(matched, post)
+		content := bufio.NewScanner(strings.NewReader(post.Content))
+		content.Split(bufio.ScanWords)
+		title := bufio.NewScanner(strings.NewReader(post.Title))
+		title.Split(bufio.ScanWords)
+		for content.Scan() {
+			if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
+				log.Println("content:", content.Text(), jwd.Calculate(content.Text(), search.Query))
+				matched = append(matched, post)
+				goto End
+			}
 		}
+		for title.Scan() {
+			if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
+				log.Println("title:", title.Text(), jwd.Calculate(title.Text(), search.Query))
+				matched = append(matched, post)
+				goto End
+			}
+		}
+	End:
 	}
 	return matched, nil
 }
