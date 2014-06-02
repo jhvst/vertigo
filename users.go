@@ -196,7 +196,7 @@ func (person Person) Login(db *r.Session) (Person, error) {
 func (person Person) Get(db *r.Session) (Person, error) {
 	row, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
 		return post.Field("author").Eq(person.ID)
-	}).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
+	}).OrderBy(r.Desc("date")).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
 	if err != nil {
 		return person, err
 	}
