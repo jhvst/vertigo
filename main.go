@@ -44,6 +44,14 @@ func main() {
 
 	m.Get("/", Homepage)
 
+	m.Group("/feeds", func(r martini.Router) {
+		r.Get("", func(res render.Render) {
+			res.Redirect("/feeds/rss", 302)
+		})
+		r.Get("/atom", ReadFeed)
+		r.Get("/rss", ReadFeed)
+	})
+
 	m.Group("/post", func(r martini.Router) {
 
 		// Please note that `/new` route has to be before the `/:title` route. Otherwise the program will try

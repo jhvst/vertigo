@@ -42,6 +42,8 @@ type Post struct {
 // on-site search queries.
 type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
+	Score float64
+	Post  Post
 }
 
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
@@ -304,7 +306,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 		return post, err
 	}
 	post.Author = person.ID
-	post.Date = int32(time.Now().Unix())
+	post.Date = time.Now().Unix()
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
