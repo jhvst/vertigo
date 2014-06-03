@@ -27,7 +27,7 @@ import (
 // Binding defines whether the field is required when inserting or updating the object.
 // Gorethink field defines which name the variable gets once inserted to database.
 type Post struct {
-	Date      int32  `json:"date" gorethink:"date"`
+	Date      int64  `json:"date" gorethink:"date"`
 	Title     string `json:"title" form:"title" binding:"required" gorethink:"title"`
 	Author    string `json:"author,omitempty" gorethink:"author"`
 	Content   string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
