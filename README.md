@@ -1,4 +1,4 @@
-vertigo [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.png)](https://godoc.org/github.com/9uuso/vertigo)
+vertigo
 =======
 
 Currently under heavy development!
@@ -12,6 +12,23 @@ Vertigo is developed with frontend JavaScript frameworks in mind, although Verti
 On the backend the server makes a heavy use of [Martini](http://martini.codegangsta.io/), which makes programming web services in Go bit easier. Database of choice is [RethinkDB](http://rethinkdb.com/), which is forked version of MySQL. It serves data in JSON, but the query language comes with joins and plenty of other functionality not usually met with NoSQL databases. Unfortunately, there are very few SaaS products which provide RethinkDB, so you will most likely need to run one yourself. RethinkDB is the only part of the program which cannot be shipped in the executable.
 
 ##[Install instructions](https://github.com/9uuso/vertigo/releases/tag/v0.1-beta)
+
+##Screenshots
+
+![](http://i.imgur.com/EGlBhjP.png)
+Homepage
+
+![](http://i.imgur.com/0AfvQnW.png)
+User home
+
+![](http://i.imgur.com/AeC9xml.png)
+Writing mode (nothing cropped out!)
+
+![](http://i.imgur.com/rDlM9IX.png)
+Post view mode (HTML content preserves it's form if edited)
+
+![](http://i.imgur.com/EwFcRfq.png)
+Content requested trough API
 
 ##What works
 
