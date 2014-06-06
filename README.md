@@ -3,7 +3,7 @@ vertigo
 
 Currently under heavy development!
 
-Vertigo aims to bring simpler way to publish simple websites or blogs, which are normally done with heavy content management systems like Wordpress. Basic ideaology is that functionality could be added with JavaScript even without touching the backend source code. Theme development should be distinct from backend code so that knowledge in Go would not be needed when developing themes.
+Vertigo aims to be portable and easy to customize blog publishing platform. It endorces easy frontend customization, letting the blog owner decide what tools to use. That's why Vertigo ships without any frontend CSS or JavaScript frameworks, so you can start from ground-zero just from the start.
 
 Once more stable, Vertigo is supposed to be available in simple executable file for platforms supported by Go. Any unnecessary 3rd party packages are subject to be removed to further increase easy portability.
 
@@ -13,22 +13,15 @@ On the backend the server makes a heavy use of [Martini](http://martini.codegang
 
 ##[Install instructions](https://github.com/9uuso/vertigo/releases/tag/v0.1-beta)
 
+See: https://github.com/9uuso/vertigo/releases/tag/v0.1-beta
+
 ##Screenshots
 
 ![](http://i.imgur.com/EGlBhjP.png)
-Homepage
-
 ![](http://i.imgur.com/0AfvQnW.png)
-User home
-
 ![](http://i.imgur.com/AeC9xml.png)
-Writing mode (nothing cropped out!)
-
 ![](http://i.imgur.com/rDlM9IX.png)
-Post view mode (HTML content preserves it's form if edited)
-
 ![](http://i.imgur.com/EwFcRfq.png)
-Content requested trough API
 
 ##What works
 
@@ -40,9 +33,10 @@ Since there is so much to do, I'd rather list some things that are currently wor
 - Password protected user page with CRUD options for each post
 - Basic homepage which lists all posts from all users
 - JSON API
-- Produce HTML5 compliant code with text editor
+- Produce HTML5 compliant code with text editor (divitism, but I've decided to not battle against contenteditable)
 - Auto-saving of posts to LocalStorage
 - Search
+- RSS and Atom feeds
 
 ##License
 
