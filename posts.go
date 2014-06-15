@@ -53,6 +53,7 @@ func Homepage(res render.Render, db *r.Session) {
 	posts, err := post.GetAll(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	res.HTML(200, "home", posts)
@@ -78,6 +79,7 @@ func SearchPost(req *http.Request, db *r.Session, res render.Render, search Sear
 	posts, err := search.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -99,6 +101,7 @@ func (search Search) Get(db *r.Session) ([]Post, error) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
+		log.Println(err)
 		return matched, err
 	}
 	for _, post := range posts {
@@ -132,6 +135,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render
 	entry, err := post.Insert(db, s)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -152,6 +156,7 @@ func ReadPosts(res render.Render, db *r.Session) {
 	posts, err := post.GetAll(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	res.JSON(200, posts)
@@ -303,6 +308,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	var person Person
 	person, err := person.Session(db, s)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	post.Author = person.ID
@@ -312,10 +318,12 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Published = false
 	row, err := r.Table("posts").Insert(post).RunRow(db)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	err = row.Scan(&post)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	return post, err
@@ -329,6 +337,7 @@ func (post Post) Get(db *r.Session) (Post, error) {
 		return this.Field("slug").Eq(post.Slug)
 	}).RunRow(db)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	if row.IsNil() {
@@ -336,6 +345,7 @@ func (post Post) Get(db *r.Session) (Post, error) {
 	}
 	err = row.Scan(&post)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	return post, err
@@ -348,6 +358,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 	var person Person
 	person, err := person.Session(db, s)
 	if err != nil {
+		log.Println(err)
 		return post, err
 	}
 	if post.Author == person.ID {
@@ -355,6 +366,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 			return this.Field("slug").Eq(post.Slug)
 		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).RunRow(db)
 		if err != nil {
+			log.Println(err)
 			return post, err
 		}
 		if row.IsNil() {
@@ -362,6 +374,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 		}
 		err = row.Scan(&post)
 		if err != nil {
+			log.Println(err)
 			return post, err
 		}
 	} else {
@@ -377,6 +390,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 	var person Person
 	person, err := person.Session(db, s)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	if post.Author == person.ID {
@@ -384,6 +398,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 			return this.Field("slug").Eq(post.Slug)
 		}).Delete().RunRow(db)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 		if row.IsNil() {
@@ -391,6 +406,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 		}
 		err = row.Scan(&post)
 		if err != nil {
+			log.Println(err)
 			return err
 		}
 	} else {
@@ -405,12 +421,14 @@ func (post Post) GetAll(db *r.Session) ([]Post, error) {
 	var posts []Post
 	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(db)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	for rows.Next() {
 		err := rows.Scan(&post)
 		post, err := post.Get(db)
 		if err != nil {
+			log.Println(err)
 			return nil, err
 		}
 		if post.Published {

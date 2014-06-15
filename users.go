@@ -36,8 +36,8 @@ func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 	}
 	user, err := person.Insert(db)
 	if err != nil {
-		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -58,11 +58,13 @@ func DeleteUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 	person, err := person.Login(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	err = person.Delete(db, s)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -89,6 +91,7 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		user, err := person.Get(db)
 		if err != nil {
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			log.Println(err)
 			return
 		}
 		res.JSON(200, user)
@@ -96,9 +99,9 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 	case "user":
 		user, err := person.Session(db, s)
 		if err != nil {
-			log.Println(err)
 			s.Delete("user")
 			res.HTML(500, "error", err)
+			log.Println(err)
 			return
 		}
 		res.HTML(200, "user/index", user)
@@ -114,6 +117,7 @@ func ReadUsers(res render.Render, db *r.Session) {
 	users, err := person.GetAll(db)
 	if err != nil {
 		res.JSON(500, err)
+		log.Println(err)
 		return
 	}
 	res.JSON(200, users)
@@ -127,6 +131,7 @@ func EmailIsUnique(db *r.Session, person Person) bool {
 		return user.Field("email").Eq(person.Email)
 	}).RunRow(db)
 	if err != nil || !row.IsNil() {
+		log.Println(err)
 		return false
 	}
 	return true
@@ -141,6 +146,7 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 	person, err := person.Login(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -179,10 +185,12 @@ func (person Person) Login(db *r.Session) (Person, error) {
 		return post.Field("email").Eq(person.Email)
 	}).RunRow(db)
 	if err != nil || row.IsNil() {
+		log.Println(err)
 		return person, err
 	}
 	err = row.Scan(&person)
 	if err != nil {
+		log.Println(err)
 		return person, err
 	}
 	if CompareHash(person.Digest, person.Password) {
@@ -198,6 +206,7 @@ func (person Person) Get(db *r.Session) (Person, error) {
 		return post.Field("author").Eq(person.ID)
 	}).OrderBy(r.Desc("date")).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
 	if err != nil {
+		log.Println(err)
 		return person, err
 	}
 	if row.IsNil() {
@@ -205,6 +214,7 @@ func (person Person) Get(db *r.Session) (Person, error) {
 	}
 	err = row.Scan(&person)
 	if err != nil {
+		log.Println(err)
 		return person, err
 	}
 	return person, err
@@ -220,6 +230,7 @@ func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) 
 		person.ID = id
 		person, err := person.Get(db)
 		if err != nil {
+			log.Println(err)
 			return person, err
 		}
 		return person, nil
@@ -231,10 +242,12 @@ func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) 
 func (person Person) Delete(db *r.Session, s sessions.Session) error {
 	person, err := person.Session(db, s)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	_, err = r.Table("users").Get(person.ID).Delete().RunRow(db)
 	if err != nil {
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -250,10 +263,12 @@ func (person Person) Insert(db *r.Session) (Person, error) {
 	person.Password = ""
 	row, err := r.Table("users").Insert(person).RunRow(db)
 	if err != nil {
+		log.Println(err)
 		return person, err
 	}
 	err = row.Scan(&person)
 	if err != nil {
+		log.Println(err)
 		return person, err
 	}
 	return person, err
@@ -264,12 +279,14 @@ func (person Person) GetAll(db *r.Session) ([]Person, error) {
 	var persons []Person
 	rows, err := r.Table("users").Without("digest", "email").Run(db)
 	if err != nil {
+		log.Println(err)
 		return nil, err
 	}
 	for rows.Next() {
 		err := rows.Scan(&person)
 		person, err := person.Get(db)
 		if err != nil {
+			log.Println(err)
 			return nil, err
 		}
 		persons = append(persons, person)
