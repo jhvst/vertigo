@@ -42,12 +42,10 @@ func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 	}
 	switch root(req) {
 	case "api":
-		s.Set("user", user.ID)
 		res.JSON(200, user)
 		return
 	case "user":
-		s.Set("user", user.ID)
-		res.Redirect("/user", 302)
+		res.Redirect("/user/login", 302)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -98,6 +96,8 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 	case "user":
 		user, err := person.Session(db, s)
 		if err != nil {
+			log.Println(err)
+			s.Delete("user")
 			res.HTML(500, "error", err)
 			return
 		}
@@ -224,7 +224,7 @@ func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) 
 		}
 		return person, nil
 	}
-	return person, errors.New("session could not be retrieved")
+	return person, nil
 }
 
 // Delete or person.Delete deletes the user with given .Id from the database.
