@@ -29,6 +29,13 @@ func main() {
 			}
 			return false
 		},
+		"title": func(t interface{}) string {
+			post, exists := t.(Post)
+			if exists {
+				return post.Title
+			}
+			return "Vertigo"
+		},
 	}
 
 	m := martini.Classic()
