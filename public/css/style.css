@@ -1,11 +1,18 @@
 body {
-	width: 960px;
 	margin: auto;
-	padding: 20px;
+	padding: 1em;
 	font-family: 'PT Serif', serif;
+	max-width: 960px;
 }
 
-fieldset.search {
-	width: 3em;
-	float: right;
+@media only screen and (max-width: 400px) {
+	body { font-size:90%;}
+}
+
+@media only screen and (max-width: 800px) {
+	body { font-size:100%;}
+}  
+
+@media only screen and (max-width: 1100px) {
+    body { font-size:120%; }
 }
