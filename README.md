@@ -1,7 +1,7 @@
 vertigo
 =======
 
-Currently under heavy development!
+Currently under not-so-heavy development!
 
 Vertigo aims to be portable and easy to customize blog publishing platform. It endorces easy frontend customization, letting the blog owner decide what tools to use. That's why Vertigo ships without any frontend CSS or JavaScript frameworks, so you can start from ground-zero just from the start.
 
