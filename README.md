@@ -11,6 +11,10 @@ Vertigo is developed with frontend JavaScript frameworks in mind, although Verti
 
 On the backend the server makes a heavy use of [Martini](http://martini.codegangsta.io/), which makes programming web services in Go bit easier. Database of choice is [RethinkDB](http://rethinkdb.com/), which is forked version of MySQL. It serves data in JSON, but the query language comes with joins and plenty of other functionality not usually met with NoSQL databases. Unfortunately, there are very few SaaS products which provide RethinkDB, so you will most likely need to run one yourself. RethinkDB is the only part of the program which cannot be shipped in the executable.
 
+##Demo
+
+See [my personal website](http://www.juusohaavisto.com/)
+
 ##[Install instructions](https://github.com/9uuso/vertigo/releases/tag/v0.1-beta)
 
 See: https://github.com/9uuso/vertigo/releases/tag/v0.1-beta

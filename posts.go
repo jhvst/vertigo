@@ -111,14 +111,12 @@ func (search Search) Get(db *r.Session) ([]Post, error) {
 		title.Split(bufio.ScanWords)
 		for content.Scan() {
 			if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
-				log.Println("content:", content.Text(), jwd.Calculate(content.Text(), search.Query))
 				matched = append(matched, post)
 				goto End
 			}
 		}
 		for title.Scan() {
 			if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
-				log.Println("title:", title.Text(), jwd.Calculate(title.Text(), search.Query))
 				matched = append(matched, post)
 				goto End
 			}
