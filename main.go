@@ -10,6 +10,7 @@ import (
 	"html"
 	"html/template"
 	"log"
+	"time"
 )
 
 func main() {
@@ -35,6 +36,9 @@ func main() {
 				return post.Title
 			}
 			return "Vertigo"
+		},
+		"date": func(d int64) string {
+			return time.Unix(d, 0).String()
 		},
 	}
 

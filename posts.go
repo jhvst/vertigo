@@ -364,7 +364,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 	if post.Author == person.ID {
 		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
 			return this.Field("slug").Eq(post.Slug)
-		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).RunRow(db)
+		}).Update(map[string]interface{}{"date": time.Now().Unix(), "published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).RunRow(db)
 		if err != nil {
 			log.Println(err)
 			return post, err
