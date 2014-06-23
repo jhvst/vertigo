@@ -21,15 +21,6 @@ func main() {
 		"unescape": func(s string) template.HTML {
 			return template.HTML(html.UnescapeString(s))
 		},
-		// Nothing returns bool according to whether data object length
-		// is less or equal to zero. Same as calling `if len {{.}} le 0`,
-		// but I hope this helper function is easier to read.
-		"nothing": func(p []Post) bool {
-			if len(p) <= 0 {
-				return true
-			}
-			return false
-		},
 		"title": func(t interface{}) string {
 			post, exists := t.(Post)
 			if exists {
