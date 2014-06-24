@@ -10,7 +10,8 @@
 	<li>
 		<a href="/post/{{.Slug}}">{{.Title}}</a>
 		<a href="/post/{{.Slug}}/edit">[edit]</a>
-		<a href="/post/{{.Slug}}/delete">[delete]</a>
+		<!-- Before modidying the line below please see the additional comments after the <script> tag -->
+		<a id="{{.Slug}}" class="delete" href="/post/{{.Slug}}/delete">[delete]</a>
 		{{if not .Published}}
 			<a href="/post/{{.Slug}}/publish">[publish]</a>
 		{{end}}
@@ -19,3 +20,19 @@
 </ul>
 {{end}}
 {{end}}
+<script type="text/javascript">
+	// NOTICE: If you modify the delete <a> element, you will need to pass the class="delete" and id="{{.Slug}}" onto the new one.
+	// Otherwise your localStorage will be messy and may cause some confusion if you create a entry with a same title as before.
+	//
+	// This small JS snippet attaches a click event listener
+	// to delete buttons so that the localStorage content will be wiped out
+	// upon deletion as well.
+	// Native .forEach did not work for a reason beyond my comprehension.
+	var index
+	var links = document.getElementsByClassName("delete")
+	for (index = 0; index < links.length; ++index) {
+		links[index].addEventListener("click", function(event) {
+			localStorage.removeItem(event.target.id);
+		}, false)
+	}
+</script>
