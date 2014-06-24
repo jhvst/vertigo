@@ -1,12 +1,12 @@
 package main
 
 import (
-	"github.com/attilaolah/strict"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	"github.com/martini-contrib/strict"
 	"html"
 	"html/template"
 	"log"
