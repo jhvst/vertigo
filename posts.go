@@ -436,7 +436,7 @@ func (post Post) GetAll(db *r.Session) ([]Post, error) {
 	return posts, nil
 }
 
-// Increment or post.Increment increases viewcount of a post by one according to post.Id.
+// Increment or post.Increment increases viewcount of a post according to its post.ID
 func (post Post) Increment(db *r.Session) error {
 	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).RunRow(db)
 	if err != nil {

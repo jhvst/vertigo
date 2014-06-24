@@ -20,7 +20,7 @@ import (
 type Person struct {
 	ID       string `json:"id" gorethink:",omitempty"`
 	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
-	Password string `form:"password" json:"password,omitempty" gorethink:"-,omitempty"`
+	Password string `json:"password,omitempty" form:"password" gorethink:"-,omitempty"`
 	Digest   []byte `json:"digest,omitempty" gorethink:"digest"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" gorethink:"email"`
 	Posts    []Post `json:"posts" gorethink:"posts"`
