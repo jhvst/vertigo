@@ -21,6 +21,8 @@ func main() {
 		"unescape": func(s string) template.HTML {
 			return template.HTML(html.UnescapeString(s))
 		},
+		// Title renders post name as a page title.
+		// Otherwise it defaults to Vertigo.
 		"title": func(t interface{}) string {
 			post, exists := t.(Post)
 			if exists {
@@ -28,6 +30,7 @@ func main() {
 			}
 			return "Vertigo"
 		},
+		// Date helper returns unix date as more readable one in string format.
 		"date": func(d int64) string {
 			return time.Unix(d, 0).String()
 		},
