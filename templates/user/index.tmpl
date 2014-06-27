@@ -9,7 +9,7 @@
 	<li>
 		<a href="/post/{{.Slug}}">{{.Title}}</a>
 		<a href="/post/{{.Slug}}/edit">[edit]</a>
-		{/* Before modidying the line below please see the additional comments on the bottom of this template */}}
+		{{/* Before modidying the line below please see the additional comments on the bottom of this template */}}
 		<a id="{{.Slug}}" class="delete" href="/post/{{.Slug}}/delete">[delete]</a>
 		{{if not .Published}}
 			<a href="/post/{{.Slug}}/publish">[publish]</a>
