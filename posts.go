@@ -12,6 +12,7 @@ import (
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/gosimple/slug"
+	"github.com/kennygrant/sanitize"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"log"
@@ -70,7 +71,7 @@ func Excerpt(input string) string {
 		count++
 		excerpt.WriteString(scanner.Text() + " ")
 	}
-	return strings.TrimSpace(excerpt.String())
+	return sanitize.HTML(strings.TrimSpace(excerpt.String()))
 }
 
 // SearchPost is a route which returns all posts and aggregates the ones which contain
