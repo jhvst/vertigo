@@ -10,10 +10,7 @@ import (
 	"html"
 	"html/template"
 	"log"
-<<<<<<< HEAD
-=======
 	"os"
->>>>>>> 0ff12af... import cookie hash from env
 	"time"
 )
 
@@ -41,11 +38,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-<<<<<<< HEAD
-	store := sessions.NewCookieStore([]byte("heartbleed"))
-=======
 	store := sessions.NewCookieStore([]byte(os.Getenv("vertigo_hash")))
->>>>>>> 0ff12af... import cookie hash from env
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
