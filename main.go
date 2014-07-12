@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/gzip"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/strict"
@@ -42,7 +41,6 @@ func main() {
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
-	m.Use(gzip.All())
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
 		Funcs:  []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
