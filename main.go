@@ -8,7 +8,6 @@ import (
 	"github.com/martini-contrib/strict"
 	"html"
 	"html/template"
-	"log"
 	"os"
 	"time"
 )
@@ -118,5 +117,4 @@ func main() {
 	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
 	m.Run()
 
-	log.Println("Vertigo started")
 }
