@@ -22,8 +22,8 @@ import (
 //		Database: "test"
 func middleware() martini.Handler {
 	session, err := r.Connect(r.ConnectOpts{
-		Address:     os.Getenv("rDB"),
-		Database:    os.Getenv("rNAME"),
+		Address:     os.Getenv("RDB_HOST")+":"+os.Getenv("RDB_PORT"),
+		Database:    "vertigo",
 		MaxIdle:     10,
 		IdleTimeout: time.Second * 10,
 	})
