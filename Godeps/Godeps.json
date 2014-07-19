@@ -1,0 +1,84 @@
+{
+	"ImportPath": "github.com/9uuso/vertigo",
+	"GoVersion": "go1.2",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
+			"Comment": "null-192",
+			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
+		},
+		{
+			"ImportPath": "code.google.com/p/go.crypto/blowfish",
+			"Comment": "null-192",
+			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
+		},
+		{
+			"ImportPath": "code.google.com/p/goprotobuf/proto",
+			"Comment": "go.r60-138",
+			"Rev": "8af8443f6427e7a7faa07fbc40d88f5a61f7892c"
+		},
+		{
+			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
+			"Rev": "dd956d58793a60e8b088fe73a405f36a0bf0c470"
+		},
+		{
+			"ImportPath": "github.com/codegangsta/inject",
+			"Rev": "9aea7a2fa5b79ef7fc00f63a575e72df33b4e886"
+		},
+		{
+			"ImportPath": "github.com/dancannon/gorethink",
+			"Comment": "v0.2-5-g2b7f0a7",
+			"Rev": "2b7f0a777b13285cdae2e57a5ccf24bd0781a403"
+		},
+		{
+			"ImportPath": "github.com/fiam/gounidecode/unidecode",
+			"Rev": "311ebb7422d3ff70cc1d064c5a297520ff5f304a"
+		},
+		{
+			"ImportPath": "github.com/go-martini/martini",
+			"Comment": "v0.1-149-g7cea1b3",
+			"Rev": "7cea1b34e29976de64195b7cca1f668cad9abc8d"
+		},
+		{
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "1be7a086a5fd6440ef16fe96baeda0c78282b980"
+		},
+		{
+			"ImportPath": "github.com/gorilla/feeds",
+			"Rev": "ced1bd794b051ade0f28996a2cdd7524676c5851"
+		},
+		{
+			"ImportPath": "github.com/gorilla/securecookie",
+			"Rev": "972f32923fd3555b7f0ea39acdc4e3d4d5412ee8"
+		},
+		{
+			"ImportPath": "github.com/gorilla/sessions",
+			"Rev": "c5bbe9d3d3c906d01de60189e5bfbba1d8164a80"
+		},
+		{
+			"ImportPath": "github.com/gosimple/slug",
+			"Rev": "9e21c95a064f1a57a6936f5be4026224568b2a4f"
+		},
+		{
+			"ImportPath": "github.com/kennygrant/sanitize",
+			"Rev": "557f183f75194df5a90a2fb43fad35fddf0f3612"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/binding",
+			"Rev": "868aa3c906a9671878bf49eb1579bd14324456b9"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/render",
+			"Rev": "7b617783357fec5b5a6d4ecac82e747e4a14d1b5"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/sessions",
+			"Rev": "5fb70e24200d12981048814d5f1732a59671fae4"
+		},
+		{
+			"ImportPath": "github.com/martini-contrib/strict",
+			"Comment": "0.1.0",
+			"Rev": "44893ecfb18d76bd04dcad6a0edd4356eaa31358"
+		}
+	]
+}
