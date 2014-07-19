@@ -9,6 +9,5 @@ sudo apt-get update -y
 sudo apt-get install rethinkdb -y
 
 start rethinkdb
-sleep 3
-./install
+sleep 1
 start vertigo

@@ -17,10 +17,22 @@ import (
 
 // Middleware function hooks the RethinkDB to be accessible for Martini routes.
 // By default the middleware spawns a session pool of 10 connections.
-// Typical connection options on development environment would be
-//		Address: "localhost:28015"
-//		Database: "test"
 func middleware() martini.Handler {
+
+	session, err := r.Connect(r.ConnectOpts{
+		Address: os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
+	})
+
+	r.DbCreate("vertigo").RunRow(session)
+
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+
+	_, _ = r.Db("vertigo").TableCreate("users").RunWrite(session)
+
+	_, _ = r.Db("vertigo").TableCreate("posts").RunWrite(session)
+
 	session, err := r.Connect(r.ConnectOpts{
 		Address:     os.Getenv("RDB_HOST")+":"+os.Getenv("RDB_PORT"),
 		Database:    "vertigo",
