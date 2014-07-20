@@ -15,9 +15,13 @@ On the backend the server makes a heavy use of [Martini](http://martini.codegang
 
 See [my personal website](http://www.juusohaavisto.com/)
 
-##[Install instructions](https://github.com/9uuso/vertigo/releases/tag/v0.1-beta)
+##Install instructions
 
-See: https://github.com/9uuso/vertigo/releases/tag/v0.1-beta
+1. [Install RethinkDB](http://rethinkdb.com/docs/install/)
+2. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
+3. `go get github.com/tools/godep`
+4. `git clone github.com/9uuso/vertigo`
+5. `cd vertigo && rethinkdb && godep go build && ./vertigo PORT=80`
 
 ##Screenshots
 
