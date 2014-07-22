@@ -1,15 +1,16 @@
 package main
 
 import (
+	"html"
+	"html/template"
+	"os"
+	"time"
+
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/strict"
-	"html"
-	"html/template"
-	"os"
-	"time"
 )
 
 func main() {
@@ -40,6 +41,12 @@ func main() {
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
+	m.Use(martini.Static("public", martini.StaticOptions{
+		SkipLogging: true,
+		Expires: func() string {
+			return "Cache-Control: max-age=31536000"
+		},
+	}))
 	m.Use(render.Renderer(render.Options{
 		Layout: "layout",
 		Funcs:  []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
