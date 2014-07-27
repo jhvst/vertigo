@@ -37,7 +37,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-	store := sessions.NewCookieStore([]byte(os.Getenv("vertigo_hash")))
+	store := sessions.NewCookieStore([]byte(os.Getenv("VG_HASH")))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
