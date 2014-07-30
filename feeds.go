@@ -19,8 +19,8 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 
 	hostname, err := os.Hostname()
 	if err != nil {
-		log.Println(err)
 		log.Fatal("Could not determine hostname. Please input it manually on feeds.go line 16.")
+		log.Println(err)
 	}
 
 	feed := &feeds.Feed{
