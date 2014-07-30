@@ -25,15 +25,13 @@ func middleware() martini.Handler {
 		Address: os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
 	})
 
-	r.DbCreate("vertigo").RunRow(session)
-
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
-	_, _ = r.Db("vertigo").TableCreate("users").RunWrite(session)
-
-	_, _ = r.Db("vertigo").TableCreate("posts").RunWrite(session)
+	r.DbCreate("vertigo").RunRow(session)
+	r.Db("vertigo").TableCreate("users").RunWrite(session)
+	r.Db("vertigo").TableCreate("posts").RunWrite(session)
 
 	session, err = r.Connect(r.ConnectOpts{
 		Address:     os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
