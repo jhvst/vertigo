@@ -21,7 +21,8 @@ See [my personal website](http://www.juusohaavisto.com/)
 2. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
 3. `go get github.com/tools/godep`
 4. `git clone github.com/9uuso/vertigo`
-5. `cd vertigo && rethinkdb && godep go build && ./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80" VG_HASH="some_long_hash_here"`
+5. Fill out mail settings on users.go `SendRecoverMail` function.
+6. `cd vertigo && rethinkdb && godep go build && ./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80" VG_HASH="some_long_hash_here"`
 
 ##Screenshots
 
@@ -45,6 +46,7 @@ Since there is so much to do, I'd rather list some things that are currently wor
 - Auto-saving of posts to LocalStorage
 - Search
 - RSS and Atom feeds
+- Password recovery with (forced :new_moon_with_face:) Mailgun integration
 
 ##License
 

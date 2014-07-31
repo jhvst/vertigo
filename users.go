@@ -5,12 +5,17 @@ package main
 
 import (
 	"errors"
-	r "github.com/dancannon/gorethink"
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
-	"github.com/martini-contrib/sessions"
 	"log"
 	"net/http"
+	"os"
+	"time"
+
+	"code.google.com/p/go-uuid/uuid"
+	r "github.com/dancannon/gorethink"
+	"github.com/go-martini/martini"
+	"github.com/mailgun/mailgun-go"
+	"github.com/martini-contrib/render"
+	"github.com/martini-contrib/sessions"
 )
 
 // Person struct holds all relevant data for representing user accounts on Vertigo.
@@ -20,6 +25,7 @@ type Person struct {
 	ID       string `json:"id" gorethink:",omitempty"`
 	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
 	Password string `json:"password,omitempty" form:"password" gorethink:"-,omitempty"`
+	Recovery string `json:",omitempty" gorethink:"recovery"`
 	Digest   []byte `json:"digest,omitempty" gorethink:"digest"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" gorethink:"email"`
 	Posts    []Post `json:"posts" gorethink:"posts"`
@@ -144,6 +150,10 @@ func EmailIsUnique(db *r.Session, person Person) bool {
 func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
 	person, err := person.Login(db)
 	if err != nil {
+		if err.Error() == "wrong username or password" {
+			res.HTML(401, "user/login", "Wrong username or password.")
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
@@ -157,6 +167,55 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 		s.Set("user", person.ID)
 		res.Redirect("/user", 302)
 		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+}
+
+// RecoverUser is a route of the first step of account recovery, which sends out the recovery
+// email etc. associated function calls.
+func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
+	person, err := person.Recover(db)
+	if err != nil {
+		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	switch root(req) {
+	case "api":
+		res.JSON(200, map[string]interface{}{"success": "We've sent you a link to your email which you may use you reset your password."})
+		return
+	case "user":
+		res.Redirect("/user/login", 302)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+}
+
+// ResetUserPassword is a route which is called when accessing the page generated dispatched with
+// account recovery emails.
+func ResetUserPassword(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session, person Person) {
+	person.ID = params["id"]
+	entry, err := person.Get(db)
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
+		return
+	}
+	if entry.Recovery == params["recovery"] {
+		entry.Password = person.Password
+		_, err := person.Update(db, entry)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		}
+		switch root(req) {
+		case "api":
+			res.JSON(200, map[string]interface{}{"success": "Password was updated successfully."})
+			return
+		case "user":
+			res.Redirect("/user/login", 302)
+			return
+		}
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
@@ -198,7 +257,79 @@ func (person Person) Login(db *r.Session) (Person, error) {
 	return person, errors.New("wrong username or password")
 }
 
-// Get or person.Get returns Person object according to given .Id
+// Update or person.Update updates data of "entry" parameter with the data received from "person".
+// Can only used to update Name and Digest fields because of how person.Get works.
+// Currently not used elsewhere than in password Recovery, that's why the Digest generation.
+func (person Person) Update(db *r.Session, entry Person) (Person, error) {
+	entry.Digest = GenerateHash(entry.Password)
+	row, err := r.Table("users").Get(entry.ID).Update(map[string]interface{}{"name": entry.Name, "digest": entry.Digest}).RunRow(db)
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+	if row.IsNil() {
+		return person, errors.New("nothing was found")
+	}
+	err = row.Scan(&person)
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+	return person, err
+}
+
+// Recover or person.Recover is used to recover Person's password according to person.Email
+// The function will insert person.Recovery field with generated UUID string and dispatch an email
+// to the corresponding person.Email address. It will also add TTL to Recovery field.
+func (person Person) Recover(db *r.Session) (Person, error) {
+	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
+		return post.Field("email").Eq(person.Email)
+	}).RunRow(db)
+	if err != nil || row.IsNil() {
+		log.Println(err)
+		return person, err
+	}
+	err = row.Scan(&person)
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+
+	err = person.InsertRecoveryHash(db)
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+
+	person, err = person.Get(db)
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+
+	err = person.SendRecoverMail()
+	if err != nil {
+		log.Println(err)
+		return person, err
+	}
+
+	go person.ExpireRecovery(db, 180*time.Minute)
+
+	return person, nil
+}
+
+// ExpireRecovery or person.ExpireRecovery sets a TTL according to t to a recovery hash.
+// This function is supposed to be run as goroutine to avoid blocking exection for t.
+func (person Person) ExpireRecovery(db *r.Session, t time.Duration) {
+	time.Sleep(t)
+	err := person.DeleteRecoveryHash(db)
+	if err != nil {
+		log.Println(err)
+	}
+	return
+}
+
+// Get or person.Get returns Person object according to given .ID
 // with post information merged, but without the .Digest and .Email field.
 func (person Person) Get(db *r.Session) (Person, error) {
 	row, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
@@ -291,4 +422,43 @@ func (person Person) GetAll(db *r.Session) ([]Person, error) {
 		persons = append(persons, person)
 	}
 	return persons, nil
+}
+
+func (person Person) DeleteRecoveryHash(db *r.Session) error {
+	// should probably be replaced with person.Update call
+	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": ""}).RunRow(db)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+func (person Person) InsertRecoveryHash(db *r.Session) error {
+	// should probably be replaced with person.Update call
+	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": uuid.New()}).RunRow(db)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
+	return nil
+}
+
+// SendRecoverMail or person.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
+// See Mailgun example on https://gist.github.com/mbanzon/8179682
+func (person Person) SendRecoverMail() error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		log.Fatal("Could not determine hostname. Please input it manually on person.SendMail function line 3 in users.go file.")
+		return err
+	}
+	gun := mailgun.NewMailgun("valid-mailgun-domain", "private-mailgun-key", "public-mailgun-key")
+	m := mailgun.NewMessage("Sender <sender@example.com>", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+hostname+"/user/reset/"+person.ID+"/"+person.Recovery, "Recipient <"+person.Email+">")
+	response, id, err := gun.Send(m)
+	log.Printf("Password recovery: response ID: %s\n", id)
+	log.Printf("Password recovery: message from server: %s\n", response)
+	if err != nil {
+		return err
+	}
+	return nil
 }

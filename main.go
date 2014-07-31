@@ -90,6 +90,15 @@ func main() {
 		})
 		r.Post("/register", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), binding.ErrorHandler, CreateUser)
 
+		r.Get("/recover", SessionRedirect, func(res render.Render) {
+			res.HTML(200, "user/recover", nil)
+		})
+		r.Post("/recover", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), RecoverUser)
+		r.Get("/reset/:id/:recovery", SessionRedirect, func(res render.Render) {
+			res.HTML(200, "user/reset", nil)
+		})
+		r.Post("/reset/:id/:recovery", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), ResetUserPassword)
+
 		r.Get("/login", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/login", nil)
 		})
