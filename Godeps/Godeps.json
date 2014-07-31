@@ -3,6 +3,11 @@
 	"GoVersion": "go1.2",
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/go-uuid/uuid",
+			"Comment": "null-10",
+			"Rev": "5fac954758f5aa282478dc07fbb8709fe9575184"
+		},
+		{
 			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
 			"Comment": "null-192",
 			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
@@ -64,6 +69,10 @@
 			"Rev": "557f183f75194df5a90a2fb43fad35fddf0f3612"
 		},
 		{
+			"ImportPath": "github.com/mailgun/mailgun-go",
+			"Rev": "2ca215da32e6862eb95230369e7b63eccbb9b71d"
+		},
+		{
 			"ImportPath": "github.com/martini-contrib/binding",
 			"Rev": "868aa3c906a9671878bf49eb1579bd14324456b9"
 		},
@@ -79,6 +88,10 @@
 			"ImportPath": "github.com/martini-contrib/strict",
 			"Comment": "0.1.0",
 			"Rev": "44893ecfb18d76bd04dcad6a0edd4356eaa31358"
+		},
+		{
+			"ImportPath": "github.com/mbanzon/simplehttp",
+			"Rev": "6722b2563d432e901cc00a9d3786266501f1e5ec"
 		}
 	]
 }

@@ -1,0 +1,12 @@
+language: go
+go:
+  - 1.2.1
+  - 1.2.2
+  - tip
+env:
+  - GOARCH=amd64
+  - GOARCH=386
+script:
+  - go get github.com/mbanzon/callbackenv
+  - go get github.com/mbanzon/dummyserver
+  - go test
