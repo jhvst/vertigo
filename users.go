@@ -1,8 +1,7 @@
-package main
-
 // This file contains about everything related to persons aka users. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
 // to the ones in posts.go.
+package main
 
 import (
 	"errors"
