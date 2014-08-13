@@ -447,10 +447,10 @@ func (post Post) GetAll(db *r.Session) ([]Post, error) {
 }
 
 // Increment or post.Increment increases viewcount of a post according to its post.ID
-func (post Post) Increment(db *r.Session) error {
+// It is supposed to be run as a gouroutine, so therefore it does not return anything.
+func (post Post) Increment(db *r.Session) {
 	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).RunRow(db)
 	if err != nil {
 		log.Println("analytics:", err)
 	}
-	return nil
 }
