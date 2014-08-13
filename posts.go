@@ -105,10 +105,20 @@ func (search Search) Get(db *r.Session) ([]Post, error) {
 		return matched, err
 	}
 	for _, post := range posts {
+		// posts are searched for a match in both content and title, so here
+		// we declare two scanners for them
 		content := bufio.NewScanner(strings.NewReader(post.Content))
 		content.Split(bufio.ScanWords)
 		title := bufio.NewScanner(strings.NewReader(post.Title))
 		title.Split(bufio.ScanWords)
+		// content is scanned trough Jaro-Winkler distance with
+		// quite strict matching score of 0.9/1
+		// matching score this high would most likely catch only different
+		// capitalization and small, one letter missclicks in search query
+		//
+		// since we are already in a for loop, we have to break the
+		// iteration here by going to label End to avoid showing a
+		// duplicate search result
 		for content.Scan() {
 			if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
 				matched = append(matched, post)
