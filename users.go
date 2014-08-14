@@ -261,7 +261,11 @@ func (person Person) Login(db *r.Session) (Person, error) {
 // Can only used to update Name and Digest fields because of how person.Get works.
 // Currently not used elsewhere than in password Recovery, that's why the Digest generation.
 func (person Person) Update(db *r.Session, entry Person) (Person, error) {
-	entry.Digest = GenerateHash(entry.Password)
+	digest, err := GenerateHash(entry.Password)
+	if err != nil {
+		return person, err
+	}
+	entry.Digest = digest
 	row, err := r.Table("users").Get(entry.ID).Update(map[string]interface{}{"name": entry.Name, "digest": entry.Digest}).RunRow(db)
 	if err != nil {
 		log.Println(err)
@@ -386,7 +390,11 @@ func (person Person) Delete(db *r.Session, s sessions.Session) error {
 // Insert or person.Insert inserts a new Person struct into the database.
 // The function creates .Digest hash from .Password.
 func (person Person) Insert(db *r.Session) (Person, error) {
-	person.Digest = GenerateHash(person.Password)
+	digest, err := GenerateHash(person.Password)
+	if err != nil {
+		return person, err
+	}
+	person.Digest = digest
 	// We dont want to store plaintext password.
 	// Options given in Person struct will omit the field
 	// from being written to database at all.

@@ -7,13 +7,13 @@ import (
 )
 
 // GenerateHash generates bcrypt hash from plaintext password
-func GenerateHash(password string) []byte {
+func GenerateHash(password string) ([]byte, error) {
 	hex := []byte(password)
 	hashedPassword, err := bcrypt.GenerateFromPassword(hex, 10)
 	if err != nil {
-		panic(err)
+		return hashedPassword, err
 	}
-	return hashedPassword
+	return hashedPassword, nil
 }
 
 // CompareHash compares bcrypt password with a plaintext one. Returns true if passwords match
