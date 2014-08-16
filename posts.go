@@ -413,11 +413,6 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 		if row.IsNil() {
 			return errors.New("nothing was found")
 		}
-		err = row.Scan(&post)
-		if err != nil {
-			log.Println(err)
-			return err
-		}
 	} else {
 		return errors.New("unauthorized")
 	}
