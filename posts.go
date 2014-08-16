@@ -7,6 +7,11 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"log"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/9uuso/go-jaro-winkler-distance"
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
@@ -14,10 +19,6 @@ import (
 	"github.com/kennygrant/sanitize"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	"log"
-	"net/http"
-	"strings"
-	"time"
 )
 
 // Post struct contains all relevant data when it comes to posts. Most fields
@@ -334,7 +335,7 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 		log.Println(err)
 		return post, err
 	}
-	return post, err
+	return post, nil
 }
 
 // Get or post.Get returns post according to given post.Slug.
@@ -356,7 +357,7 @@ func (post Post) Get(db *r.Session) (Post, error) {
 		log.Println(err)
 		return post, err
 	}
-	return post, err
+	return post, nil
 }
 
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
@@ -388,7 +389,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 	} else {
 		return post, errors.New("unauthorized")
 	}
-	return post, err
+	return post, nil
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.
@@ -420,7 +421,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 	} else {
 		return errors.New("unauthorized")
 	}
-	return err
+	return nil
 }
 
 // GetAll or post.GetAll returns all posts in database.

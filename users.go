@@ -279,7 +279,7 @@ func (person Person) Update(db *r.Session, entry Person) (Person, error) {
 		log.Println(err)
 		return person, err
 	}
-	return person, err
+	return person, nil
 }
 
 // Recover or person.Recover is used to recover Person's password according to person.Email
@@ -351,7 +351,7 @@ func (person Person) Get(db *r.Session) (Person, error) {
 		log.Println(err)
 		return person, err
 	}
-	return person, err
+	return person, nil
 }
 
 // Session or person.Session returns Person object from client session cookie.
@@ -409,7 +409,7 @@ func (person Person) Insert(db *r.Session) (Person, error) {
 		log.Println(err)
 		return person, err
 	}
-	return person, err
+	return person, nil
 }
 
 // GetAll or person.GetAll fetches all persons with post data merged from the database.
