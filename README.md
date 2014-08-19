@@ -22,7 +22,7 @@ See [my personal website](http://www.juusohaavisto.com/)
 3. `go get github.com/tools/godep`
 4. `git clone github.com/9uuso/vertigo`
 5. Fill out mail settings on users.go `SendRecoverMail` function.
-6. `cd vertigo && rethinkdb && godep go build && ./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80" VG_HASH="some_long_hash_here"`
+6. `cd vertigo && rethinkdb && godep go build && ./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80"`
 
 ##Screenshots
 

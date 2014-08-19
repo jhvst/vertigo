@@ -3,7 +3,6 @@ package main
 import (
 	"html"
 	"html/template"
-	"os"
 	"time"
 
 	"github.com/go-martini/martini"
@@ -14,6 +13,11 @@ import (
 )
 
 func main() {
+
+	hash, err := SessionCookie()
+	if err != nil {
+		panic(err)
+	}
 
 	helpers := template.FuncMap{
 		// Unescape unescapes and parses HTML from database objects.
@@ -37,7 +41,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-	store := sessions.NewCookieStore([]byte(os.Getenv("VG_HASH")))
+	store := sessions.NewCookieStore([]byte(hash))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)

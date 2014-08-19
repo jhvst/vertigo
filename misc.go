@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"code.google.com/p/go-uuid/uuid"
+	"github.com/9uuso/sugarcane"
 	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"
@@ -46,6 +48,27 @@ func middleware() martini.Handler {
 	return func(c martini.Context) {
 		c.Map(session)
 	}
+}
+
+// Creates a session cookie
+func SessionCookie() (string, error) {
+	var hash string
+	w, err := sugarcane.Open("settings.vtg")
+	if err != nil {
+		return "", err
+	}
+	data, err := sugarcane.Read("settings.vtg")
+	if err != nil {
+		return "", err
+	}
+	err = sugarcane.Scan(&hash, data)
+	if err != nil {
+		return "", err
+	}
+	if hash == "" {
+		sugarcane.Insert(uuid.New(), w)
+	}
+	return hash, nil
 }
 
 // sessionIsAlive checks that session cookie with label "user" exists and is valid.
