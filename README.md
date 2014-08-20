@@ -22,7 +22,10 @@ See [my personal website](http://www.juusohaavisto.com/)
 3. `go get github.com/tools/godep`
 4. `git clone github.com/9uuso/vertigo`
 5. Fill out mail settings on users.go `SendRecoverMail` function.
-6. `cd vertigo && rethinkdb && godep go build && ./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80"`
+6. Daemonize `rethinkdb`
+7. `cd vertigo && godep go build` and then daemonize Vertigo `./vertigo RDB_HOST="localhost" RDB_PORT="28015" PORT="80"`
+
+One way of daemonizing the commands is to use the `upstart` scripts in `/install`, but that requires you are running Ubuntu. Otherwise I recommend looking into the matter by your own.
 
 ##Screenshots
 
