@@ -5,6 +5,7 @@
 package main
 
 import (
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -62,11 +63,12 @@ func SessionCookie() (string, error) {
 		return "", err
 	}
 	err = sugarcane.Scan(&hash, data)
+	if err == io.EOF {
+		sugarcane.Insert(uuid.New(), w)
+		return SessionCookie()
+	}
 	if err != nil {
 		return "", err
-	}
-	if hash == "" {
-		sugarcane.Insert(uuid.New(), w)
 	}
 	return hash, nil
 }
