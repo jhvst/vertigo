@@ -6,7 +6,6 @@ package main
 
 import (
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -23,20 +22,35 @@ import (
 // By default the middleware spawns a session pool of 10 connections.
 func middleware() martini.Handler {
 
+	host := os.Getenv("RDB_HOST")
+	port := os.Getenv("RDB_PORT")
+
+	if host == "" {
+		host = "localhost"
+	}
+
+	if port == "" {
+		port = "28015"
+	}
+
+	address := host + ":" + port
+
 	session, err := r.Connect(r.ConnectOpts{
-		Address: os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
+		Address: address,
 	})
 
 	if err != nil {
-		log.Fatalln(err.Error())
+		panic(err)
 	}
 
+	// Here database and tables are created in case they do not exist yet.
+	// If database or tables do exist, nothing will happen to the original ones.
 	r.DbCreate("vertigo").RunRow(session)
 	r.Db("vertigo").TableCreate("users").RunWrite(session)
 	r.Db("vertigo").TableCreate("posts").RunWrite(session)
 
 	session, err = r.Connect(r.ConnectOpts{
-		Address:     os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
+		Address:     address,
 		Database:    "vertigo",
 		MaxIdle:     10,
 		IdleTimeout: time.Second * 10,
