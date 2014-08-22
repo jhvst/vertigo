@@ -1,12 +1,13 @@
 <form action="/user/login" method="post">
-    <fieldset>
-        <legend>Login to Vertigo</legend>
+	<fieldset>
+		<legend>Login to Vertigo</legend>
 
-        <input type="email" name="email" placeholder="Email" required="required">
-        <input type="password" name="password" placeholder="Password" required="required">
+		<input type="email" name="email" placeholder="Email" required="required">
+		<input type="password" name="password" placeholder="Password" required="required">
 
-        <button type="submit">Submit</button>
-        <a href="/user/recover">Forgot your password?</a>
-    </fieldset>
+		<button type="submit">Submit</button>
+		<a href="/user/recover">Forgot your password?</a>
+	</fieldset>
 </form>
+{{/* check if there is a login error */}}
 {{if .}}<h2>{{.}}</h2>{{end}}
