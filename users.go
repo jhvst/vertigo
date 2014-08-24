@@ -462,9 +462,7 @@ func (person Person) SendRecoverMail() error {
 	}
 	gun := mailgun.NewMailgun("valid-mailgun-domain", "private-mailgun-key", "public-mailgun-key")
 	m := mailgun.NewMessage("Sender <sender@example.com>", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+hostname+"/user/reset/"+person.ID+"/"+person.Recovery, "Recipient <"+person.Email+">")
-	response, id, err := gun.Send(m)
-	log.Printf("Password recovery: response ID: %s\n", id)
-	log.Printf("Password recovery: message from server: %s\n", response)
+	_, _, err := gun.Send(m)
 	if err != nil {
 		return err
 	}
