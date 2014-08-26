@@ -1,14 +1,15 @@
 package main
 
 import (
-	r "github.com/dancannon/gorethink"
-	"github.com/gorilla/feeds"
-	"github.com/martini-contrib/render"
 	"log"
 	"net/http"
 	"os"
 	"strings"
 	"time"
+
+	r "github.com/dancannon/gorethink"
+	"github.com/gorilla/feeds"
+	"github.com/martini-contrib/render"
 )
 
 // ReadFeed renders RSS or Atom feed of latest published posts.
@@ -21,6 +22,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 	if err != nil {
 		log.Fatal("Could not determine hostname. Please input it manually on feeds.go line 16.")
 		log.Println(err)
+		return
 	}
 
 	feed := &feeds.Feed{
@@ -34,6 +36,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
 	}
 
 	for _, post := range posts {
@@ -44,6 +47,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
 		}
 
 		// The email in &feeds.Author is not actually exported, as it is left out by person.Get().
@@ -64,6 +68,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
 	}
 
 	format := strings.Split(r.URL.Path[1:], "/")[1]
@@ -72,6 +77,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
 		}
 	}
 
