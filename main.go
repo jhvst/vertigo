@@ -14,11 +14,6 @@ import (
 
 func main() {
 
-	hash, err := SessionCookie()
-	if err != nil {
-		panic(err)
-	}
-
 	helpers := template.FuncMap{
 		// Unescape unescapes and parses HTML from database objects.
 		// Used in templates such as "/post/display.tmpl"
