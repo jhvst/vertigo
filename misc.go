@@ -45,7 +45,7 @@ func middleware() martini.Handler {
 
 	// Here database and tables are created in case they do not exist yet.
 	// If database or tables do exist, nothing will happen to the original ones.
-	r.DbCreate("vertigo").RunRow(session)
+	r.DbCreate("vertigo").Run(session)
 	r.Db("vertigo").TableCreate("users").RunWrite(session)
 	r.Db("vertigo").TableCreate("posts").RunWrite(session)
 
