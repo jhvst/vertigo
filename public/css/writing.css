@@ -1,31 +1,22 @@
-fieldset {
+fieldset, input, textarea {
 	border: 0;
+}
+
+input, textarea {
+	width: 100%;
+	font-size: 1.5em;
 }
 
 a.homepage-link, fieldset.search {
 	display: none;
 }
 
-input {
-	width: 100%;
-	font-size: 1.5em;
-	border: 0;
-}
-
 textarea {
-	width: 100%;
 	height: 70vh;
 	resize: none;
 	overflow: auto;
-	font-size: 1.5em;
-	border: 0;
 }
 
 *:focus {
 	outline: 0;
-}
-
-button {
-	float: right;
-	margin-bottom: 1em;
 }
