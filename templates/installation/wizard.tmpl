@@ -1,0 +1,44 @@
+<h1>Your settings file seems to miss some fields. Lets fix that.</h1>
+<form method="post" action="/user/installation">
+	<fieldset>
+
+		<label>Hostname</label>
+		<p>Hostname is used to generate RSS and Atom links which lead somewhere. Also used in password reminder email template. Please leave out the http:// or https:// prefix.</p>
+		<input name="hostname" placeholder="example.com" required="required">
+
+		<br><br>
+
+		<label>Blog name</label>
+		<p>This is the text people see on their browser tabs when visiting your homepage.</p>
+		<input name="name" placeholder="Foo's Blog" required="required">
+
+		<br><br>
+
+		<label>Blog description</label>
+		<p>Your beloved site's description. Used in RSS and Atom feeds.</p>
+		<input name="description" placeholder="Thoughts about which witch is which" required="required">
+
+		<br><br>
+
+		<label>Mailgun domain</label>
+		<p>Vertigo uses Mailgun to send out emails. Below you enter the domain from which you want to send mail from. By default, the sender address is called postmaster@MAILGUN-DOMAIN.</p>
+		<input name="mgdomain" placeholder="example.com" required="required">
+
+		<br><br>
+
+		<label>Mailgun API key</label>
+		<p>This is the key labeled as API key on https://mailgun.com/cp. This key is sometimes referenced as the private key.</p>
+		<input name="mgprikey" placeholder="key-aaaaa-bbbbbbbbbbbbbbbbbbb" required="required">
+
+		<br><br>
+
+		<label>Mailgun public API key</label>
+		<p>This is the key labeled as Public API key on https://mailgun.com/cp.</p>
+		<input name="mgpubkey" placeholder="pubkey-aaaaaaaaaaaaaaa" required="required">
+
+		<br><br>
+
+		<button type="submit">Submit</button>	
+
+	</fieldset>
+</form>

@@ -36,7 +36,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-	store := sessions.NewCookieStore([]byte(hash))
+	store := sessions.NewCookieStore([]byte(*cookie))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
@@ -83,6 +83,8 @@ func main() {
 
 		r.Get("", ProtectedPage, ReadUser)
 		//r.Post("/delete", strict.ContentType("application/x-www-form-urlencoded"), ProtectedPage, binding.Form(Person{}), DeleteUser)
+
+		m.Post("/installation", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 
 		r.Get("/register", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/register", nil)
