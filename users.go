@@ -132,9 +132,9 @@ func ReadUsers(res render.Render, db *r.Session) {
 // The function is used to make sure two persons do not register under the same email. This limitation could however be removed,
 // as by default primary key for tables used by Vertigo is ID, not email.
 func EmailIsUnique(db *r.Session, person Person) bool {
-	row, err := r.Table("users").Filter(func(user r.RqlTerm) r.RqlTerm {
+	row, err := r.Table("users").Filter(func(user r.Term) r.Term {
 		return user.Field("email").Eq(person.Email)
-	}).RunRow(db)
+	}).Run(db)
 	if err != nil || !row.IsNil() {
 		log.Println(err)
 		return false
@@ -239,14 +239,17 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 // The function then compares the retrieved object's .Digest field with given .Password field.
 // If the .Password and .Hash match, the function returns the requested Person struct.
 func (person Person) Login(db *r.Session) (Person, error) {
-	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
+	res, err := r.Table("users").Filter(func(post r.Term) r.Term {
 		return post.Field("email").Eq(person.Email)
-	}).RunRow(db)
-	if err != nil || row.IsNil() {
+	}).Run(db)
+	if err != nil {
 		log.Println(err)
 		return person, err
 	}
-	err = row.Scan(&person)
+	err = res.One(&person)
+	if err == r.ErrEmptyResult {
+		return person, err
+	}
 	if err != nil {
 		log.Println(err)
 		return person, err
@@ -266,15 +269,15 @@ func (person Person) Update(db *r.Session, entry Person) (Person, error) {
 		return person, err
 	}
 	entry.Digest = digest
-	row, err := r.Table("users").Get(entry.ID).Update(map[string]interface{}{"name": entry.Name, "digest": entry.Digest}).RunRow(db)
+	res, err := r.Table("users").Get(entry.ID).Update(map[string]interface{}{"name": entry.Name, "digest": entry.Digest}).Run(db)
 	if err != nil {
 		log.Println(err)
 		return person, err
 	}
-	if row.IsNil() {
-		return person, errors.New("nothing was found")
+	err = res.One(&person)
+	if err == r.ErrEmptyResult {
+		return person, err
 	}
-	err = row.Scan(&person)
 	if err != nil {
 		log.Println(err)
 		return person, err
@@ -286,14 +289,17 @@ func (person Person) Update(db *r.Session, entry Person) (Person, error) {
 // The function will insert person.Recovery field with generated UUID string and dispatch an email
 // to the corresponding person.Email address. It will also add TTL to Recovery field.
 func (person Person) Recover(db *r.Session) (Person, error) {
-	row, err := r.Table("users").Filter(func(post r.RqlTerm) r.RqlTerm {
+	res, err := r.Table("users").Filter(func(post r.Term) r.Term {
 		return post.Field("email").Eq(person.Email)
-	}).RunRow(db)
-	if err != nil || row.IsNil() {
+	}).Run(db)
+	if err != nil {
 		log.Println(err)
 		return person, err
 	}
-	err = row.Scan(&person)
+	err = res.One(&person)
+	if err == r.ErrEmptyResult {
+		return person, err
+	}
 	if err != nil {
 		log.Println(err)
 		return person, err
@@ -336,17 +342,17 @@ func (person Person) ExpireRecovery(db *r.Session, t time.Duration) {
 // Get or person.Get returns Person object according to given .ID
 // with post information merged, but without the .Digest and .Email field.
 func (person Person) Get(db *r.Session) (Person, error) {
-	row, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.RqlTerm) r.RqlTerm {
+	res, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.Term) r.Term {
 		return post.Field("author").Eq(person.ID)
-	}).OrderBy(r.Desc("date")).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").RunRow(db)
+	}).OrderBy(r.Desc("date")).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").Run(db)
 	if err != nil {
 		log.Println(err)
 		return person, err
 	}
-	if row.IsNil() {
-		return person, errors.New("nothing was found")
+	err = res.One(&person)
+	if err == r.ErrEmptyResult {
+		return person, err
 	}
-	err = row.Scan(&person)
 	if err != nil {
 		log.Println(err)
 		return person, err
@@ -379,7 +385,7 @@ func (person Person) Delete(db *r.Session, s sessions.Session) error {
 		log.Println(err)
 		return err
 	}
-	_, err = r.Table("users").Get(person.ID).Delete().RunRow(db)
+	_, err = r.Table("users").Get(person.ID).Delete().Run(db)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -399,12 +405,15 @@ func (person Person) Insert(db *r.Session) (Person, error) {
 	// Options given in Person struct will omit the field
 	// from being written to database at all.
 	person.Password = ""
-	row, err := r.Table("users").Insert(person).RunRow(db)
+	res, err := r.Table("users").Insert(person).Run(db)
 	if err != nil {
 		log.Println(err)
 		return person, err
 	}
-	err = row.Scan(&person)
+	err = res.One(&person)
+	if err == r.ErrEmptyResult {
+		return person, err
+	}
 	if err != nil {
 		log.Println(err)
 		return person, err
@@ -415,13 +424,12 @@ func (person Person) Insert(db *r.Session) (Person, error) {
 // GetAll or person.GetAll fetches all persons with post data merged from the database.
 func (person Person) GetAll(db *r.Session) ([]Person, error) {
 	var persons []Person
-	rows, err := r.Table("users").Without("digest", "email").Run(db)
+	res, err := r.Table("users").Without("digest", "email").Run(db)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	for rows.Next() {
-		err := rows.Scan(&person)
+	for res.Next(&person) {
 		person, err := person.Get(db)
 		if err != nil {
 			log.Println(err)
@@ -429,12 +437,15 @@ func (person Person) GetAll(db *r.Session) ([]Person, error) {
 		}
 		persons = append(persons, person)
 	}
+	if res.Err() != nil {
+		return persons, err
+	}
 	return persons, nil
 }
 
 func (person Person) DeleteRecoveryHash(db *r.Session) error {
 	// should probably be replaced with person.Update call
-	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": ""}).RunRow(db)
+	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": ""}).Run(db)
 	if err != nil {
 		log.Println(err)
 		return err
@@ -444,7 +455,7 @@ func (person Person) DeleteRecoveryHash(db *r.Session) error {
 
 func (person Person) InsertRecoveryHash(db *r.Session) error {
 	// should probably be replaced with person.Update call
-	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": uuid.New()}).RunRow(db)
+	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": uuid.New()}).Run(db)
 	if err != nil {
 		log.Println(err)
 		return err

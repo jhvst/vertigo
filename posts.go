@@ -325,12 +325,12 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
-	row, err := r.Table("posts").Insert(post).RunRow(db)
+	res, err := r.Table("posts").Insert(post).Run(db)
 	if err != nil {
 		log.Println(err)
 		return post, err
 	}
-	err = row.Scan(&post)
+	err = res.One(&post)
 	if err != nil {
 		log.Println(err)
 		return post, err
@@ -342,17 +342,18 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 // Requires db session as a parameter.
 // Returns Post and error object.
 func (post Post) Get(db *r.Session) (Post, error) {
-	row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
+	res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
 		return this.Field("slug").Eq(post.Slug)
-	}).RunRow(db)
+	}).Run(db)
+
 	if err != nil {
 		log.Println(err)
 		return post, err
 	}
-	if row.IsNil() {
+	err = res.One(&post)
+	if err == r.ErrEmptyResult {
 		return post, errors.New("nothing was found")
 	}
-	err = row.Scan(&post)
 	if err != nil {
 		log.Println(err)
 		return post, err
@@ -371,17 +372,17 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 		return post, err
 	}
 	if post.Author == person.ID {
-		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
+		res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
 			return this.Field("slug").Eq(post.Slug)
-		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).RunRow(db)
+		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).Run(db)
 		if err != nil {
 			log.Println(err)
 			return post, err
 		}
-		if row.IsNil() {
+		err = res.One(&post)
+		if err == r.ErrEmptyResult {
 			return post, errors.New("nothing was found")
 		}
-		err = row.Scan(&post)
 		if err != nil {
 			log.Println(err)
 			return post, err
@@ -403,15 +404,16 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 		return err
 	}
 	if post.Author == person.ID {
-		row, err := r.Table("posts").Filter(func(this r.RqlTerm) r.RqlTerm {
+		res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
 			return this.Field("slug").Eq(post.Slug)
-		}).Delete().RunRow(db)
+		}).Delete().Run(db)
+		err = res.One(&post)
+		if err == r.ErrEmptyResult {
+			return errors.New("nothing was found")
+		}
 		if err != nil {
 			log.Println(err)
 			return err
-		}
-		if row.IsNil() {
-			return errors.New("nothing was found")
 		}
 	} else {
 		return errors.New("unauthorized")
@@ -423,13 +425,12 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 // Returns []Post and error object.
 func (post Post) GetAll(db *r.Session) ([]Post, error) {
 	var posts []Post
-	rows, err := r.Table("posts").OrderBy(r.Desc("date")).Run(db)
+	res, err := r.Table("posts").OrderBy(r.Desc("date")).Run(db)
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
-	for rows.Next() {
-		err := rows.Scan(&post)
+	for res.Next(&post) {
 		post, err := post.Get(db)
 		if err != nil {
 			log.Println(err)
@@ -439,13 +440,16 @@ func (post Post) GetAll(db *r.Session) ([]Post, error) {
 			posts = append(posts, post)
 		}
 	}
+	if res.Err() != nil {
+		return posts, err
+	}
 	return posts, nil
 }
 
 // Increment or post.Increment increases viewcount of a post according to its post.ID
 // It is supposed to be run as a gouroutine, so therefore it does not return anything.
 func (post Post) Increment(db *r.Session) {
-	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).RunRow(db)
+	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).Run(db)
 	if err != nil {
 		log.Println("analytics:", err)
 	}
