@@ -32,8 +32,8 @@
 		},
 		{
 			"ImportPath": "github.com/dancannon/gorethink",
-			"Comment": "v0.2-5-g2b7f0a7",
-			"Rev": "2b7f0a777b13285cdae2e57a5ccf24bd0781a403"
+			"Comment": "v0.3.1",
+			"Rev": "34ae3362d0b3cdcf1daa41e179af3a5a1d0c7cbc"
 		},
 		{
 			"ImportPath": "github.com/fiam/gounidecode/unidecode",
