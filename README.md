@@ -20,7 +20,7 @@ See [my personal website](http://www.juusohaavisto.com/)
 3. `go get github.com/tools/godep`
 4. `git clone github.com/9uuso/vertigo`
 5. Daemonize `rethinkdb`
-6. `cd vertigo && godep go build` and then daemonize Vertigo `RDB_HOST="localhost" RDB_PORT="28015" PORT="80" ./vertigo`
+6. `cd vertigo && godep go build` and then daemonize Vertigo `RDB_HOST="localhost" RDB_PORT="28015" PORT="80" MARTINI_ENV="production" ./vertigo`
 
 One way of daemonizing the commands is to use the `upstart` scripts in `/install`, but that requires you are running Ubuntu. Otherwise I recommend looking into the matter by your own.
 
