@@ -3,7 +3,6 @@ package main
 import (
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -18,17 +17,10 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 
 	w.Header().Set("Content-Type", "application/xml")
 
-	hostname, err := os.Hostname()
-	if err != nil {
-		log.Fatal("Could not determine hostname. Please input it manually on feeds.go line 16.")
-		log.Println(err)
-		return
-	}
-
 	feed := &feeds.Feed{
-		Title:       hostname,
-		Link:        &feeds.Link{Href: "http://" + hostname},
-		Description: "A blog run by Vertigo",
+		Title:       Settings.Hostname,
+		Link:        &feeds.Link{Href: "http://" + Settings.Hostname},
+		Description: Settings.Description,
 	}
 
 	var post Post
@@ -54,7 +46,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: "http://" + hostname + "/" + post.Slug},
+			Link:        &feeds.Link{Href: "http://" + Settings.Hostname + "/" + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{person.Name, person.Email},
 			Created:     time.Unix(post.Date, 0),

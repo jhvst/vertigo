@@ -27,7 +27,7 @@ func main() {
 			if exists {
 				return post.Title
 			}
-			return "Vertigo"
+			return Settings.Name
 		},
 		// Date helper returns unix date as more readable one in string format.
 		"date": func(d int64) string {

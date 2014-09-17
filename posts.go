@@ -50,7 +50,7 @@ type Search struct {
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
 // Normally you'd use this function as your "/" route.
 func Homepage(res render.Render, db *r.Session) {
-	if Firstrun() {
+	if *firstrun {
 		res.HTML(200, "installation/wizard", nil)
 		return
 	}

@@ -13,26 +13,30 @@ import (
 )
 
 type Vertigo struct {
-	Name        string          `json:"name" form:"name"`
+	Name        string          `json:"name" form:"name" binding:"required"`
 	Hostname    string          `json:"hostname" form:"hostname" binding:"required"`
 	Firstrun    bool            `json:"firstrun"`
 	CookieHash  string          `json:"cookiehash"`
-	Description string          `json:"description" form:"description"`
+	Description string          `json:"description" form:"description" binding:"required"`
 	Mailer      MailgunSettings `json:"mailgun"`
 }
 
 type MailgunSettings struct {
-	Domain     string `json:"domain" form:"mgdomain"`
-	PrivateKey string `json:"key" form:"mgprikey"`
-	PublicKey  string `json:"pubkey" form:"mgpubkey"`
+	Domain     string `json:"domain" form:"mgdomain" binding:"required"`
+	PrivateKey string `json:"key" form:"mgprikey" binding:"required"`
+	PublicKey  string `json:"pubkey" form:"mgpubkey" binding:"required"`
 }
 
 func init() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 }
 
-var cookie *string = flag.String("cookie", SessionCookie(), "session cookie used to handle logins etc")
-var firstrun *bool = flag.Bool("firstrun", Firstrun(), "checks whether the installation is new and needs settings wizard to be shown")
+var Settings Vertigo = VertigoSettings()
+
+var (
+	cookie   *string = flag.String("cookie", SessionCookie(), "session cookie used to handle logins etc")
+	firstrun *bool   = flag.Bool("firstrun", Firstrun(), "checks whether the installation is new and needs settings wizard to be shown")
+)
 
 // Firstrun is a flag flag shorthand function which checks whether the application has been started for the first time
 // and whether the installation wizard should be called when accessing homepage.
@@ -48,8 +52,21 @@ func Firstrun() bool {
 	return settings.Firstrun
 }
 
-// Returns a session cookie. Creates the whole settings file if it does not already exist.
+// SessionCookie returns a session cookie. Creates the whole settings file if it does not already exist.
 func SessionCookie() string {
+	var settings Vertigo
+	data, err := ioutil.ReadFile("settings.json")
+	if err != nil {
+		panic(err)
+	}
+	if err := json.Unmarshal(data, &settings); err != nil {
+		panic(err)
+	}
+	return settings.CookieHash
+}
+
+// VertigoSettings populates the global namespace with input given on installation wizard.
+func VertigoSettings() Vertigo {
 	var settings Vertigo
 	_, err := os.OpenFile("settings.json", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
@@ -73,13 +90,13 @@ func SessionCookie() string {
 		if err != nil {
 			panic(err)
 		}
-		return SessionCookie()
+		return VertigoSettings()
 	}
 
 	if err := json.Unmarshal(data, &settings); err != nil {
 		panic(err)
 	}
-	return settings.CookieHash
+	return settings
 }
 
 // UpdateSettings is a route which updates the local .json settings file.
