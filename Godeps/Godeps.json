@@ -3,6 +3,11 @@
 	"GoVersion": "go1.2",
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/cascadia",
+			"Comment": "null-30",
+			"Rev": "4f03c71bc42ba0015a68bea86422f0ecbb71bf70"
+		},
+		{
 			"ImportPath": "code.google.com/p/go-uuid/uuid",
 			"Comment": "null-10",
 			"Rev": "5fac954758f5aa282478dc07fbb8709fe9575184"
@@ -18,6 +23,11 @@
 			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
 		},
 		{
+			"ImportPath": "code.google.com/p/go.net/html",
+			"Comment": "null-145",
+			"Rev": "81cc697d50c43e5525cf90ae3fa1699a51e02324"
+		},
+		{
 			"ImportPath": "code.google.com/p/goprotobuf/proto",
 			"Comment": "go.r60-138",
 			"Rev": "8af8443f6427e7a7faa07fbc40d88f5a61f7892c"
@@ -25,6 +35,11 @@
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
 			"Rev": "dd956d58793a60e8b088fe73a405f36a0bf0c470"
+		},
+		{
+			"ImportPath": "github.com/PuerkitoBio/goquery",
+			"Comment": "v0.3.2-30-g12a8512",
+			"Rev": "12a851277896ab3921778fea9543634284691034"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/inject",
@@ -92,6 +107,16 @@
 		{
 			"ImportPath": "github.com/mbanzon/simplehttp",
 			"Rev": "6722b2563d432e901cc00a9d3786266501f1e5ec"
+		},
+		{
+			"ImportPath": "github.com/onsi/ginkgo",
+			"Comment": "v1.1.0-11-ge809316",
+			"Rev": "e8093161dcbdab0a59dfe56f3f8c867d243ac75f"
+		},
+		{
+			"ImportPath": "github.com/onsi/gomega",
+			"Comment": "v1.0-12-g3ca2515",
+			"Rev": "3ca2515afb00bc39bc77d27cdbce85a7caaf103e"
 		}
 	]
 }
