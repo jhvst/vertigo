@@ -1,8 +1,9 @@
+// Settings.go includes everything you would think site-wide settings need. It also contains a installation wizard
+// route at the bottom of the file. You generally should not need to change anything in here.
 package main
 
 import (
 	"encoding/json"
-	"flag"
 	"io/ioutil"
 	"log"
 	"os"
@@ -12,6 +13,10 @@ import (
 	"github.com/martini-contrib/render"
 )
 
+// Vertigo struct is used as a site wide settings structure. Different from posts and person
+// it is saved on local disk in JSON format.
+// Firstrun and CookieHash are generated and controlled by the application and should not be
+// rendered or made editable anywhere on the site.
 type Vertigo struct {
 	Name        string          `json:"name" form:"name" binding:"required"`
 	Hostname    string          `json:"hostname" form:"hostname" binding:"required"`
@@ -21,6 +26,8 @@ type Vertigo struct {
 	Mailer      MailgunSettings `json:"mailgun"`
 }
 
+// MailgunSettings holds the API keys necessary to send account recovery email.
+// You can find the necessary values for these structures in https://mailgun.com/cp
 type MailgunSettings struct {
 	Domain     string `json:"domain" form:"mgdomain" binding:"required"`
 	PrivateKey string `json:"key" form:"mgprikey" binding:"required"`
@@ -28,46 +35,18 @@ type MailgunSettings struct {
 }
 
 func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
+	runtime.GOMAXPROCS(runtime.NumCPU()) // defining gomaxprocs is proven to add performance by few percentages
 }
 
-var Settings Vertigo = VertigoSettings()
+// Settings is a global variable which holds settings stored in the settings.json file.
+// You can call it globally anywhere by simply using the Settings keyword. For example
+// fmt.Println(Settings.Name) will print out your site's name.
+// As mentioned in the Vertigo struct, be careful when dealing with the Firstun and CookieHash values.
+var Settings *Vertigo = VertigoSettings()
 
-var (
-	cookie   *string = flag.String("cookie", SessionCookie(), "session cookie used to handle logins etc")
-	firstrun *bool   = flag.Bool("firstrun", Firstrun(), "checks whether the installation is new and needs settings wizard to be shown")
-)
-
-// Firstrun is a flag flag shorthand function which checks whether the application has been started for the first time
-// and whether the installation wizard should be called when accessing homepage.
-func Firstrun() bool {
-	var settings Vertigo
-	data, err := ioutil.ReadFile("settings.json")
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(data, &settings); err != nil {
-		panic(err)
-	}
-	return settings.Firstrun
-}
-
-// SessionCookie returns a session cookie. Creates the whole settings file if it does not already exist.
-func SessionCookie() string {
-	var settings Vertigo
-	data, err := ioutil.ReadFile("settings.json")
-	if err != nil {
-		panic(err)
-	}
-	if err := json.Unmarshal(data, &settings); err != nil {
-		panic(err)
-	}
-	return settings.CookieHash
-}
-
-// VertigoSettings populates the global namespace with input given on installation wizard.
-func VertigoSettings() Vertigo {
-	var settings Vertigo
+// VertigoSettings populates the global namespace with data from settings.json.
+// If the file does not exist, it creates it.
+func VertigoSettings() *Vertigo {
 	_, err := os.OpenFile("settings.json", os.O_RDWR|os.O_CREATE, 0600)
 	if err != nil {
 		panic(err)
@@ -80,6 +59,7 @@ func VertigoSettings() Vertigo {
 
 	// If settings file is empty, we presume its a first run.
 	if len(data) == 0 {
+		var settings Vertigo
 		settings.CookieHash = uuid.New()
 		settings.Firstrun = true
 		jsonconfig, err := json.Marshal(settings)
@@ -93,33 +73,47 @@ func VertigoSettings() Vertigo {
 		return VertigoSettings()
 	}
 
+	var settings *Vertigo
 	if err := json.Unmarshal(data, &settings); err != nil {
 		panic(err)
 	}
 	return settings
 }
 
-// UpdateSettings is a route which updates the local .json settings file.
-// It is supposed to be disabled after the first run. Therefore the JSON route is not available for now.
-func UpdateSettings(res render.Render, settings Vertigo) {
-	if *firstrun == false {
-		log.Println("Somebody tried to change your local settings...")
-		res.JSON(406, map[string]interface{}{"error": "You are not allowed to change underlying settings this time."})
-		return
-	}
-	settings.CookieHash = *cookie
-	settings.Firstrun = false
-	err := flag.Set("firstrun", "false")
+// Save() or Settings.Save() is a method which replaces the global Settings structure with the structure is is called with.
+// It has builtin variable declaration which prevents you from overwriting CookieHash field.
+func (settings *Vertigo) Save() error {
+	var old Vertigo
+	data, err := ioutil.ReadFile("settings.json")
 	if err != nil {
+		return err
+	}
+	if err := json.Unmarshal(data, &old); err != nil {
 		panic(err)
 	}
+	Settings = settings
+	settings.CookieHash = old.CookieHash // this to assure that cookiehash cannot be overwritten even if system is hacked
 	jsonconfig, err := json.Marshal(settings)
 	if err != nil {
-		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
+		return err
 	}
 	err = ioutil.WriteFile("settings.json", jsonconfig, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// UpdateSettings is a route which updates the local .json settings file.
+// It is supposed to be disabled after the first run. Therefore the JSON API route is not available for now.
+func UpdateSettings(res render.Render, settings Vertigo) {
+	if Settings.Firstrun == false {
+		log.Println("Somebody tried to change your local settings...")
+		res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time. :)"})
+		return
+	}
+	settings.Firstrun = false
+	err := settings.Save()
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})

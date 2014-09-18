@@ -36,7 +36,7 @@ func main() {
 	}
 
 	m := martini.Classic()
-	store := sessions.NewCookieStore([]byte(*cookie))
+	store := sessions.NewCookieStore([]byte(Settings.CookieHash))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
 	m.Use(strict.Strict)
