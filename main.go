@@ -14,7 +14,9 @@ import (
 	"github.com/martini-contrib/strict"
 )
 
-func main() {
+type Server *martini.ClassicMartini
+
+func NewServer() Server {
 
 	helpers := template.FuncMap{
 		// Unescape unescapes and parses HTML from database objects.
@@ -134,6 +136,10 @@ func main() {
 	})
 
 	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
-	m.Run()
+	return m
+}
 
+func main() {
+	server := NewServer()
+	server.Run()
 }
