@@ -1,4 +1,4 @@
-vertigo
+vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017)
 =======
 
 Vertigo aims to be portable and easy to customize publishing platform.
