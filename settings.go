@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
 	"runtime"
 
@@ -29,9 +30,9 @@ type Vertigo struct {
 // MailgunSettings holds the API keys necessary to send account recovery email.
 // You can find the necessary values for these structures in https://mailgun.com/cp
 type MailgunSettings struct {
-	Domain     string `json:"domain" form:"mgdomain" binding:"required"`
-	PrivateKey string `json:"key" form:"mgprikey" binding:"required"`
-	PublicKey  string `json:"pubkey" form:"mgpubkey" binding:"required"`
+	Domain     string `json:"mgdomain" form:"mgdomain" binding:"required"`
+	PrivateKey string `json:"mgprikey" form:"mgprikey" binding:"required"`
+	PublicKey  string `json:"mgpubkey" form:"mgpubkey" binding:"required"`
 }
 
 func init() {
@@ -106,7 +107,7 @@ func (settings *Vertigo) Save() error {
 
 // UpdateSettings is a route which updates the local .json settings file.
 // It is supposed to be disabled after the first run. Therefore the JSON API route is not available for now.
-func UpdateSettings(res render.Render, settings Vertigo) {
+func UpdateSettings(req *http.Request, res render.Render, settings Vertigo) {
 	if Settings.Firstrun == false {
 		log.Println("Somebody tried to change your local settings...")
 		res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time. :)"})
@@ -119,5 +120,13 @@ func UpdateSettings(res render.Render, settings Vertigo) {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	res.Redirect("/user/register", 302)
+	switch root(req) {
+	case "api":
+		res.JSON(200, map[string]interface{}{"success": "Settings were successfully saved"})
+		return
+	case "user":
+		res.Redirect("/user/register", 302)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
