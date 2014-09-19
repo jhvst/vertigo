@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	. "github.com/onsi/ginkgo"
@@ -57,6 +58,18 @@ var _ = Describe("Vertigo", func() {
 				sel := doc.Find("a").First().Text()
 				Expect(sel).To(Equal("Home"))
 			})
+
+			It("page's should display installation wizard", func() {
+				server.ServeHTTP(recorder, request)
+
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+
+				sel := doc.Find("h1").First().Text()
+				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))
+			})
 		})
 	})
 
@@ -67,6 +80,44 @@ var _ = Describe("Vertigo", func() {
 			It("Firstrun should equal to true", func() {
 				settings := VertigoSettings()
 				Expect(settings.Firstrun).To(Equal(true))
+			})
+
+		})
+
+		Context("after submitting settings in JSON", func() {
+
+			It("response should be a redirection", func() {
+				request, err := http.NewRequest("POST", "/api/installation", strings.NewReader(`{"hostname": "example.com", "name": "Foo Blog", "description": "Foo's test blog", "mailgun": {"mgdomain": "foo", "mgprikey": "foo", "mgpubkey": "foo"}}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("the settings.json should have all fields populated", func() {
+				Expect(Settings.Hostname).To(Equal("example.com"))
+				Expect(Settings.Name).To(Equal("Foo Blog"))
+				Expect(Settings.Description).To(Equal("Foo's test blog"))
+				Expect(Settings.Mailer.Domain).To(Equal("foo"))
+				Expect(Settings.Mailer.PrivateKey).To(Equal("foo"))
+				Expect(Settings.Mailer.PrivateKey).To(Equal("foo"))
+				Expect(Settings.Mailer.PublicKey).To(Equal("foo"))
+			})
+
+		})
+
+		Context("when manipulating the global Settings variable", func() {
+
+			It("should save the changes to disk", func() {
+				var settings Vertigo
+				settings.Name = "Juuso's Blog"
+				err := settings.Save()
+				if err != nil {
+					panic(err)
+				}
+				Expect(Settings.Name).To(Equal("Juuso's Blog"))
 			})
 
 		})
