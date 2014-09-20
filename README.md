@@ -34,17 +34,15 @@ One way of daemonizing the commands is to use the `upstart` scripts in `/install
 
 ##What works
 
-Since there is so much to do, I'd rather list some things that are currently working:
-
 - Create and read users
 - Create, read, update and delete posts
 - Session control
 - Password protected user page
-- Basic homepage which lists all posts from all users
+- Basic homepage which lists all published posts from all users
 - JSON API
 - Produce HTML5 compliant code with text editor (divitism, but I've decided to not battle against contenteditable)
-- Auto-saving of posts to LocalStorage
-- Site-wide search of posts
+- Failover auto-saving to LocalStorage
+- Searching of posts
 - RSS and Atom feeds
 - Password recovery with (forced :new_moon_with_face:) Mailgun integration
 - Installation wizard
