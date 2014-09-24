@@ -236,7 +236,8 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 
 // Login or person.Login is a function which retrieves user according to given .Email field.
 // The function then compares the retrieved object's .Digest field with given .Password field.
-// If the .Password and .Hash match, the function returns the requested Person struct.
+// If the .Password and .Digest match, the function returns the requested Person struct, but with
+// the .Password and .Digest omitted.
 func (person Person) Login(db *r.Session) (Person, error) {
 	res, err := r.Table("users").Filter(func(post r.Term) r.Term {
 		return post.Field("email").Eq(person.Email)
@@ -254,7 +255,15 @@ func (person Person) Login(db *r.Session) (Person, error) {
 		return person, err
 	}
 	if CompareHash(person.Digest, person.Password) {
-		return person, nil
+		// Here we need to re-get the orignal person to avoid responding with
+		// person.Password and person.Digest visible in the JSON route
+		var personWithoutDigest Person
+		personWithoutDigest.ID = person.ID
+		personWithoutDigest, err := personWithoutDigest.Get(db)
+		if err != nil {
+			return personWithoutDigest, err
+		}
+		return personWithoutDigest, nil
 	}
 	return person, errors.New("wrong username or password")
 }
