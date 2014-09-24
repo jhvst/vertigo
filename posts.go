@@ -359,13 +359,13 @@ func (post Post) Get(db *r.Session) (Post, error) {
 	res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
 		return this.Field("slug").Eq(post.Slug)
 	}).Run(db)
-
 	if err != nil {
 		log.Println(err)
 		return post, err
 	}
 	err = res.One(&post)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return post, errors.New("nothing was found")
 	}
 	if err != nil {
@@ -395,6 +395,7 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 		}
 		err = res.One(&post)
 		if err == r.ErrEmptyResult {
+			log.Println(err)
 			return post, errors.New("nothing was found")
 		}
 		if err != nil {
@@ -423,6 +424,7 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 		}).Delete().Run(db)
 		err = res.One(&post)
 		if err == r.ErrEmptyResult {
+			log.Println(err)
 			return errors.New("nothing was found")
 		}
 		if err != nil {

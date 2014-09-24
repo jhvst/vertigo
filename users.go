@@ -248,6 +248,7 @@ func (person Person) Login(db *r.Session) (Person, error) {
 	}
 	err = res.One(&person)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return person, err
 	}
 	if err != nil {
@@ -284,6 +285,7 @@ func (person Person) Update(db *r.Session, entry Person) (Person, error) {
 	}
 	err = res.One(&person)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return person, err
 	}
 	if err != nil {
@@ -306,6 +308,7 @@ func (person Person) Recover(db *r.Session) (Person, error) {
 	}
 	err = res.One(&person)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return person, err
 	}
 	if err != nil {
@@ -359,6 +362,7 @@ func (person Person) Get(db *r.Session) (Person, error) {
 	}
 	err = res.One(&person)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return person, err
 	}
 	if err != nil {
@@ -420,6 +424,7 @@ func (person Person) Insert(db *r.Session) (Person, error) {
 	}
 	err = res.One(&person)
 	if err == r.ErrEmptyResult {
+		log.Println(err)
 		return person, err
 	}
 	if err != nil {
