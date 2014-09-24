@@ -32,7 +32,7 @@ One way of daemonizing the commands is to use the `upstart` scripts in `/install
 ![](http://i.imgur.com/rDlM9IX.png)
 ![](http://i.imgur.com/EwFcRfq.png)
 
-##What works
+##Features
 
 - Create and read users
 - Create, read, update and delete posts
