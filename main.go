@@ -128,7 +128,7 @@ func NewServer() Server {
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:title", ReadPost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, CreatePost)
-		r.Get("/post/:title/publish")
+		r.Get("/post/:title/publish", PublishPost)
 		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/post/:title/delete", DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, CreatePost)
