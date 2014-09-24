@@ -1,6 +1,9 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -10,6 +13,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
+
+var sessioncookie *string = flag.String("sessioncookie", "", "global flag for test sessioncookie")
 
 var _ = Describe("Vertigo", func() {
 
@@ -120,6 +125,91 @@ var _ = Describe("Vertigo", func() {
 				Expect(Settings.Name).To(Equal("Juuso's Blog"))
 			})
 
+			It("frontpage's <title> should now be 'Juuso's Blog'", func() {
+				request, err := http.NewRequest("GET", "/", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("title").Text()
+				Expect(sel).To(Equal("Juuso's Blog"))
+			})
 		})
 	})
+
+	Describe("Creating a user", func() {
+
+		Context("POSTing to /api/user", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should be then listed on /users", func() {
+				request, err := http.NewRequest("GET", "/api/users", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				var users []Person
+				if err := json.Unmarshal(recorder.Body.Bytes(), &users); err != nil {
+					panic(err)
+				}
+				fmt.Println("User structs listed on /users", recorder.Body)
+				Expect(recorder.Code).To(Equal(200))
+				for i, user := range users {
+					Expect(i).To(Equal(0))
+					Expect(user.Name).To(Equal("Juuso"))
+					Expect(user.ID).NotTo(Equal(""))
+				}
+			})
+		})
+	})
+
+	Describe("Logging in a user", func() {
+
+		Context("POSTing to /api/user/login", func() {
+
+			It("should return HTTP 200", func() {
+
+				request, err := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				flag.Set("sessioncookie", strings.Split(strings.Split(recorder.HeaderMap["Set-Cookie"][0], ";")[0], "=")[1])
+				fmt.Println("User sessioncookie:", *sessioncookie)
+				fmt.Println("User struct responded in login", recorder.Body)
+				Expect(recorder.Code).To(Equal(200))
+
+			})
+		})
+
+		Context("Accessing control panel", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/user", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
+	})
+
 })
