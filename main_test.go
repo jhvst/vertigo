@@ -15,6 +15,7 @@ import (
 )
 
 var sessioncookie *string = flag.String("sessioncookie", "", "global flag for test sessioncookie")
+var postslug *string = flag.String("postslug", "", "global flag for test postslug")
 
 var _ = Describe("Vertigo", func() {
 
@@ -188,6 +189,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
+				// i assure, nothing else worked
 				flag.Set("sessioncookie", strings.Split(strings.Split(recorder.HeaderMap["Set-Cookie"][0], ";")[0], "=")[1])
 				fmt.Println("User sessioncookie:", *sessioncookie)
 				fmt.Println("User struct responded in login", recorder.Body)
@@ -208,7 +210,89 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
 			})
+		})
+	})
 
+	Describe("Creating a post", func() {
+
+		Context("POSTing to /api/post", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Example post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				flag.Set("postslug", post.Slug)
+			})
+		})
+
+		Context("Reading the post", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+		Context("Publishing the post", func() {
+
+			It("without session data should return HTTP 401", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+			})
+
+			It("with session data should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+		Context("GET /posts", func() {
+
+			It("should display the new post", func() {
+				request, err := http.NewRequest("GET", "/api/posts", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body).NotTo(Equal("null"))
+				fmt.Println("GET /posts responded with", recorder.Body)
+				var posts []Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
+					panic(err)
+				}
+				for i, post := range posts {
+					Expect(i).To(Equal(0))
+					Expect(post.Slug).To(Equal(*postslug))
+					Expect(post.Title).To(Equal("Example post"))
+					Expect(post.Viewcount).To(Equal(uint(1)))
+					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
+					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
+				}
+			})
 		})
 	})
 
