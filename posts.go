@@ -35,7 +35,7 @@ type Post struct {
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
 	Slug      string `json:"slug" gorethink:"slug"`
 	Published bool   `json:"-" gorethink:"published"`
-	Viewcount int32  `json:"viewcount" gorethink:"viewcount"`
+	Viewcount uint   `json:"viewcount" gorethink:"viewcount"`
 	ID        string `json:"id" gorethink:",omitempty"`
 }
 
