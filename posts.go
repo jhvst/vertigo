@@ -237,6 +237,11 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 	}
 	post, err = entry.Update(db, s, post)
 	if err != nil {
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
+			log.Println(err)
+			return
+		}		
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
@@ -268,6 +273,11 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	}
 	post, err = post.Update(db, s, post)
 	if err != nil {
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
+			log.Println(err)
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
