@@ -30,8 +30,8 @@ import (
 type Post struct {
 	Date      int64  `json:"date" gorethink:"date"`
 	Title     string `json:"title" form:"title" binding:"required" gorethink:"title"`
-	Author    string `json:"author,omitempty" gorethink:"author"`
-	Content   string `json:",omitempty" form:"content" binding:"required" gorethink:"content"`
+	Author    string `json:"author" gorethink:"author"`
+	Content   string `json:"content" form:"content" binding:"required" gorethink:"content"`
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
 	Slug      string `json:"slug" gorethink:"slug"`
 	Published bool   `json:"-" gorethink:"published"`
@@ -241,7 +241,7 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
 			log.Println(err)
 			return
-		}		
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
