@@ -294,6 +294,24 @@ var _ = Describe("Vertigo", func() {
 				}
 			})
 		})
+
+		Context("GET / (homepage)", func() {
+
+			It("should display the published post", func() {
+				request, err := http.NewRequest("GET", "/", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("article h1").Text()
+				Expect(sel).To(Equal("Example post"))
+			})
+		})
 	})
 
 })
