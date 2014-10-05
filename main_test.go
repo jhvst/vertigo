@@ -312,6 +312,49 @@ var _ = Describe("Vertigo", func() {
 				Expect(sel).To(Equal("Example post"))
 			})
 		})
+
+		Context("Update post", func() {
+
+			It("should return the updated post structure", func() {
+				request, err := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "Example post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				fmt.Println("Update responded with", recorder.Body)
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				Expect(post.Title).To(Equal("Example post edited"))
+				flag.Set("postslug", post.Slug)
+			})
+
+			It("should display the new post on new url", func() {
+				request, err := http.NewRequest("GET", "/api/posts", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body).NotTo(Equal("null"))
+				var posts []Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
+					panic(err)
+				}
+				for i, post := range posts {
+					Expect(i).To(Equal(0))
+					Expect(post.Title).To(Equal("Example post edited"))
+					Expect(post.Slug).To(Equal("example-post-edited"))
+					Expect(post.Content).To(Equal("This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
+					Expect(post.Excerpt).To(Equal("This is an EDITED example post with HTML elements like bold and italics in place."))
+				}
+			})
+		})
 	})
 
 })
