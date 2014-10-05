@@ -39,6 +39,33 @@ type Post struct {
 	ID        string `json:"id" gorethink:",omitempty"`
 }
 
+// WriteResponse is a custom database response structure for Posts.
+// It is used to in some JSON routes to respond the changes after a
+// Update call in the same database query.
+// See https://github.com/dancannon/gorethink/issues/126 for more.
+type WriteResponse struct {
+	Errors        int
+	Created       int
+	Inserted      int
+	Updated       int
+	Unchanged     int
+	Replaced      int
+	Renamed       int
+	Deleted       int
+	GeneratedKeys []string `gorethink:"generated_keys"`
+	FirstError    string   `gorethink:"first_error"` // populated if Errors > 0
+	Changes       []WriteChanges
+}
+
+// WriteChanges is a custom WriteResponse.Changes field for Post structure.
+// It is used to in some JSON routes to respond the changes after a
+// Update call in the same database query.
+// See https://github.com/dancannon/gorethink/issues/126 for more.
+type WriteChanges struct {
+	NewValue Post `gorethink:"new_val"`
+	OldValue Post `gorethink:"old_val"`
+}
+
 // Search struct is basically just a type check to make sure people don't add anything nasty to
 // on-site search queries.
 type Search struct {
@@ -375,6 +402,17 @@ func (post Post) Get(db *r.Session) (Post, error) {
 	return post, nil
 }
 
+// RunWritePost wraps custom WriteResponse to return changes to updated structure
+// in the same query. See https://github.com/dancannon/gorethink/issues/126 for more information.
+func RunWritePost(t r.Term, s *r.Session) (WriteResponse, error) {
+	var response WriteResponse
+	res, err := t.Run(s)
+	if err == nil {
+		err = res.One(&response)
+	}
+	return response, err
+}
+
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
@@ -386,22 +424,19 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 		return post, err
 	}
 	if post.Author == person.ID {
-		res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
+		query := r.Table("posts").Filter(func(this r.Term) r.Term {
 			return this.Field("slug").Eq(post.Slug)
-		}).Update(map[string]interface{}{"published": entry.Published, "content": entry.Content, "slug": slug.Make(entry.Title), "title": entry.Title, "excerpt": Excerpt(entry.Content)}).Run(db)
+		}).Update(entry, r.UpdateOpts{ReturnChanges: true})
+		res, err := RunWritePost(query, db)
 		if err != nil {
 			log.Println(err)
 			return post, err
 		}
-		err = res.One(&post)
 		if err == r.ErrEmptyResult {
 			log.Println(err)
 			return post, errors.New("nothing was found")
 		}
-		if err != nil {
-			log.Println(err)
-			return post, err
-		}
+		return res.Changes[0].NewValue, nil
 	} else {
 		return post, errors.New("unauthorized")
 	}
