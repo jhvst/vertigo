@@ -39,7 +39,7 @@ var _ = Describe("Vertigo", func() {
 		recorder = httptest.NewRecorder()
 	})
 
-	Describe("GET / (homepage)", func() {
+	Describe("Web server and installation wizard", func() {
 
 		// Set up a new GET request before every test
 		// in this describe block.
@@ -47,7 +47,7 @@ var _ = Describe("Vertigo", func() {
 			request, _ = http.NewRequest("GET", "/", nil)
 		})
 
-		Context("", func() {
+		Context("loading the homepage", func() {
 			It("returns a status code of 200", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
@@ -142,9 +142,9 @@ var _ = Describe("Vertigo", func() {
 		})
 	})
 
-	Describe("Creating a user", func() {
+	Describe("Users", func() {
 
-		Context("POSTing to /api/user", func() {
+		Context("creation", func() {
 
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`))
@@ -156,6 +156,10 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 
+		})
+
+		Context("reading", func() {
+
 			It("should be then listed on /users", func() {
 				request, err := http.NewRequest("GET", "/api/users", nil)
 				if err != nil {
@@ -166,7 +170,6 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &users); err != nil {
 					panic(err)
 				}
-				fmt.Println("User structs listed on /users", recorder.Body)
 				Expect(recorder.Code).To(Equal(200))
 				for i, user := range users {
 					Expect(i).To(Equal(0))
@@ -175,11 +178,20 @@ var _ = Describe("Vertigo", func() {
 				}
 			})
 		})
-	})
 
-	Describe("Logging in a user", func() {
+		Context("accessing control panel before signing", func() {
 
-		Context("POSTing to /api/user/login", func() {
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/user", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
+			})
+		})
+
+		Context("signing in", func() {
 
 			It("should return HTTP 200", func() {
 
@@ -192,13 +204,12 @@ var _ = Describe("Vertigo", func() {
 				// i assure, nothing else worked
 				flag.Set("sessioncookie", strings.Split(strings.Split(recorder.HeaderMap["Set-Cookie"][0], ";")[0], "=")[1])
 				fmt.Println("User sessioncookie:", *sessioncookie)
-				fmt.Println("User struct responded in login", recorder.Body)
 				Expect(recorder.Code).To(Equal(200))
 
 			})
 		})
 
-		Context("Accessing control panel", func() {
+		Context("accessing control panel after signing", func() {
 
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("GET", "/user", nil)
@@ -211,11 +222,12 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 		})
+
 	})
 
-	Describe("Creating a post", func() {
+	Describe("Posts", func() {
 
-		Context("POSTing to /api/post", func() {
+		Context("creation", func() {
 
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Example post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
@@ -235,7 +247,7 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
-		Context("Reading the post", func() {
+		Context("reading", func() {
 
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
@@ -247,7 +259,7 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
-		Context("Publishing the post", func() {
+		Context("publishing", func() {
 
 			It("without session data should return HTTP 401", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
@@ -268,36 +280,8 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
 			})
-		})
 
-		Context("GET /posts", func() {
-
-			It("should display the new post", func() {
-				request, err := http.NewRequest("GET", "/api/posts", nil)
-				if err != nil {
-					panic(err)
-				}
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body).NotTo(Equal("null"))
-				fmt.Println("GET /posts responded with", recorder.Body)
-				var posts []Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
-					panic(err)
-				}
-				for i, post := range posts {
-					Expect(i).To(Equal(0))
-					Expect(post.Slug).To(Equal(*postslug))
-					Expect(post.Title).To(Equal("Example post"))
-					Expect(post.Viewcount).To(Equal(uint(1)))
-					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
-					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
-				}
-			})
-		})
-
-		Context("GET / (homepage)", func() {
-
-			It("should display the published post", func() {
+			It("after publishing, the post should be displayed on frontpage", func() {
 				request, err := http.NewRequest("GET", "/", nil)
 				if err != nil {
 					panic(err)
@@ -313,7 +297,31 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
-		Context("Update post", func() {
+		Context("reading after publishing", func() {
+
+			It("should display the new post", func() {
+				request, err := http.NewRequest("GET", "/api/posts", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body).NotTo(Equal("null"))
+				var posts []Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
+					panic(err)
+				}
+				for i, post := range posts {
+					Expect(i).To(Equal(0))
+					Expect(post.Slug).To(Equal(*postslug))
+					Expect(post.Title).To(Equal("Example post"))
+					Expect(post.Viewcount).To(Equal(uint(1)))
+					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
+					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
+				}
+			})
+		})
+
+		Context("updating", func() {
 
 			It("should return the updated post structure", func() {
 				request, err := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "Example post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
@@ -325,7 +333,6 @@ var _ = Describe("Vertigo", func() {
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
-				fmt.Println("Update responded with", recorder.Body)
 				var post Post
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
@@ -352,7 +359,20 @@ var _ = Describe("Vertigo", func() {
 					Expect(post.Slug).To(Equal("example-post-edited"))
 					Expect(post.Content).To(Equal("This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
 					Expect(post.Excerpt).To(Equal("This is an EDITED example post with HTML elements like bold and italics in place."))
+					flag.Set("postslug", post.Slug)
 				}
+			})
+		})
+
+		Context("reading after updating", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
 			})
 		})
 	})
