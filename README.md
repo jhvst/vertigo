@@ -15,14 +15,11 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Install instructions
 
-1. [Install RethinkDB](http://rethinkdb.com/docs/install/)
-2. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
-3. `go get github.com/tools/godep`
-4. `git clone github.com/9uuso/vertigo`
-5. Daemonize `rethinkdb`
-6. `cd vertigo && go get ./ && godep go build` and then daemonize Vertigo `RDB_HOST="localhost" RDB_PORT="28015" PORT="80" MARTINI_ENV="production" ./vertigo`
-
-One way of daemonizing the commands is to use the `upstart` scripts in `/install`, but that requires you are running Ubuntu. Otherwise I recommend looking into the matter by your own.
+1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
+2. `go get github.com/tools/godep`
+3. `git clone github.com/9uuso/vertigo`
+4. `cd vertigo && go get ./ && godep go build`
+5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ##Screenshots
 
