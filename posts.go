@@ -194,7 +194,9 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	}
 	post.Slug = params["title"]
 	post, err := post.Get(db)
-	go post.Increment(db)
+	if post.Published {
+		go post.Increment(db)
+	}
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
