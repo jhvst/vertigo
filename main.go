@@ -43,6 +43,7 @@ func NewServer() Server {
 	store := sessions.NewCookieStore([]byte(Settings.CookieHash))
 	m.Use(sessions.Sessions("user", store))
 	m.Use(middleware())
+	m.Use(sessionchecker())
 	m.Use(strict.Strict)
 	m.Use(martini.Static("public", martini.StaticOptions{
 		SkipLogging: true,
@@ -86,28 +87,28 @@ func NewServer() Server {
 	m.Group("/user", func(r martini.Router) {
 
 		r.Get("", ProtectedPage, ReadUser)
-		//r.Post("/delete", strict.ContentType("application/x-www-form-urlencoded"), ProtectedPage, binding.Form(Person{}), DeleteUser)
+		//r.Post("/delete", strict.ContentType("application/x-www-form-urlencoded"), ProtectedPage, binding.Form(User{}), DeleteUser)
 
 		r.Post("/installation", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 
 		r.Get("/register", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/register", nil)
 		})
-		r.Post("/register", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), binding.ErrorHandler, CreateUser)
+		r.Post("/register", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), binding.ErrorHandler, CreateUser)
 
 		r.Get("/recover", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/recover", nil)
 		})
-		r.Post("/recover", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), RecoverUser)
+		r.Post("/recover", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), RecoverUser)
 		r.Get("/reset/:id/:recovery", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/reset", nil)
 		})
-		r.Post("/reset/:id/:recovery", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), ResetUserPassword)
+		r.Post("/reset/:id/:recovery", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), ResetUserPassword)
 
 		r.Get("/login", SessionRedirect, func(res render.Render) {
 			res.HTML(200, "user/login", nil)
 		})
-		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Person{}), LoginUser)
+		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), LoginUser)
 		r.Get("/logout", LogoutUser)
 
 	})
@@ -121,8 +122,8 @@ func NewServer() Server {
 		r.Get("/users", ReadUsers)
 		r.Get("/user/:id", ReadUser)
 		//r.Delete("/user", DeleteUser)
-		r.Post("/user", strict.ContentType("application/json"), binding.Json(Person{}), binding.ErrorHandler, CreateUser)
-		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(Person{}), binding.ErrorHandler, LoginUser)
+		r.Post("/user", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, CreateUser)
+		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, LoginUser)
 		r.Get("/user/logout", LogoutUser)
 
 		r.Get("/posts", ReadPosts)

@@ -7,14 +7,17 @@ import (
 	"strings"
 	"time"
 
-	r "github.com/dancannon/gorethink"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/feeds"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // ReadFeed renders RSS or Atom feed of latest published posts.
 // It determines the feed type with strings.Split(r.URL.Path[1:], "/")[1].
-func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.Request) {
+func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/xml")
 
@@ -34,22 +37,22 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *r.Session, r *http.R
 
 	for _, post := range posts {
 
-		var person Person
-		person.ID = post.Author
-		person, err := person.Get(db)
+		var user User
+		user.ID = post.Author
+		user, err := user.Get(db)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
 
-		// The email in &feeds.Author is not actually exported, as it is left out by person.Get().
+		// The email in &feeds.Author is not actually exported, as it is left out by user.Get().
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
 			Title:       post.Title,
 			Link:        &feeds.Link{Href: "http://" + Settings.Hostname + "/" + post.Slug},
 			Description: post.Excerpt,
-			Author:      &feeds.Author{person.Name, person.Email},
+			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Date, 0),
 		}
 		feed.Items = append(feed.Items, item)

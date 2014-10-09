@@ -5,35 +5,18 @@ package main
 
 import (
 	"net/http"
-	"os"
 	"strings"
-	"time"
 
-	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/sessions"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// Middleware function hooks the RethinkDB to be accessible for Martini routes.
-// By default the middleware spawns a session pool of 10 connections.
-func middleware() martini.Handler {
-
-	host := os.Getenv("RDB_HOST")
-	port := os.Getenv("RDB_PORT")
-
-	if host == "" {
-		host = "localhost"
-	}
-
-	if port == "" {
-		port = "28015"
-	}
-
-	address := host + ":" + port
-
-	session, err := r.Connect(r.ConnectOpts{
-		Address: address,
-	})
+func init() {
+	db, err := gorm.Open("sqlite3", "./vertigo.db")
 
 	if err != nil {
 		panic(err)
@@ -41,30 +24,40 @@ func middleware() martini.Handler {
 
 	// Here database and tables are created in case they do not exist yet.
 	// If database or tables do exist, nothing will happen to the original ones.
-	r.DbCreate("vertigo").Run(session)
-	r.Db("vertigo").TableCreate("users").RunWrite(session)
-	r.Db("vertigo").TableCreate("posts").RunWrite(session)
+	db.CreateTable(&User{})
+	db.CreateTable(&Post{})
+}
 
-	session, err = r.Connect(r.ConnectOpts{
-		Address:     address,
-		Database:    "vertigo",
-		MaxIdle:     10,
-		IdleTimeout: time.Second * 10,
-	})
+func sessionchecker() martini.Handler {
+	return func(session sessions.Session) {
+		data := session.Get("user")
+		_, exists := data.(int64)
+		if exists {
+			return
+		}
+		session.Set("user", -1)
+		return
+	}
+}
 
+// Middleware function hooks the RethinkDB to be accessible for Martini routes.
+// By default the middleware spawns a session pool of 10 connections.
+func middleware() martini.Handler {
+
+	db, err := gorm.Open("sqlite3", "./vertigo.db")
 	if err != nil {
 		panic(err)
 	}
 
 	return func(c martini.Context) {
-		c.Map(session)
+		c.Map(&db)
 	}
 }
 
 // sessionIsAlive checks that session cookie with label "user" exists and is valid.
 func sessionIsAlive(session sessions.Session) bool {
 	data := session.Get("user")
-	_, exists := data.(string)
+	_, exists := data.(int64)
 	if exists {
 		return true
 	}

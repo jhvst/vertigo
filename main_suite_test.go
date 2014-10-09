@@ -5,7 +5,6 @@ import (
 	"os"
 	"testing"
 
-	r "github.com/dancannon/gorethink"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -27,9 +26,5 @@ func TestVertigo(t *testing.T) {
 
 var _ = AfterSuite(func() {
 	os.Remove("settings.json")
-	session, _ := r.Connect(r.ConnectOpts{
-		Address:  os.Getenv("RDB_HOST") + ":" + os.Getenv("RDB_PORT"),
-		Database: "vertigo",
-	})
-	r.DbDrop("vertigo").Run(session)
+	os.Remove("vertigo.db")
 })

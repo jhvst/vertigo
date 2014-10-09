@@ -13,12 +13,15 @@ import (
 	"time"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
-	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gosimple/slug"
+	"github.com/jinzhu/gorm"
 	"github.com/kennygrant/sanitize"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Post struct contains all relevant data when it comes to posts. Most fields
@@ -30,40 +33,13 @@ import (
 type Post struct {
 	Date      int64  `json:"date" gorethink:"date"`
 	Title     string `json:"title" form:"title" binding:"required" gorethink:"title"`
-	Author    string `json:"author" gorethink:"author"`
+	Author    int64  `json:"author" gorethink:"author"`
 	Content   string `json:"content" form:"content" binding:"required" gorethink:"content"`
 	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
 	Slug      string `json:"slug" gorethink:"slug"`
 	Published bool   `json:"-" gorethink:"published"`
 	Viewcount uint   `json:"viewcount" gorethink:"viewcount"`
-	ID        string `json:"id" gorethink:",omitempty"`
-}
-
-// WriteResponse is a custom database response structure for Posts.
-// It is used to in some JSON routes to respond the changes after a
-// Update call in the same database query.
-// See https://github.com/dancannon/gorethink/issues/126 for more.
-type WriteResponse struct {
-	Errors        int
-	Created       int
-	Inserted      int
-	Updated       int
-	Unchanged     int
-	Replaced      int
-	Renamed       int
-	Deleted       int
-	GeneratedKeys []string `gorethink:"generated_keys"`
-	FirstError    string   `gorethink:"first_error"` // populated if Errors > 0
-	Changes       []WriteChanges
-}
-
-// WriteChanges is a custom WriteResponse.Changes field for Post structure.
-// It is used to in some JSON routes to respond the changes after a
-// Update call in the same database query.
-// See https://github.com/dancannon/gorethink/issues/126 for more.
-type WriteChanges struct {
-	NewValue Post `gorethink:"new_val"`
-	OldValue Post `gorethink:"old_val"`
+	ID        int64  `json:"id" gorethink:",omitempty"`
 }
 
 // Search struct is basically just a type check to make sure people don't add anything nasty to
@@ -76,7 +52,7 @@ type Search struct {
 
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
 // Normally you'd use this function as your "/" route.
-func Homepage(res render.Render, db *r.Session) {
+func Homepage(res render.Render, db *gorm.DB) {
 	if Settings.Firstrun {
 		res.HTML(200, "installation/wizard", nil)
 		return
@@ -107,7 +83,7 @@ func Excerpt(input string) string {
 
 // SearchPost is a route which returns all posts and aggregates the ones which contain
 // the POSTed search query in either Title or Content field.
-func SearchPost(req *http.Request, db *r.Session, res render.Render, search Search) {
+func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search) {
 	posts, err := search.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -128,7 +104,7 @@ func SearchPost(req *http.Request, db *r.Session, res render.Render, search Sear
 // Get or search.Get returns all posts which contain parameter search.Query in either
 // post.Title or post.Content.
 // Returns []Post and error object.
-func (search Search) Get(db *r.Session) ([]Post, error) {
+func (search Search) Get(db *gorm.DB) ([]Post, error) {
 	var matched []Post
 	var post Post
 	posts, err := post.GetAll(db)
@@ -171,7 +147,7 @@ func (search Search) Get(db *r.Session) ([]Post, error) {
 // CreatePost is a route which creates a new post according to the posted data.
 // API response contains the created post object and normal request redirects to "/user" page.
 // Does not publish the post automatically. See PublishPost for more.
-func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render.Render, post Post) {
+func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.Render, post Post) {
 	entry, err := post.Insert(db, s)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -191,7 +167,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *r.Session, res render
 
 // ReadPosts is a route which returns all posts without merged owner data (although the object does include author field)
 // Not available on frontend, so therefore it only returns a JSON response.
-func ReadPosts(res render.Render, db *r.Session) {
+func ReadPosts(res render.Render, db *gorm.DB) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
@@ -204,7 +180,7 @@ func ReadPosts(res render.Render, db *r.Session) {
 
 // ReadPost is a route which returns post with given post.Slug.
 // Returns post data on JSON call and displays a formatted page on frontend.
-func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render, db *r.Session) {
+func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render, db *gorm.DB) {
 	var post Post
 	if params["title"] == "new" {
 		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
@@ -232,7 +208,7 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 // EditPost is a route which returns a post object to be displayed and edited on frontend.
 // Not available for JSON API.
 // Analogous to ReadPost. Could be replaced at some point.
-func EditPost(req *http.Request, params martini.Params, res render.Render, db *r.Session) {
+func EditPost(req *http.Request, params martini.Params, res render.Render, db *gorm.DB) {
 	var post Post
 	post.Slug = params["title"]
 	post, err := post.Get(db)
@@ -254,7 +230,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *r
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
 // Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
-func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session, post Post) {
+func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB, post Post) {
 	post.Slug = params["title"]
 	entry, err := post.Get(db)
 	if err != nil {
@@ -288,7 +264,7 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 // JSON request returns `HTTP 200 {"success": "Post published"}` on success. Frontend call will redirect to
 // published page.
 // Requires active session cookie.
-func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session) {
+func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
 	post.Slug = params["title"]
 	post, err := post.Get(db)
@@ -301,8 +277,7 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	post, err = post.Update(db, s, post)
 	if err != nil {
 		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
-			log.Println(err)
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -324,7 +299,7 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 // JSON request returns `HTTP 200 {"success": "Post deleted"}` on success. Frontend call will redirect to
 // "/user" page on successful request.
 // Requires active session cookie.
-func DeletePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session) {
+func DeletePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
 	post.Slug = params["title"]
 	post, err := post.Get(db)
@@ -354,27 +329,22 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 // Requires active session cookie
 // Fills post.Author, post.Date, post.Excerpt, post.Slug and post.Published automatically.
 // Returns Post and error object.
-func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
-	var person Person
-	person, err := person.Session(db, s)
+func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
+	var user User
+	user, err := user.Session(db, s)
 	if err != nil {
 		log.Println(err)
 		return post, err
 	}
-	post.Author = person.ID
+	post.Author = user.ID
 	post.Date = time.Now().Unix()
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
-	res, err := r.Table("posts").Insert(post).Run(db)
-	if err != nil {
-		log.Println(err)
-		return post, err
-	}
-	err = res.One(&post)
-	if err != nil {
-		log.Println(err)
-		return post, err
+	db.Create(&post)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return post, db.Error
 	}
 	return post, nil
 }
@@ -382,61 +352,37 @@ func (post Post) Insert(db *r.Session, s sessions.Session) (Post, error) {
 // Get or post.Get returns post according to given post.Slug.
 // Requires db session as a parameter.
 // Returns Post and error object.
-func (post Post) Get(db *r.Session) (Post, error) {
-	res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
-		return this.Field("slug").Eq(post.Slug)
-	}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return post, err
-	}
-	err = res.One(&post)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return post, errors.New("nothing was found")
-	}
-	if err != nil {
-		log.Println(err)
-		return post, err
+func (post Post) Get(db *gorm.DB) (Post, error) {
+	db.Where(&Post{Slug: post.Slug}).First(&post)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return post, db.Error
 	}
 	return post, nil
-}
-
-// RunWritePost wraps custom WriteResponse to return changes to updated structure
-// in the same query. See https://github.com/dancannon/gorethink/issues/126 for more information.
-func RunWritePost(t r.Term, s *r.Session) (WriteResponse, error) {
-	var response WriteResponse
-	res, err := t.Run(s)
-	if err == nil {
-		err = res.One(&response)
-	}
-	return response, err
 }
 
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, error) {
-	var person Person
-	person, err := person.Session(db, s)
+func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, error) {
+	var user User
+	user, err := user.Session(db, s)
 	if err != nil {
 		log.Println(err)
 		return post, err
 	}
-	if post.Author == person.ID {
-		query := r.Table("posts").Filter(func(this r.Term) r.Term {
-			return this.Field("slug").Eq(post.Slug)
-		}).Update(entry, r.UpdateOpts{ReturnChanges: true})
-		res, err := RunWritePost(query, db)
-		if err != nil {
-			log.Println(err)
-			return post, err
+	if post.Author == user.ID {
+		db.Where(&Post{Slug: post.Slug}).First(&post)
+		if db.Error != nil {
+			log.Println(db.Error)
+			return post, db.Error
 		}
-		if err == r.ErrEmptyResult {
-			log.Println(err)
-			return post, errors.New("nothing was found")
+		db.Model(&post).Updates(entry)
+		if db.Error != nil {
+			log.Println(db.Error)
+			return post, db.Error
 		}
-		return res.Changes[0].NewValue, nil
+		return post, nil
 	} else {
 		return post, errors.New("unauthorized")
 	}
@@ -446,25 +392,23 @@ func (post Post) Update(db *r.Session, s sessions.Session, entry Post) (Post, er
 // Delete or post.Delete deletes a post according to post.Slug.
 // Requires session cookie.
 // Returns error object.
-func (post Post) Delete(db *r.Session, s sessions.Session) error {
-	var person Person
-	person, err := person.Session(db, s)
+func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
+	var user User
+	user, err := user.Session(db, s)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	if post.Author == person.ID {
-		res, err := r.Table("posts").Filter(func(this r.Term) r.Term {
-			return this.Field("slug").Eq(post.Slug)
-		}).Delete().Run(db)
-		err = res.One(&post)
-		if err == r.ErrEmptyResult {
-			log.Println(err)
-			return errors.New("nothing was found")
+	if post.Author == user.ID {
+		db.Where(&Post{Slug: post.Slug}).First(&post)
+		if db.Error != nil {
+			log.Println(db.Error)
+			return db.Error
 		}
-		if err != nil {
-			log.Println(err)
-			return err
+		db.Delete(&post)
+		if db.Error != nil {
+			log.Println(db.Error)
+			return db.Error
 		}
 	} else {
 		return errors.New("unauthorized")
@@ -474,34 +418,19 @@ func (post Post) Delete(db *r.Session, s sessions.Session) error {
 
 // GetAll or post.GetAll returns all posts in database.
 // Returns []Post and error object.
-func (post Post) GetAll(db *r.Session) ([]Post, error) {
+func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 	var posts []Post
-	res, err := r.Table("posts").OrderBy(r.Desc("date")).Run(db)
-	if err != nil {
-		log.Println(err)
-		return nil, err
-	}
-	for res.Next(&post) {
-		post, err := post.Get(db)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		if post.Published {
-			posts = append(posts, post)
-		}
-	}
-	if res.Err() != nil {
-		return posts, err
+	db.Find(&posts)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return posts, db.Error
 	}
 	return posts, nil
 }
 
 // Increment or post.Increment increases viewcount of a post according to its post.ID
 // It is supposed to be run as a gouroutine, so therefore it does not return anything.
-func (post Post) Increment(db *r.Session) {
-	_, err := r.Table("posts").Get(post.ID).Update(map[string]interface{}{"viewcount": post.Viewcount + 1}).Run(db)
-	if err != nil {
-		log.Println("analytics:", err)
-	}
+func (post Post) Increment(db *gorm.DB) {
+	db.Where([]int64{post.ID}).Find(&post)
+	db.Model(&post).Updates(Post{Viewcount: post.Viewcount + 1})
 }

@@ -24,3 +24,4 @@ _testmain.go
 vertigo
 rethinkdb_data
 settings.json
+vertigo.db

@@ -1,4 +1,4 @@
-// This file contains about everything related to persons aka users. At the top you will find routes
+// This file contains about everything related to users aka users. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
 // to the ones in posts.go.
 package main
@@ -7,38 +7,42 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 
 	"code.google.com/p/go-uuid/uuid"
-	r "github.com/dancannon/gorethink"
 	"github.com/go-martini/martini"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/mailgun/mailgun-go"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	_ "github.com/mattn/go-sqlite3"
 )
 
-// Person struct holds all relevant data for representing user accounts on Vertigo.
-// A complete Person struct also includes Posts field (type []Post) which includes
+// User struct holds all relevant data for representing user accounts on Vertigo.
+// A complete User struct also includes Posts field (type []Post) which includes
 // all posts made by the user.
-type Person struct {
-	ID       string `json:"id" gorethink:",omitempty"`
+type User struct {
+	ID       int64  `json:"id" gorethink:",omitempty"`
 	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
-	Password string `json:"password,omitempty" form:"password" gorethink:"-,omitempty"`
+	Password string `json:"password,omitempty" form:"password" gorethink:"-,omitempty" sql:"-"`
 	Recovery string `json:",omitempty" gorethink:"recovery"`
-	Digest   []byte `json:"digest,omitempty" gorethink:"digest"`
+	Digest   []byte `json:"-" gorethink:"digest"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" gorethink:"email"`
 	Posts    []Post `json:"posts" gorethink:"posts"`
 }
 
-// CreateUser is a route which creates a new person struct according to posted parameters.
+// CreateUser is a route which creates a new user struct according to posted parameters.
 // Requires session cookie.
 // Returns created user struct for API requests and redirects to "/user" on frontend ones.
-func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.Session, person Person) {
-	if !EmailIsUnique(db, person) {
+func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
+	if user.Unique(db) == false {
 		res.JSON(422, map[string]interface{}{"error": "Email already in use"})
 		return
 	}
-	user, err := person.Insert(db)
+	user, err := user.Insert(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
@@ -58,14 +62,14 @@ func CreateUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 // DeleteUser is a route which deletes a user from database according to session cookie.
 // The function calls Login function inside, so it also requires password in POST data.
 // Currently unavailable function on both API and frontend side.
-func DeleteUser(req *http.Request, res render.Render, db *r.Session, s sessions.Session, person Person) {
-	person, err := person.Login(db)
+func DeleteUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
+	user, err := user.Login(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
-	err = person.Delete(db, s)
+	err = user.Delete(db, s)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
@@ -87,12 +91,16 @@ func DeleteUser(req *http.Request, res render.Render, db *r.Session, s sessions.
 // ReadUser is a route which fetches user according to parameter "id" on API side and according to retrieved
 // session cookie on frontend side.
 // Returns user struct with all posts merged to object on API call. Frontend call will render user "home" page, "user/index.tmpl".
-func ReadUser(req *http.Request, params martini.Params, res render.Render, s sessions.Session, db *r.Session) {
-	var person Person
+func ReadUser(req *http.Request, params martini.Params, res render.Render, s sessions.Session, db *gorm.DB) {
+	var user User
 	switch root(req) {
 	case "api":
-		person.ID = params["id"]
-		user, err := person.Get(db)
+		id, err := strconv.Atoi(params["id"])
+		if err != nil {
+			panic(err)
+		}
+		user.ID = int64(id)
+		user, err := user.Get(db)
 		if err != nil {
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			log.Println(err)
@@ -101,9 +109,9 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		res.JSON(200, user)
 		return
 	case "user":
-		user, err := person.Session(db, s)
+		user, err := user.Session(db, s)
 		if err != nil {
-			s.Delete("user")
+			s.Set("user", -1)
 			res.HTML(500, "error", err)
 			log.Println(err)
 			return
@@ -116,9 +124,9 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 
 // ReadUsers is a route only available on API side, which fetches all users with post data merged.
 // Returns complete list of users on success.
-func ReadUsers(res render.Render, db *r.Session) {
-	var person Person
-	users, err := person.GetAll(db)
+func ReadUsers(res render.Render, db *gorm.DB) {
+	var user User
+	users, err := user.GetAll(db)
 	if err != nil {
 		res.JSON(500, err)
 		log.Println(err)
@@ -128,26 +136,22 @@ func ReadUsers(res render.Render, db *r.Session) {
 }
 
 // EmailIsUnique returns bool value acoording to whether user email already exists in database with called user struct.
-// The function is used to make sure two persons do not register under the same email. This limitation could however be removed,
+// The function is used to make sure two users do not register under the same email. This limitation could however be removed,
 // as by default primary key for tables used by Vertigo is ID, not email.
-func EmailIsUnique(db *r.Session, person Person) bool {
-	row, err := r.Table("users").Filter(func(user r.Term) r.Term {
-		return user.Field("email").Eq(person.Email)
-	}).Run(db)
-	if err != nil || !row.IsNil() {
-		log.Println(err)
-		return false
+func (user User) Unique(db *gorm.DB) bool {
+	if db.Where(&User{Email: user.Email}).First(&user).RecordNotFound() {
+		return true
 	}
-	return true
+	return false
 }
 
 // LoginUser is a route which compares plaintext password sent with POST request with
 // hash stored in database. On successful request returns session cookie named "user", which contains
 // user's ID encrypted, which is the primary key used in database table.
-// When called by API it responds with person struct without post data merged.
+// When called by API it responds with user struct without post data merged.
 // On frontend call it redirect the client to "/user" page.
-func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
-	person, err := person.Login(db)
+func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
+	user, err := user.Login(db)
 	if err != nil {
 		if err.Error() == "wrong username or password" {
 			res.HTML(401, "user/login", "Wrong username or password.")
@@ -159,11 +163,11 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 	}
 	switch root(req) {
 	case "api":
-		s.Set("user", person.ID)
-		res.JSON(200, person)
+		s.Set("user", user.ID)
+		res.JSON(200, user)
 		return
 	case "user":
-		s.Set("user", person.ID)
+		s.Set("user", user.ID)
 		res.Redirect("/user", 302)
 		return
 	}
@@ -172,8 +176,8 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *r.S
 
 // RecoverUser is a route of the first step of account recovery, which sends out the recovery
 // email etc. associated function calls.
-func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *r.Session, person Person) {
-	person, err := person.Recover(db)
+func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
+	user, err := user.Recover(db)
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -192,17 +196,18 @@ func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *r
 
 // ResetUserPassword is a route which is called when accessing the page generated dispatched with
 // account recovery emails.
-func ResetUserPassword(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *r.Session, person Person) {
-	person.ID = params["id"]
-	entry, err := person.Get(db)
+func ResetUserPassword(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB, user User) {
+	id, err := strconv.Atoi(params["id"])
+	user.ID = int64(id)
+	entry, err := user.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
 	if entry.Recovery == params["recovery"] {
-		entry.Password = person.Password
-		_, err := person.Update(db, entry)
+		entry.Password = user.Password
+		_, err := user.Update(db, entry)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -234,253 +239,190 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
-// Login or person.Login is a function which retrieves user according to given .Email field.
+// Login or user.Login is a function which retrieves user according to given .Email field.
 // The function then compares the retrieved object's .Digest field with given .Password field.
-// If the .Password and .Digest match, the function returns the requested Person struct, but with
+// If the .Password and .Digest match, the function returns the requested User struct, but with
 // the .Password and .Digest omitted.
-func (person Person) Login(db *r.Session) (Person, error) {
-	res, err := r.Table("users").Filter(func(post r.Term) r.Term {
-		return post.Field("email").Eq(person.Email)
-	}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return person, err
+func (user User) Login(db *gorm.DB) (User, error) {
+	password := user.Password
+	db.Where(&User{Email: user.Email}).First(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
-	err = res.One(&person)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return person, err
+	if !CompareHash(user.Digest, password) {
+		return user, errors.New("wrong username or password")
 	}
-	if err != nil {
-		log.Println(err)
-		return person, err
-	}
-	if CompareHash(person.Digest, person.Password) {
-		// Here we need to re-get the orignal person to avoid responding with
-		// person.Password and person.Digest visible in the JSON route
-		var personWithoutDigest Person
-		personWithoutDigest.ID = person.ID
-		personWithoutDigest, err := personWithoutDigest.Get(db)
-		if err != nil {
-			return personWithoutDigest, err
-		}
-		return personWithoutDigest, nil
-	}
-	return person, errors.New("wrong username or password")
+	return user, nil
 }
 
-// Update or person.Update updates data of "entry" parameter with the data received from "person".
-// Can only used to update Name and Digest fields because of how person.Get works.
+// Update or user.Update updates data of "entry" parameter with the data received from "user".
+// Can only used to update Name and Digest fields because of how user.Get works.
 // Currently not used elsewhere than in password Recovery, that's why the Digest generation.
-func (person Person) Update(db *r.Session, entry Person) (Person, error) {
+func (user User) Update(db *gorm.DB, entry User) (User, error) {
 	digest, err := GenerateHash(entry.Password)
 	if err != nil {
-		return person, err
+		return user, err
 	}
 	entry.Digest = digest
-	res, err := r.Table("users").Get(entry.ID).Update(map[string]interface{}{"name": entry.Name, "digest": entry.Digest}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return person, err
+	db.Where([]int64{user.ID}).Find(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
-	err = res.One(&person)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return person, err
+	db.Model(&user).Updates(User{Name: entry.Name, Digest: entry.Digest})
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
-	if err != nil {
-		log.Println(err)
-		return person, err
-	}
-	return person, nil
+	return user, nil
 }
 
-// Recover or person.Recover is used to recover Person's password according to person.Email
-// The function will insert person.Recovery field with generated UUID string and dispatch an email
-// to the corresponding person.Email address. It will also add TTL to Recovery field.
-func (person Person) Recover(db *r.Session) (Person, error) {
-	res, err := r.Table("users").Filter(func(post r.Term) r.Term {
-		return post.Field("email").Eq(person.Email)
-	}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return person, err
-	}
-	err = res.One(&person)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return person, err
-	}
-	if err != nil {
-		log.Println(err)
-		return person, err
+// Recover or user.Recover is used to recover User's password according to user.Email
+// The function will insert user.Recovery field with generated UUID string and dispatch an email
+// to the corresponding user.Email address. It will also add TTL to Recovery field.
+func (user User) Recover(db *gorm.DB) (User, error) {
+	db.Where(&User{Email: user.Email}).First(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
 
-	err = person.InsertRecoveryHash(db)
+	err := user.InsertRecoveryHash(db)
 	if err != nil {
 		log.Println(err)
-		return person, err
+		return user, err
 	}
 
-	person, err = person.Get(db)
+	user, err = user.Get(db)
 	if err != nil {
 		log.Println(err)
-		return person, err
+		return user, err
 	}
 
-	err = person.SendRecoverMail()
+	err = user.SendRecoverMail()
 	if err != nil {
 		log.Println(err)
-		return person, err
+		return user, err
 	}
 
-	go person.ExpireRecovery(db, 180*time.Minute)
+	go user.ExpireRecovery(db, 180*time.Minute)
 
-	return person, nil
+	return user, nil
 }
 
-// ExpireRecovery or person.ExpireRecovery sets a TTL according to t to a recovery hash.
+// ExpireRecovery or user.ExpireRecovery sets a TTL according to t to a recovery hash.
 // This function is supposed to be run as goroutine to avoid blocking exection for t.
-func (person Person) ExpireRecovery(db *r.Session, t time.Duration) {
+func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 	time.Sleep(t)
-	err := person.DeleteRecoveryHash(db)
+	err := user.DeleteRecoveryHash(db)
 	if err != nil {
 		log.Println(err)
 	}
 	return
 }
 
-// Get or person.Get returns Person object according to given .ID
+// Get or user.Get returns User object according to given .ID
 // with post information merged, but without the .Digest and .Email field.
-func (person Person) Get(db *r.Session) (Person, error) {
-	res, err := r.Table("users").Get(person.ID).Merge(map[string]interface{}{"posts": r.Table("posts").Filter(func(post r.Term) r.Term {
-		return post.Field("author").Eq(person.ID)
-	}).OrderBy(r.Desc("date")).CoerceTo("ARRAY").Without("author")}).Without("digest", "email").Run(db)
-	if err != nil {
-		log.Println(err)
-		return person, err
+func (user User) Get(db *gorm.DB) (User, error) {
+	var posts []Post
+	db.Where([]int64{user.ID}).Find(&user)
+	db.Where(&Post{Author: user.ID}).Find(&posts)
+	user.Posts = posts
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
-	err = res.One(&person)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return person, err
-	}
-	if err != nil {
-		log.Println(err)
-		return person, err
-	}
-	return person, nil
+	return user, nil
 }
 
-// Session or person.Session returns Person object from client session cookie.
+// Session or user.Session returns User object from client session cookie.
 // The returned object has post data merged.
-func (person Person) Session(db *r.Session, s sessions.Session) (Person, error) {
+func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 	data := s.Get("user")
-	id, exists := data.(string)
+	id, exists := data.(int64)
 	if exists {
-		var person Person
-		person.ID = id
-		person, err := person.Get(db)
+		var user User
+		user.ID = id
+		user, err := user.Get(db)
 		if err != nil {
 			log.Println(err)
-			return person, err
+			return user, err
 		}
-		return person, nil
+		return user, nil
 	}
-	return person, nil
+	return user, errors.New("unauthorized")
 }
 
-// Delete or person.Delete deletes the user with given .Id from the database.
-func (person Person) Delete(db *r.Session, s sessions.Session) error {
-	person, err := person.Session(db, s)
+// Delete or user.Delete deletes the user with given .Id from the database.
+func (user User) Delete(db *gorm.DB, s sessions.Session) error {
+	user, err := user.Session(db, s)
 	if err != nil {
 		log.Println(err)
 		return err
 	}
-	_, err = r.Table("users").Get(person.ID).Delete().Run(db)
-	if err != nil {
-		log.Println(err)
-		return err
+	db.Delete(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return db.Error
 	}
 	return nil
 }
 
-// Insert or person.Insert inserts a new Person struct into the database.
+// Insert or user.Insert inserts a new User struct into the database.
 // The function creates .Digest hash from .Password.
-func (person Person) Insert(db *r.Session) (Person, error) {
-	digest, err := GenerateHash(person.Password)
+func (user User) Insert(db *gorm.DB) (User, error) {
+	digest, err := GenerateHash(user.Password)
 	if err != nil {
-		return person, err
+		return user, err
 	}
-	person.Digest = digest
-	// We dont want to store plaintext password.
-	// Options given in Person struct will omit the field
-	// from being written to database at all.
-	person.Password = ""
-	res, err := r.Table("users").Insert(person).Run(db)
-	if err != nil {
-		log.Println(err)
-		return person, err
+	user.Digest = digest
+	db.Create(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
 	}
-	err = res.One(&person)
-	if err == r.ErrEmptyResult {
-		log.Println(err)
-		return person, err
-	}
-	if err != nil {
-		log.Println(err)
-		return person, err
-	}
-	return person, nil
+	return user, nil
 }
 
-// GetAll or person.GetAll fetches all persons with post data merged from the database.
-func (person Person) GetAll(db *r.Session) ([]Person, error) {
-	var persons []Person
-	res, err := r.Table("users").Without("digest", "email").Run(db)
-	if err != nil {
-		log.Println(err)
-		return nil, err
+// GetAll or user.GetAll fetches all users with post data merged from the database.
+func (user User) GetAll(db *gorm.DB) ([]User, error) {
+	var users []User
+	db.Find(&users)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return users, db.Error
 	}
-	for res.Next(&person) {
-		person, err := person.Get(db)
-		if err != nil {
-			log.Println(err)
-			return nil, err
-		}
-		persons = append(persons, person)
-	}
-	if res.Err() != nil {
-		return persons, err
-	}
-	return persons, nil
+	return users, nil
 }
 
-func (person Person) DeleteRecoveryHash(db *r.Session) error {
-	// should probably be replaced with person.Update call
-	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": ""}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return err
+func (user User) DeleteRecoveryHash(db *gorm.DB) error {
+	// should probably be replaced with user.Update call
+	db.Where([]int64{user.ID}).Find(&user)
+	db.Model(&user).Updates(User{Recovery: ""})
+	return nil
+}
+
+func (user User) InsertRecoveryHash(db *gorm.DB) error {
+	// should probably be replaced with user.Update call
+	db.Where([]int64{user.ID}).Find(&user)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return db.Error
+	}
+	db.Model(&user).Updates(User{Recovery: uuid.New()})
+	if db.Error != nil {
+		log.Println(db.Error)
+		return db.Error
 	}
 	return nil
 }
 
-func (person Person) InsertRecoveryHash(db *r.Session) error {
-	// should probably be replaced with person.Update call
-	_, err := r.Table("users").Get(person.ID).Update(map[string]interface{}{"recovery": uuid.New()}).Run(db)
-	if err != nil {
-		log.Println(err)
-		return err
-	}
-	return nil
-}
-
-// SendRecoverMail or person.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
+// SendRecoverMail or user.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
 // See Mailgun example on https://gist.github.com/mbanzon/8179682
-func (person Person) SendRecoverMail() error {
+func (user User) SendRecoverMail() error {
 	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, Settings.Mailer.PublicKey)
-	m := mailgun.NewMessage("Sender <postmaster@"+Settings.Mailer.Domain+">", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+Settings.Hostname+"/user/reset/"+person.ID+"/"+person.Recovery, "Recipient <"+person.Email+">")
+	m := mailgun.NewMessage("Sender <postmaster@"+Settings.Mailer.Domain+">", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+Settings.Hostname+"/user/reset/"+string(user.ID)+"/"+user.Recovery, "Recipient <"+user.Email+">")
 	if _, _, err := gun.Send(m); err != nil {
 		return err
 	}

@@ -166,11 +166,12 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				server.ServeHTTP(recorder, request)
-				var users []Person
+				var users []User
 				if err := json.Unmarshal(recorder.Body.Bytes(), &users); err != nil {
 					panic(err)
 				}
 				Expect(recorder.Code).To(Equal(200))
+				fmt.Println(recorder.Body)
 				for i, user := range users {
 					Expect(i).To(Equal(0))
 					Expect(user.Name).To(Equal("Juuso"))
@@ -202,7 +203,8 @@ var _ = Describe("Vertigo", func() {
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				// i assure, nothing else worked
-				flag.Set("sessioncookie", strings.Split(strings.Split(recorder.HeaderMap["Set-Cookie"][0], ";")[0], "=")[1])
+				cookie := strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
+				flag.Set("sessioncookie", cookie)
 				fmt.Println("User sessioncookie:", *sessioncookie)
 				Expect(recorder.Code).To(Equal(200))
 
@@ -339,28 +341,6 @@ var _ = Describe("Vertigo", func() {
 				}
 				Expect(post.Title).To(Equal("Example post edited"))
 				flag.Set("postslug", post.Slug)
-			})
-
-			It("should display the new post on new url", func() {
-				request, err := http.NewRequest("GET", "/api/posts", nil)
-				if err != nil {
-					panic(err)
-				}
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body).NotTo(Equal("null"))
-				var posts []Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
-					panic(err)
-				}
-				for i, post := range posts {
-					Expect(i).To(Equal(0))
-					Expect(post.Title).To(Equal("Example post edited"))
-					Expect(post.Slug).To(Equal("example-post-edited"))
-					Expect(post.Content).To(Equal("This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
-					Expect(post.Excerpt).To(Equal("This is an EDITED example post with HTML elements like bold and italics in place."))
-					flag.Set("postslug", post.Slug)
-				}
 			})
 		})
 
