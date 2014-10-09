@@ -1,4 +1,4 @@
-vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017)
+vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo)
 =======
 
 Vertigo aims to be portable and easy to customize publishing platform.
@@ -15,11 +15,12 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Install instructions
 
+Here you have two choices. You can either download the binaries from [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) (recommended) or you can build Vertigo from source the source. Below you can find the instructions to build from source:
+
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
-2. `go get github.com/tools/godep`
-3. `git clone github.com/9uuso/vertigo`
-4. `cd vertigo && go get ./ && godep go build`
-5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
+2. `git clone github.com/9uuso/vertigo`
+3. `cd vertigo && go get ./ && go build`
+4. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ##Screenshots
 
