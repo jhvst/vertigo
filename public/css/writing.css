@@ -4,7 +4,6 @@ fieldset, input, textarea {
 
 input, textarea {
 	width: 100%;
-	font-size: 1.5em;
 }
 
 a.homepage-link, fieldset.search {
