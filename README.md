@@ -15,7 +15,7 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Install instructions
 
-Here you have two choices. You can either download the binaries from [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) (recommended) or you can build Vertigo from source the source. Below you can find the instructions to build from source:
+Here you have two choices. You can either download the binaries from [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) (recommended) or you can build Vertigo from the source. Below are the instructions for the latter:
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
 2. `git clone github.com/9uuso/vertigo`
