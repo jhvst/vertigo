@@ -169,13 +169,19 @@ func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.R
 // Not available on frontend, so therefore it only returns a JSON response.
 func ReadPosts(res render.Render, db *gorm.DB) {
 	var post Post
+	var published []Post
 	posts, err := post.GetAll(db)
+	for _, post := range posts {
+		if post.Published {
+			published = append(published, post)
+		}
+	}
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
-	res.JSON(200, posts)
+	res.JSON(200, published)
 }
 
 // ReadPost is a route which returns post with given post.Slug.
