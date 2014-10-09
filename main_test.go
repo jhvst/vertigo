@@ -316,7 +316,7 @@ var _ = Describe("Vertigo", func() {
 					Expect(i).To(Equal(0))
 					Expect(post.Slug).To(Equal(*postslug))
 					Expect(post.Title).To(Equal("Example post"))
-					Expect(post.Viewcount).To(Equal(uint(1)))
+					Expect(post.Viewcount).To(Equal(uint(0)))
 					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
 					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
 				}
