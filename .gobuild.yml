@@ -1,0 +1,18 @@
+author: juuso@mail.com
+description: >
+        Blog in Go.
+
+filesets:
+    includes:
+        - templates
+        - public
+        - README.md
+        - LICENSE
+    excludes:
+        - \.git
+settings:
+        targetdir: ""
+        build: |
+            test -d Godeps && go(){ godep go "$@";} ; go install -v
+        outfiles:
+            - packer
