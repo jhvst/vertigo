@@ -15,7 +15,15 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Install instructions
 
-Here you have two choices. You can either download the binaries from [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) (recommended) or you can build Vertigo from the source. Below are the instructions for the latter:
+###Binaries
+
+[![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo)
+
+###Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+
+###Source
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
 2. `go get github.com/tools/godep`
