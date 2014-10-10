@@ -1,5 +1,5 @@
 {
-	"ImportPath": "github.com/9uuso/vertigo",
+	"ImportPath": "vertigo",
 	"GoVersion": "go1.2",
 	"Deps": [
 		{
@@ -28,11 +28,6 @@
 			"Rev": "81cc697d50c43e5525cf90ae3fa1699a51e02324"
 		},
 		{
-			"ImportPath": "code.google.com/p/goprotobuf/proto",
-			"Comment": "go.r60-138",
-			"Rev": "8af8443f6427e7a7faa07fbc40d88f5a61f7892c"
-		},
-		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
 			"Rev": "dd956d58793a60e8b088fe73a405f36a0bf0c470"
 		},
@@ -46,11 +41,6 @@
 			"Rev": "9aea7a2fa5b79ef7fc00f63a575e72df33b4e886"
 		},
 		{
-			"ImportPath": "github.com/dancannon/gorethink",
-			"Comment": "v0.3.1",
-			"Rev": "34ae3362d0b3cdcf1daa41e179af3a5a1d0c7cbc"
-		},
-		{
 			"ImportPath": "github.com/fiam/gounidecode/unidecode",
 			"Rev": "311ebb7422d3ff70cc1d064c5a297520ff5f304a"
 		},
@@ -58,6 +48,11 @@
 			"ImportPath": "github.com/go-martini/martini",
 			"Comment": "v0.1-149-g7cea1b3",
 			"Rev": "7cea1b34e29976de64195b7cca1f668cad9abc8d"
+		},
+		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-26-g9543750",
+			"Rev": "9543750295406ef070f7de8ae9c43ccddd44e15e"
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
@@ -80,8 +75,16 @@
 			"Rev": "9e21c95a064f1a57a6936f5be4026224568b2a4f"
 		},
 		{
+			"ImportPath": "github.com/jinzhu/gorm",
+			"Rev": "0aaefebf4fdbd9ab9e8d8ad23b7a585987abdfb9"
+		},
+		{
 			"ImportPath": "github.com/kennygrant/sanitize",
 			"Rev": "557f183f75194df5a90a2fb43fad35fddf0f3612"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Rev": "c6325123e6d45115749734a8bc35060ebac74d0e"
 		},
 		{
 			"ImportPath": "github.com/mailgun/mailgun-go",
@@ -103,6 +106,10 @@
 			"ImportPath": "github.com/martini-contrib/strict",
 			"Comment": "0.1.0",
 			"Rev": "44893ecfb18d76bd04dcad6a0edd4356eaa31358"
+		},
+		{
+			"ImportPath": "github.com/mattn/go-sqlite3",
+			"Rev": "a80c27ba3354e27b4c8dfbbd1165bc253ca7c522"
 		},
 		{
 			"ImportPath": "github.com/mbanzon/simplehttp",
