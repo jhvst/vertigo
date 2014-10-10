@@ -1,4 +1,4 @@
-vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo)
+vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 =======
 
 Vertigo aims to be portable and easy to customize publishing platform.

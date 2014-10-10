@@ -1,0 +1,14 @@
+{
+  "name": "Vertigo",
+  "description": "Blog in Go",
+  "keywords": [
+    "blog",
+    "go",
+    "golang"
+  ],
+  "addons": [
+  	"mailgun"
+  ],
+  "env": {},
+  "repository": "https://github.com/9uuso/vertigo"
+}
