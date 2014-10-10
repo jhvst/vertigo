@@ -9,6 +9,8 @@
   "addons": [
   	"mailgun"
   ],
-  "env": {},
+  "env": {
+  	"BUILDPACK_URL": "https://github.com/kr/heroku-buildpack-go"
+  },
   "repository": "https://github.com/9uuso/vertigo"
 }
