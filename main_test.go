@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -22,13 +21,6 @@ var _ = Describe("Vertigo", func() {
 	var server Server
 	var request *http.Request
 	var recorder *httptest.ResponseRecorder
-
-	if os.Getenv("WERCKER_RETHINKDB_HOST") != "" {
-		os.Setenv("RDB_HOST", os.Getenv("WERCKER_RETHINKDB_HOST"))
-	}
-	if os.Getenv("WERCKER_RETHINKDB_PORT") != "" {
-		os.Setenv("RDB_PORT", os.Getenv("WERCKER_RETHINKDB_PORT"))
-	}
 
 	BeforeEach(func() {
 		// Set up a new server, connected to a test database,
