@@ -22,13 +22,13 @@
 
 		<label>Mailgun domain</label>
 		<p>Vertigo uses Mailgun to send out emails. Below you enter the domain from which you want to send mail from. By default, the sender address is called postmaster@MAILGUN-DOMAIN.</p>
-		<input name="mgdomain" placeholder="example.com" required="required">
+		<input name="mgdomain" placeholder="example.com" required="required" value="{{env "MAILGUN_SMTP_LOGIN"}}">
 
 		<br><br>
 
 		<label>Mailgun API key</label>
 		<p>This is the key labeled as API key on https://mailgun.com/cp. This key is sometimes referenced as the private key.</p>
-		<input name="mgprikey" placeholder="key-aaaaa-bbbbbbbbbbbbbbbbbbb" required="required">
+		<input name="mgprikey" placeholder="key-aaaaa-bbbbbbbbbbbbbbbbbbb" required="required" value="{{env "MAILGUN_API_KEY"}}">
 
 		<br><br>
 

@@ -5,6 +5,8 @@ package main
 import (
 	"html"
 	"html/template"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/go-martini/martini"
@@ -36,6 +38,12 @@ func NewServer() Server {
 		// Date helper returns unix date as more readable one in string format.
 		"date": func(d int64) string {
 			return time.Unix(d, 0).String()
+		},
+		"env": func(s string) string {
+			if s == "MAILGUN_SMTP_LOGIN" {
+				return strings.TrimLeft(os.Getenv(s), "postmaster@")
+			}
+			return os.Getenv(s)
 		},
 	}
 
