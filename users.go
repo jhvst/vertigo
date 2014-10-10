@@ -421,7 +421,7 @@ func (user User) InsertRecoveryHash(db *gorm.DB) error {
 // SendRecoverMail or user.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
 // See Mailgun example on https://gist.github.com/mbanzon/8179682
 func (user User) SendRecoverMail() error {
-	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, Settings.Mailer.PublicKey)
+	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, "")
 	m := mailgun.NewMessage("Sender <postmaster@"+Settings.Mailer.Domain+">", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+Settings.Hostname+"/user/reset/"+string(user.ID)+"/"+user.Recovery, "Recipient <"+user.Email+">")
 	if _, _, err := gun.Send(m); err != nil {
 		return err

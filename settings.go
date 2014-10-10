@@ -32,7 +32,6 @@ type Vertigo struct {
 type MailgunSettings struct {
 	Domain     string `json:"mgdomain" form:"mgdomain" binding:"required"`
 	PrivateKey string `json:"mgprikey" form:"mgprikey" binding:"required"`
-	PublicKey  string `json:"mgpubkey" form:"mgpubkey" binding:"required"`
 }
 
 func init() {

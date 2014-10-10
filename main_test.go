@@ -100,8 +100,6 @@ var _ = Describe("Vertigo", func() {
 				Expect(Settings.Description).To(Equal("Foo's test blog"))
 				Expect(Settings.Mailer.Domain).To(Equal("foo"))
 				Expect(Settings.Mailer.PrivateKey).To(Equal("foo"))
-				Expect(Settings.Mailer.PrivateKey).To(Equal("foo"))
-				Expect(Settings.Mailer.PublicKey).To(Equal("foo"))
 			})
 
 		})
