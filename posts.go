@@ -25,21 +25,20 @@ import (
 )
 
 // Post struct contains all relevant data when it comes to posts. Most fields
-// are automatically filled inserting a new object into the database.
+// are automatically filled when inserting new object into the database.
 // JSON field after type refer to JSON key which martini will use to render data.
 // Form field refers to frontend POST form `name` fields which martini uses to read data from.
 // Binding defines whether the field is required when inserting or updating the object.
-// Gorethink field defines which name the variable gets once inserted to database.
 type Post struct {
-	Date      int64  `json:"date" gorethink:"date"`
-	Title     string `json:"title" form:"title" binding:"required" gorethink:"title"`
-	Author    int64  `json:"author" gorethink:"author"`
-	Content   string `json:"content" form:"content" binding:"required" gorethink:"content"`
-	Excerpt   string `json:"excerpt" gorethink:"excerpt"`
-	Slug      string `json:"slug" gorethink:"slug"`
-	Published bool   `json:"-" gorethink:"published"`
-	Viewcount uint   `json:"viewcount" gorethink:"viewcount"`
-	ID        int64  `json:"id" gorethink:",omitempty"`
+	ID        int64  `json:"id"`
+	Title     string `json:"title" form:"title" binding:"required"`
+	Content   string `json:"content" form:"content" binding:"required"`
+	Date      int64  `json:"date"`
+	Slug      string `json:"slug"`
+	Author    int64  `json:"author"`
+	Excerpt   string `json:"excerpt"`
+	Viewcount uint   `json:"viewcount"`
+	Published bool   `json:"-"`
 }
 
 // Search struct is basically just a type check to make sure people don't add anything nasty to
@@ -113,30 +112,32 @@ func (search Search) Get(db *gorm.DB) ([]Post, error) {
 		return matched, err
 	}
 	for _, post := range posts {
-		// posts are searched for a match in both content and title, so here
-		// we declare two scanners for them
-		content := bufio.NewScanner(strings.NewReader(post.Content))
-		content.Split(bufio.ScanWords)
-		title := bufio.NewScanner(strings.NewReader(post.Title))
-		title.Split(bufio.ScanWords)
-		// content is scanned trough Jaro-Winkler distance with
-		// quite strict matching score of 0.9/1
-		// matching score this high would most likely catch only different
-		// capitalization and small, one letter missclicks in search query
-		//
-		// since we are already in a for loop, we have to break the
-		// iteration here by going to label End to avoid showing a
-		// duplicate search result
-		for content.Scan() {
-			if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
-				matched = append(matched, post)
-				goto End
+		if post.Published {
+			// posts are searched for a match in both content and title, so here
+			// we declare two scanners for them
+			content := bufio.NewScanner(strings.NewReader(post.Content))
+			content.Split(bufio.ScanWords)
+			title := bufio.NewScanner(strings.NewReader(post.Title))
+			title.Split(bufio.ScanWords)
+			// content is scanned trough Jaro-Winkler distance with
+			// quite strict matching score of 0.9/1
+			// matching score this high would most likely catch only different
+			// capitalization and small typos
+			//
+			// since we are already in a for loop, we have to break the
+			// iteration here by going to label End to avoid showing a
+			// duplicate search result
+			for content.Scan() {
+				if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
+					matched = append(matched, post)
+					goto End
+				}
 			}
-		}
-		for title.Scan() {
-			if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
-				matched = append(matched, post)
-				goto End
+			for title.Scan() {
+				if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
+					matched = append(matched, post)
+					goto End
+				}
 			}
 		}
 	End:
@@ -194,13 +195,13 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	}
 	post.Slug = params["title"]
 	post, err := post.Get(db)
-	if post.Published {
-		go post.Increment(db)
-	}
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
+	}
+	if post.Published {
+		go post.Increment(db)
 	}
 	switch root(req) {
 	case "api":
@@ -250,11 +251,9 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 	if err != nil {
 		if err.Error() == "unauthorized" {
 			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
-			log.Println(err)
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -289,7 +288,6 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -318,8 +316,11 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 	}
 	err = post.Delete(db, s)
 	if err != nil {
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	switch root(req) {

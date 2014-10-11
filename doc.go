@@ -1,2 +1,2 @@
-// Verigo is a blog engine written in Go.
+// Blog in Go
 package main

@@ -40,15 +40,12 @@ func sessionchecker() martini.Handler {
 	}
 }
 
-// Middleware function hooks the RethinkDB to be accessible for Martini routes.
-// By default the middleware spawns a session pool of 10 connections.
+// Middleware function hooks the database to be accessible for Martini routes.
 func middleware() martini.Handler {
-
 	db, err := gorm.Open("sqlite3", "./vertigo.db")
 	if err != nil {
 		panic(err)
 	}
-
 	return func(c martini.Context) {
 		c.Map(&db)
 	}

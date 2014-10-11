@@ -165,7 +165,7 @@ var _ = Describe("Vertigo", func() {
 				for i, user := range users {
 					Expect(i).To(Equal(0))
 					Expect(user.Name).To(Equal("Juuso"))
-					Expect(user.ID).NotTo(Equal(""))
+					Expect(user.ID).To(Equal(int64(0)))
 				}
 			})
 		})

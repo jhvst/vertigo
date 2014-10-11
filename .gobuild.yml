@@ -1,6 +1,5 @@
 author: juuso@mail.com
-description: >
-        Blog in Go.
+description: Blog in Go
 
 filesets:
     includes:

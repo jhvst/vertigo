@@ -25,13 +25,13 @@ import (
 // A complete User struct also includes Posts field (type []Post) which includes
 // all posts made by the user.
 type User struct {
-	ID       int64  `json:"id" gorethink:",omitempty"`
-	Name     string `json:"name" form:"name" binding:"required" gorethink:"name"`
-	Password string `json:"password,omitempty" form:"password" gorethink:"-,omitempty" sql:"-"`
-	Recovery string `json:",omitempty" gorethink:"recovery"`
-	Digest   []byte `json:"-" gorethink:"digest"`
-	Email    string `json:"email,omitempty" form:"email" binding:"required" gorethink:"email"`
-	Posts    []Post `json:"posts" gorethink:"posts"`
+	ID       int64  `json:"id"`
+	Name     string `json:"name" form:"name" binding:"required"`
+	Password string `json:"-" form:"password" sql:"-"`
+	Recovery string `json:"-"`
+	Digest   []byte `json:"-"`
+	Email    string `json:"email,omitempty" form:"email" binding:"required"`
+	Posts    []Post `json:"posts"`
 }
 
 // CreateUser is a route which creates a new user struct according to posted parameters.
@@ -196,7 +196,7 @@ func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *g
 
 // ResetUserPassword is a route which is called when accessing the page generated dispatched with
 // account recovery emails.
-func ResetUserPassword(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB, user User) {
+func ResetUserPassword(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, user User) {
 	id, err := strconv.Atoi(params["id"])
 	user.ID = int64(id)
 	entry, err := user.Get(db)
@@ -323,20 +323,24 @@ func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 }
 
 // Get or user.Get returns User object according to given .ID
-// with post information merged, but without the .Digest and .Email field.
+// with post information merged.
 func (user User) Get(db *gorm.DB) (User, error) {
 	var posts []Post
 	db.Where([]int64{user.ID}).Find(&user)
-	db.Where(&Post{Author: user.ID}).Find(&posts)
-	user.Posts = posts
 	if db.Error != nil {
 		log.Println(db.Error)
 		return user, db.Error
 	}
+	db.Where(&Post{Author: user.ID}).Find(&posts)
+	if db.Error != nil {
+		log.Println(db.Error)
+		return user, db.Error
+	}
+	user.Posts = posts
 	return user, nil
 }
 
-// Session or user.Session returns User object from client session cookie.
+// Session or user.Session returns user.ID from client session cookie.
 // The returned object has post data merged.
 func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 	data := s.Get("user")
@@ -354,7 +358,7 @@ func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 	return user, errors.New("unauthorized")
 }
 
-// Delete or user.Delete deletes the user with given .Id from the database.
+// Delete or user.Delete deletes the user with given ID from the database.
 func (user User) Delete(db *gorm.DB, s sessions.Session) error {
 	user, err := user.Session(db, s)
 	if err != nil {

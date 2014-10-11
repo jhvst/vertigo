@@ -14,6 +14,7 @@ textarea {
 	height: 70vh;
 	resize: none;
 	overflow: auto;
+	display: none;
 }
 
 *:focus {
