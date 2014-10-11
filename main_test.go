@@ -412,6 +412,73 @@ var _ = Describe("Vertigo", func() {
 					}
 				})
 			})
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Third post", "content": "This is second post"}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				flag.Set("postslug", post.Slug)
+			})
+
+			It("with session data should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/third-post/publish", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
+
+		Context("reading after updating", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should list both of them", func() {
+				request, err := http.NewRequest("GET", "/user", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
+					if i == 0 {
+						Expect(s.Find("li a").First().Text()).To(Equal("First post edited"))
+					}
+					if i == 1 {
+						Expect(s.Find("li a").First().Text()).To(Equal("Second post edited"))
+					}
+					if i == 2 {
+						Expect(s.Find("li a").First().Text()).To(Equal("Third post"))
+					}
+				})
+			})
 		})
 
 		Context("deleting a post", func() {
@@ -455,7 +522,9 @@ var _ = Describe("Vertigo", func() {
 					if i == 0 {
 						Expect(s.Find("li a").First().Text()).To(Equal("First post edited"))
 					}
-					Expect(i).To(Equal(0))
+					if i == 1 {
+						Expect(s.Find("li a").First().Text()).To(Equal("Second post edited"))
+					}
 				})
 			})
 		})

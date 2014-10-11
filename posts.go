@@ -274,14 +274,14 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
 	post.Slug = params["title"]
-	post, err := post.Get(db)
 	post.Published = true
+	old, err := post.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
-	post, err = post.Update(db, s, post)
+	post, err = old.Update(db, s, post)
 	if err != nil {
 		if err.Error() == "unauthorized" {
 			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
@@ -362,7 +362,7 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 // Requires db session as a parameter.
 // Returns Post and error object.
 func (post Post) Get(db *gorm.DB) (Post, error) {
-	db.Where(&Post{Slug: post.Slug}).First(&post)
+	db.Find(&post, Post{Slug: post.Slug})
 	if db.Error != nil {
 		log.Println(db.Error)
 		return post, db.Error
@@ -387,10 +387,8 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 			return post, db.Error
 		}
 		return post, nil
-	} else {
-		return post, errors.New("unauthorized")
 	}
-	return post, nil
+	return post, errors.New("unauthorized")
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.
@@ -430,6 +428,11 @@ func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 // Increment or post.Increment increases viewcount of a post according to its post.ID
 // It is supposed to be run as a gouroutine, so therefore it does not return anything.
 func (post Post) Increment(db *gorm.DB) {
-	db.Where([]int64{post.ID}).Find(&post)
-	db.Model(&post).Updates(Post{Viewcount: post.Viewcount + 1})
+	var entry Post
+	entry.Viewcount = post.Viewcount + 1
+	db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
+	if db.Error != nil {
+		log.Println(db.Error)
+		panic(db.Error)
+	}
 }
