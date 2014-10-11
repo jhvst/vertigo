@@ -222,7 +222,7 @@ var _ = Describe("Vertigo", func() {
 		Context("creation", func() {
 
 			It("should return HTTP 200", func() {
-				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Example post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "First post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
 				if err != nil {
 					panic(err)
 				}
@@ -285,7 +285,7 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				sel := doc.Find("article h1").Text()
-				Expect(sel).To(Equal("Example post"))
+				Expect(sel).To(Equal("First post"))
 			})
 		})
 
@@ -305,7 +305,7 @@ var _ = Describe("Vertigo", func() {
 				for i, post := range posts {
 					Expect(i).To(Equal(0))
 					Expect(post.Slug).To(Equal(*postslug))
-					Expect(post.Title).To(Equal("Example post"))
+					Expect(post.Title).To(Equal("First post"))
 					Expect(post.Viewcount).To(Equal(uint(0)))
 					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
 					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
@@ -316,7 +316,7 @@ var _ = Describe("Vertigo", func() {
 		Context("updating", func() {
 
 			It("should return the updated post structure", func() {
-				request, err := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "Example post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				request, err := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
 				if err != nil {
 					panic(err)
 				}
@@ -329,7 +329,7 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
-				Expect(post.Title).To(Equal("Example post edited"))
+				Expect(post.Title).To(Equal("First post edited"))
 				flag.Set("postslug", post.Slug)
 			})
 		})
@@ -345,6 +345,121 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 		})
+
+		Context("creating second post", func() {
+
+			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Second post", "content": "This is second post"}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				flag.Set("postslug", post.Slug)
+			})
+		})
+
+		Context("updating second post", func() {
+
+			It("should return the updated post structure", func() {
+				request, err := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "Second post edited", "content": "This is edited second post"}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				Expect(post.Title).To(Equal("Second post edited"))
+				flag.Set("postslug", post.Slug)
+			})
+
+		})
+
+		Context("reading the posts on user control panel", func() {
+
+			It("should list both of them", func() {
+				request, err := http.NewRequest("GET", "/user", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
+					if i == 0 {
+						Expect(s.Find("li a").First().Text()).To(Equal("First post edited"))
+					}
+					if i == 1 {
+						Expect(s.Find("li a").First().Text()).To(Equal("Second post edited"))
+					}
+				})
+			})
+		})
+
+		Context("deleting a post", func() {
+
+			It("without sessioncookies", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+			})
+
+			It("with sessioncookies", func() {
+				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("after deletion, it should only list one post on user control panel", func() {
+				request, err := http.NewRequest("GET", "/user", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
+					if i == 0 {
+						Expect(s.Find("li a").First().Text()).To(Equal("First post edited"))
+					}
+					Expect(i).To(Equal(0))
+				})
+			})
+		})
+
 	})
 
 })

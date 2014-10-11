@@ -381,12 +381,7 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 		return post, err
 	}
 	if post.Author == user.ID {
-		db.Where(&Post{Slug: post.Slug}).First(&post)
-		if db.Error != nil {
-			log.Println(db.Error)
-			return post, db.Error
-		}
-		db.Model(&post).Updates(entry)
+		db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
 		if db.Error != nil {
 			log.Println(db.Error)
 			return post, db.Error
@@ -409,12 +404,7 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 		return err
 	}
 	if post.Author == user.ID {
-		db.Where(&Post{Slug: post.Slug}).First(&post)
-		if db.Error != nil {
-			log.Println(db.Error)
-			return db.Error
-		}
-		db.Delete(&post)
+		db.Where(&Post{Slug: post.Slug}).Delete(&post)
 		if db.Error != nil {
 			log.Println(db.Error)
 			return db.Error
