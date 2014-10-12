@@ -388,7 +388,7 @@ var _ = Describe("Vertigo", func() {
 
 		})
 
-		Context("reading the posts on user control panel", func() {
+		Context("reading posts on user control panel", func() {
 
 			It("should list both of them", func() {
 				request, err := http.NewRequest("GET", "/user", nil)
@@ -413,6 +413,10 @@ var _ = Describe("Vertigo", func() {
 				})
 			})
 
+		})
+
+		Context("creating third post", func() {
+
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Third post", "content": "This is second post"}`))
 				if err != nil {
@@ -430,6 +434,10 @@ var _ = Describe("Vertigo", func() {
 				flag.Set("postslug", post.Slug)
 			})
 
+		})
+
+		Context("publishing third post", func() {
+
 			It("with session data should return HTTP 200", func() {
 				request, err := http.NewRequest("GET", "/api/post/third-post/publish", nil)
 				if err != nil {
@@ -443,7 +451,7 @@ var _ = Describe("Vertigo", func() {
 
 		})
 
-		Context("reading after updating", func() {
+		Context("reading third post after publishing", func() {
 
 			It("should return HTTP 200", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
@@ -454,7 +462,11 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 
-			It("should list both of them", func() {
+		})
+
+		Context("reading all three posts on user control panel", func() {
+
+			It("should list all three of them", func() {
 				request, err := http.NewRequest("GET", "/user", nil)
 				if err != nil {
 					panic(err)
@@ -481,9 +493,9 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
-		Context("deleting a post", func() {
+		Context("deleting third post", func() {
 
-			It("without sessioncookies", func() {
+			It("without sessioncookies it should return 401", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
 				if err != nil {
 					panic(err)
@@ -493,7 +505,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(401))
 			})
 
-			It("with sessioncookies", func() {
+			It("with sessioncookies it should return 200", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
 				if err != nil {
 					panic(err)
@@ -505,7 +517,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 
-			It("after deletion, it should only list one post on user control panel", func() {
+			It("after deletion, it should only list two posts on user control panel", func() {
 				request, err := http.NewRequest("GET", "/user", nil)
 				if err != nil {
 					panic(err)
