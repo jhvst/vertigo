@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/browser"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
@@ -151,5 +152,10 @@ func NewServer() Server {
 
 func main() {
 	server := NewServer()
+	if os.Getenv("PORT") != "" {
+		browser.OpenURL("http://localhost:"+os.Getenv("PORT"))
+	} else {
+		browser.OpenURL("http://localhost:3000")
+	}
 	server.Run()
 }
