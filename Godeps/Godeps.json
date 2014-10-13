@@ -1,5 +1,5 @@
 {
-	"ImportPath": "vertigo",
+	"ImportPath": "github.com/9uuso/vertigo",
 	"GoVersion": "go1.2",
 	"Deps": [
 		{
@@ -124,6 +124,10 @@
 			"ImportPath": "github.com/onsi/gomega",
 			"Comment": "v1.0-12-g3ca2515",
 			"Rev": "3ca2515afb00bc39bc77d27cdbce85a7caaf103e"
+		},
+		{
+			"ImportPath": "github.com/pkg/browser",
+			"Rev": "2e6fb17d7a7cb6a81837ee68158214d9098de905"
 		}
 	]
 }
