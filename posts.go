@@ -432,7 +432,6 @@ func (post Post) Increment(db *gorm.DB) {
 	entry.Viewcount = post.Viewcount + 1
 	db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
 	if db.Error != nil {
-		log.Println(db.Error)
-		panic(db.Error)
+		log.Println("analytics", db.Error)
 	}
 }
