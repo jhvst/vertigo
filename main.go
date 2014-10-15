@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/browser"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/strict"
+	"github.com/pkg/browser"
 )
 
 type Server *martini.ClassicMartini
@@ -153,7 +153,7 @@ func NewServer() Server {
 func main() {
 	server := NewServer()
 	if os.Getenv("PORT") != "" {
-		browser.OpenURL("http://localhost:"+os.Getenv("PORT"))
+		browser.OpenURL("http://localhost:" + os.Getenv("PORT"))
 	} else {
 		browser.OpenURL("http://localhost:3000")
 	}
