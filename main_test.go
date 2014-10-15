@@ -85,7 +85,7 @@ var _ = Describe("Vertigo", func() {
 		Context("after submitting settings in JSON", func() {
 
 			It("response should be a redirection", func() {
-				request, err := http.NewRequest("POST", "/api/installation", strings.NewReader(`{"hostname": "example.com", "name": "Foo Blog", "description": "Foo's test blog", "mailgun": {"mgdomain": "foo", "mgprikey": "foo", "mgpubkey": "foo"}}`))
+				request, err := http.NewRequest("POST", "/api/installation", strings.NewReader(`{"hostname": "example.com", "name": "Foo Blog", "description": "Foo's test blog", "mailgun": {"mgdomain": "foo", "mgprikey": "foo"}}`))
 				if err != nil {
 					panic(err)
 				}

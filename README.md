@@ -1,19 +1,27 @@
 vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 =======
 
-Vertigo aims to be portable and easy to customize publishing platform.
+Vertigo is blogging platform similar to Wordpress, Ghost, Medium, Svbtle or Tumblr. You can make multiple accounts and write multiple posts, which then appear on your front page. You can also make unlisted pages similar to Wordpress, which you can link to navigation with help of HTML, similar to Tumblr.
 
-Once more stable, Vertigo is supposed to be available in simple executable file for platforms supported by Go. Any unnecessary 3rd party packages are subject to be removed to further increase easy portability.
+Written Go, Vertigo is not only fast, but can be run on all major operating systems like Windows, Linux and MacOSX without the language development tools.
 
-Vertigo is developed with frontend JavaScript frameworks in mind, although Vertigo doesn't itself ship with one. All actions which can be done on the site can also done with the JSON API. Even though Vertigo is programmed API-first, it does not itself rely on AJAX calls, but makes the corresponding calls server side. This makes it possible to ship Vertigo nearly JavaScript-free (the only page using JavaScript is the text editor), letting the developer decide what frontend tools to use. Vertigo also ships without any CSS frameworks, so you can start theming from ground-zero. Templating engine is `html/template` of Go's standard library, which looks much same as Mustache. You don't need to know Go to edit how Vertigo looks.
+##Is Vertigo free?
 
-On the backend the server makes a heavy use of [Martini](http://martini.codegangsta.io/), which makes programming web services in Go bit easier. The database driver is [gorm](https://github.com/jinzhu/gorm), which means Vertigo supports SQLite, MySQL and PostgreSQL out of the box. By default SQLite is used.
+It is. Not only is the source code available online for anyone to use on MIT license, you can also deploy Vertigo to Heroku free of charge. Just click the [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy) to get started. If you are worried that Heroku might own your content, you can also deploy Vertigo to a normal server or even run it privately on your own desktop. More at [Install instructions](https://github.com/9uuso/vertigo#install-instructions).
+
+##How is Vertigo's frontend code handled?
+
+The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on a few pages, such as the post edit page, where it is used to provide backup for any writings you make. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices. That being said, Vertigo works fine even with NoScript enabled.
+
+Vertigo's routes by default can lead to either HTML templates or JSON endpoints depending on what URL is used. This means that as features as implemented, they are both available on /api/ and the normal frontend site. This makes it easy to add your preferred JavaScript MVC's on top of Vertigo. You can also code your own plugins or generate your own widgets from the data accessible from /api/ endpoint. This means that you create users, submit posts and read user data even without writing a single line of Go code. So basically, one could write a SPA application on top of the Go code with only using JavaScript. Whether you want to take that path or just edit the template files found in /templates/ is up to you.
 
 ##Demo
 
 See [my personal website](http://www.juusohaavisto.com/)
 
 ##Install instructions
+
+Note: By default the HTTP server starts on port 3000. This can changed by declaring PORT environment variable or by passing one with the binary execution command.
 
 ###Binaries
 
@@ -31,6 +39,12 @@ See [my personal website](http://www.juusohaavisto.com/)
 4. `cd vertigo && godep get ./ && godep go build`
 5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
 
+###Environment variables
+PORT - the HTTP server port
+MARTINI_ENV - used by Martini to enable production optimizations such as template caching
+MAILGUN_API_KEY - Mailgun API key (declared by default with Heroku Mailgun Addon)
+MAILGUN_SMTP_LOGIN - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
+
 ##Screenshots
 
 ![](http://i.imgur.com/EGlBhjP.png)
@@ -41,18 +55,14 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Features
 
-- Create and read users
-- Create, read, update and delete posts
-- Session control
-- Password protected user page
-- Basic homepage which lists all published posts from all users
-- JSON API
-- Produce HTML5 compliant code with text editor (divitism, but I've decided to not battle against contenteditable)
-- Failover auto-saving to LocalStorage
-- Searching of posts
-- RSS and Atom feeds
-- Password recovery with (forced :new_moon_with_face:) Mailgun integration
 - Installation wizard
+- JSON API
+- SQLite, MySQL and PostgreSQL support
+- Search
+- Multiple account support
+- Auto-saving of posts to LocalStorage
+- RSS and Atom feeds
+- Password recovery with Mailgun
 
 ##License
 
