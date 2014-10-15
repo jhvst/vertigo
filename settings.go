@@ -28,7 +28,7 @@ type Vertigo struct {
 	Hostname           string          `json:"hostname" form:"hostname" binding:"required"`
 	Firstrun           bool            `json:"firstrun,omitempty"`
 	CookieHash         string          `json:"cookiehash,omitempty"`
-	AllowRegistrations bool            `json:"allowregistrations"`
+	AllowRegistrations bool            `json:"allowregistrations" form:"allowregistrations"`
 	Description        string          `json:"description" form:"description" binding:"required"`
 	Mailer             MailgunSettings `json:"mailgun"`
 }
@@ -128,7 +128,6 @@ func ReadSettings(req *http.Request, res render.Render, s sessions.Session) {
 
 // UpdateSettings is a route which updates the local .json settings file.
 func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s sessions.Session, db *gorm.DB) {
-	log.Println(settings)
 	if Settings.Firstrun == false {
 		var user User
 		user, err := user.Session(db, s)
