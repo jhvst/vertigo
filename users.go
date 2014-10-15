@@ -38,6 +38,18 @@ type User struct {
 // Requires session cookie.
 // Returns created user struct for API requests and redirects to "/user" on frontend ones.
 func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
+	if Settings.AllowRegistrations == false {
+		log.Println("Denied a new registration.")
+		switch root(req) {
+		case "api":
+			res.JSON(403, map[string]interface{}{"error": "New registrations are not allowed at this time."})
+			return
+		case "user":
+			res.HTML(403, "user/login", "New registrations are not allowed at this time.")
+			return
+		}
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+	}
 	if user.Unique(db) == false {
 		res.JSON(422, map[string]interface{}{"error": "Email already in use"})
 		return

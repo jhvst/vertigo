@@ -11,7 +11,12 @@ import (
 	"runtime"
 
 	"code.google.com/p/go-uuid/uuid"
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
+	"github.com/martini-contrib/sessions"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 // Vertigo struct is used as a site wide settings structure. Different from posts and person
@@ -19,12 +24,13 @@ import (
 // Firstrun and CookieHash are generated and controlled by the application and should not be
 // rendered or made editable anywhere on the site.
 type Vertigo struct {
-	Name        string          `json:"name" form:"name" binding:"required"`
-	Hostname    string          `json:"hostname" form:"hostname" binding:"required"`
-	Firstrun    bool            `json:"firstrun"`
-	CookieHash  string          `json:"cookiehash"`
-	Description string          `json:"description" form:"description" binding:"required"`
-	Mailer      MailgunSettings `json:"mailgun"`
+	Name               string          `json:"name" form:"name" binding:"required"`
+	Hostname           string          `json:"hostname" form:"hostname" binding:"required"`
+	Firstrun           bool            `json:"firstrun,omitempty"`
+	CookieHash         string          `json:"cookiehash,omitempty"`
+	AllowRegistrations bool            `json:"allowregistrations"`
+	Description        string          `json:"description" form:"description" binding:"required"`
+	Mailer             MailgunSettings `json:"mailgun"`
 }
 
 // MailgunSettings holds the API keys necessary to send account recovery email.
@@ -104,15 +110,55 @@ func (settings *Vertigo) Save() error {
 	return nil
 }
 
+// ReadSettings is a route which reads the local settings.json file.
+func ReadSettings(req *http.Request, res render.Render, s sessions.Session) {
+	var safesettings Vertigo
+	safesettings = *Settings
+	safesettings.CookieHash = ""
+	switch root(req) {
+	case "api":
+		res.JSON(200, safesettings)
+		return
+	case "user":
+		res.HTML(200, "settings", safesettings)
+		return
+	}
+	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+}
+
 // UpdateSettings is a route which updates the local .json settings file.
-// It is supposed to be disabled after the first run. Therefore the JSON API route is not available for now.
-func UpdateSettings(req *http.Request, res render.Render, settings Vertigo) {
+func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s sessions.Session, db *gorm.DB) {
+	log.Println(settings)
 	if Settings.Firstrun == false {
-		log.Println("Somebody tried to change your local settings...")
-		res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time. :)"})
+		var user User
+		user, err := user.Session(db, s)
+		if err != nil {
+			res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time. :)"})
+			log.Println(err)
+			return
+		}
+		settings.CookieHash = Settings.CookieHash
+		settings.Hostname = Settings.Hostname
+		settings.Firstrun = Settings.Firstrun
+		err = settings.Save()
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
+		}
+		switch root(req) {
+		case "api":
+			res.JSON(200, map[string]interface{}{"success": "Settings were successfully saved"})
+			return
+		case "user":
+			res.Redirect("/user", 302)
+			return
+		}
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	settings.Firstrun = false
+	settings.AllowRegistrations = true
 	err := settings.Save()
 	if err != nil {
 		log.Println(err)

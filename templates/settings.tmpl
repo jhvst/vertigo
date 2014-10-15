@@ -1,0 +1,48 @@
+<h1>Settings</h1>
+<form method="post" action="/user/settings">
+	<fieldset>
+
+		<label>Allow new registrations</label>
+		<p>Unchecking the box below will disable registration for new users.</p>
+		{{if eq .AllowRegistrations true}}
+    	<input name="allowregistrations" type="checkbox" checked="{{.AllowRegistrations}}"> Allow new registrations?
+    	{{else}}
+    	<input name="allowregistrations" type="checkbox"> Allow new registrations?
+    	{{end}}
+
+		<br><br>		
+
+		<label>Hostname</label>
+		<p>Hostname is used to generate RSS and Atom links which lead somewhere. Also used in password reminder email template. Please leave out the http:// or https:// prefix.</p>
+		<input name="hostname" placeholder="example.com" required="required" value="{{.Hostname}}">
+
+		<br><br>
+
+		<label>Blog name</label>
+		<p>This is the text people see on their browser tabs when visiting your homepage.</p>
+		<input name="name" placeholder="Foo's Blog" required="required" value="{{.Name}}">
+
+		<br><br>
+
+		<label>Blog description</label>
+		<p>Your beloved site's description. Used in RSS and Atom feeds.</p>
+		<input name="description" placeholder="Thoughts about which witch is which" required="required" value="{{.Description}}">
+
+		<br><br>
+
+		<label>Mailgun domain</label>
+		<p>Vertigo uses Mailgun to send out emails. Below you enter the domain from which you want to send mail from. By default, the sender address is called postmaster@MAILGUN-DOMAIN.</p>
+		<input name="mgdomain" placeholder="example.com" required="required" value="{{.Mailer.Domain}}">
+
+		<br><br>
+
+		<label>Mailgun API key</label>
+		<p>This is the key labeled as API key on https://mailgun.com/cp. This key is sometimes referenced as the private key.</p>
+		<input name="mgprikey" placeholder="key-aaaaa-bbbbbbbbbbbbbbbbbbb" required="required" value="{{.Mailer.PrivateKey}}">
+
+		<br><br>
+
+		<button type="submit">Submit</button>	
+
+	</fieldset>
+</form>

@@ -98,6 +98,9 @@ func NewServer() Server {
 		r.Get("", ProtectedPage, ReadUser)
 		//r.Post("/delete", strict.ContentType("application/x-www-form-urlencoded"), ProtectedPage, binding.Form(User{}), DeleteUser)
 
+		r.Get("/settings", ProtectedPage, ReadSettings)
+		r.Post("/settings", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Vertigo{}), binding.ErrorHandler, ProtectedPage, UpdateSettings)
+
 		r.Post("/installation", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 
 		r.Get("/register", SessionRedirect, func(res render.Render) {
@@ -127,6 +130,8 @@ func NewServer() Server {
 		r.Get("", func(res render.Render) {
 			res.HTML(200, "api/index", nil)
 		})
+		r.Get("/settings", ProtectedPage, ReadSettings)
+		r.Post("/settings", strict.ContentType("application/json"), binding.Json(Vertigo{}), binding.ErrorHandler, ProtectedPage, UpdateSettings)
 		r.Post("/installation", strict.ContentType("application/json"), binding.Json(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 		r.Get("/users", ReadUsers)
 		r.Get("/user/:id", ReadUser)

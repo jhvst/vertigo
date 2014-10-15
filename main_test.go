@@ -107,7 +107,8 @@ var _ = Describe("Vertigo", func() {
 		Context("when manipulating the global Settings variable", func() {
 
 			It("should save the changes to disk", func() {
-				var settings Vertigo
+				var settings *Vertigo
+				settings = Settings
 				settings.Name = "Juuso's Blog"
 				err := settings.Save()
 				if err != nil {
@@ -539,6 +540,86 @@ var _ = Describe("Vertigo", func() {
 					}
 				})
 			})
+		})
+
+		Context("Settings on /user/settings", func() {
+
+			It("reading without sessioncookies it should return 401", func() {
+				request, err := http.NewRequest("GET", "/api/settings", nil)
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
+			})
+
+			It("reading with sessioncookies it should return 200", func() {
+				request, err := http.NewRequest("GET", "/api/settings", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":true,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("updaring without sessioncookie", func() {
+				request, err := http.NewRequest("POST", "/api/settings", strings.NewReader(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
+			})
+
+			It("updaring without sessioncookie", func() {
+				request, err := http.NewRequest("POST", "/api/settings", strings.NewReader(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"success":"Settings were successfully saved"}`))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("reading with sessioncookies it should return 200", func() {
+				request, err := http.NewRequest("GET", "/api/settings", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+	})
+
+	Describe("Users", func() {
+
+		Context("creation", func() {
+
+			It("should return HTTP 403 because allowregistrations is false", func() {
+				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "hello", "email": "bar@example.com"}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(403))
+			})
+
 		})
 
 	})
