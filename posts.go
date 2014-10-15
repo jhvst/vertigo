@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/russross/blackfriday"
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
@@ -345,6 +346,7 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 		log.Println(err)
 		return post, err
 	}
+	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Content)))
 	post.Author = user.ID
 	post.Date = time.Now().Unix()
 	post.Excerpt = Excerpt(post.Content)
@@ -381,6 +383,7 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 		return post, err
 	}
 	if post.Author == user.ID {
+		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Content)))		
 		db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
 		if db.Error != nil {
 			log.Println(db.Error)
