@@ -1,6 +1,8 @@
 vertigo [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 =======
 
+Note: Vertigo is **under development** and things may still break apart.
+
 Vertigo is blogging platform similar to Wordpress, Ghost, Medium, Svbtle or Tumblr. You can make multiple accounts and write multiple posts, which then appear on your front page. You can also make unlisted pages similar to Wordpress, which you can link to navigation with help of HTML, similar to Tumblr.
 
 Written Go, Vertigo is not only fast, but can be run on all major operating systems like Windows, Linux and MacOSX without the language development tools.
@@ -8,6 +10,8 @@ Written Go, Vertigo is not only fast, but can be run on all major operating syst
 ##Is Vertigo free?
 
 It is. Not only is the source code available online for anyone to use on MIT license, you can also deploy Vertigo to Heroku free of charge. Just click the [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy) to get started. If you are worried that Heroku might own your content, you can also deploy Vertigo to a normal server or even run it privately on your own desktop. More at [Install instructions](https://github.com/9uuso/vertigo#install-instructions).
+
+Note: To deploy to Heroku you need to have a credit card linked to them. If you wish not to link one, you may follow instructions on [here](https://github.com/9uuso/vertigo/issues/8) to remove Mailgun from Heroku add-ons list. If you remove Mailgun you cannot use password reminder, but everything else should work.
 
 ##How is Vertigo's frontend code handled?
 
