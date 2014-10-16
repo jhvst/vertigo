@@ -214,6 +214,11 @@ func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *g
 // account recovery emails.
 func ResetUserPassword(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, user User) {
 	id, err := strconv.Atoi(params["id"])
+	if err != nil {
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		log.Println(err)
+		return
+	}
 	user.ID = int64(id)
 	entry, err := user.Get(db)
 	if err != nil {
@@ -224,6 +229,11 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 	if entry.Recovery == params["recovery"] {
 		entry.Password = user.Password
 		_, err := user.Update(db, entry)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		}
+		err = user.DeleteRecoveryHash(db)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -261,10 +271,9 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 // the .Password and .Digest omitted.
 func (user User) Login(db *gorm.DB) (User, error) {
 	password := user.Password
-	db.Where(&User{Email: user.Email}).First(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query := db.Where(&User{Email: user.Email}).First(&user)
+	if query.Error != nil {
+		return user, query.Error
 	}
 	if !CompareHash(user.Digest, password) {
 		return user, errors.New("wrong username or password")
@@ -284,16 +293,18 @@ func (user User) Update(db *gorm.DB, entry User) (User, error) {
 	if err != nil {
 		return user, err
 	}
-	entry.Digest = digest
-	db.Where([]int64{user.ID}).Find(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query := db.Where(&User{ID: user.ID}).First(&user)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return user, errors.New("not found")
+		}
+		return user, query.Error
 	}
-	db.Model(&user).Updates(User{Name: entry.Name, Digest: entry.Digest})
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	entry.Digest = digest
+	query = db.Where(&User{ID: user.ID}).Find(&user).Updates(entry)
+	if query.Error != nil {
+		log.Println(query.Error)
+		return user, query.Error
 	}
 	return user, nil
 }
@@ -302,19 +313,13 @@ func (user User) Update(db *gorm.DB, entry User) (User, error) {
 // The function will insert user.Recovery field with generated UUID string and dispatch an email
 // to the corresponding user.Email address. It will also add TTL to Recovery field.
 func (user User) Recover(db *gorm.DB) (User, error) {
-	db.Where(&User{Email: user.Email}).First(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query := db.Where(&User{Email: user.Email}).First(&user)
+	if query.Error != nil {
+		log.Println(query.Error)
+		return user, query.Error
 	}
 
 	err := user.InsertRecoveryHash(db)
-	if err != nil {
-		log.Println(err)
-		return user, err
-	}
-
-	user, err = user.Get(db)
 	if err != nil {
 		log.Println(err)
 		return user, err
@@ -375,7 +380,6 @@ func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 		user.ID = id
 		user, err := user.Get(db)
 		if err != nil {
-			log.Println(err)
 			return user, err
 		}
 		return user, nil
@@ -387,13 +391,11 @@ func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 func (user User) Delete(db *gorm.DB, s sessions.Session) error {
 	user, err := user.Session(db, s)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
-	db.Delete(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return db.Error
+	query := db.Delete(&user)
+	if query.Error != nil {
+		return query.Error
 	}
 	return nil
 }
@@ -407,10 +409,9 @@ func (user User) Insert(db *gorm.DB) (User, error) {
 	}
 	user.Digest = digest
 	user.Posts = make([]Post, 0)
-	db.Create(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query := db.Create(&user)
+	if query.Error != nil {
+		return user, query.Error
 	}
 	return user, nil
 }
@@ -418,7 +419,10 @@ func (user User) Insert(db *gorm.DB) (User, error) {
 // GetAll or user.GetAll fetches all users with post data merged from the database.
 func (user User) GetAll(db *gorm.DB) ([]User, error) {
 	var users []User
-	db.Find(&users)
+	query := db.Find(&users)
+	if query.Error != nil {
+		return users, query.Error
+	}
 	for i, user := range users {
 		user, err := user.Get(db)
 		if err != nil {
@@ -426,31 +430,27 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 		}
 		users[i] = user
 	}
-	if db.Error != nil {
-		log.Println(db.Error)
-		return users, db.Error
-	}
 	return users, nil
 }
 
 func (user User) DeleteRecoveryHash(db *gorm.DB) error {
 	// should probably be replaced with user.Update call
-	db.Where([]int64{user.ID}).Find(&user)
-	db.Model(&user).Updates(User{Recovery: ""})
+	query := db.Where([]int64{user.ID}).Find(&user).Updates(User{Recovery: ""})
+	if query.Error != nil {
+		return query.Error
+	}
 	return nil
 }
 
 func (user User) InsertRecoveryHash(db *gorm.DB) error {
 	// should probably be replaced with user.Update call
-	db.Where([]int64{user.ID}).Find(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return db.Error
+	query := db.Where([]int64{user.ID}).Find(&user)
+	if query.Error != nil {
+		return query.Error
 	}
-	db.Model(&user).Updates(User{Recovery: uuid.New()})
-	if db.Error != nil {
-		log.Println(db.Error)
-		return db.Error
+	query = db.Model(&user).Updates(User{Recovery: uuid.New()})
+	if query.Error != nil {
+		return query.Error
 	}
 	return nil
 }
@@ -459,7 +459,8 @@ func (user User) InsertRecoveryHash(db *gorm.DB) error {
 // See Mailgun example on https://gist.github.com/mbanzon/8179682
 func (user User) SendRecoverMail() error {
 	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, "")
-	m := mailgun.NewMessage("Sender <postmaster@"+Settings.Mailer.Domain+">", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+Settings.Hostname+"/user/reset/"+string(user.ID)+"/"+user.Recovery, "Recipient <"+user.Email+">")
+	id := strconv.Itoa(int(user.ID))
+	m := mailgun.NewMessage("Sender <postmaster@"+Settings.Mailer.Domain+">", "Password reset", "Somebody requested password recovery on this email. You may reset your password trough this link: http://"+Settings.Hostname+"/user/reset/"+id+"/"+user.Recovery, "Recipient <"+user.Email+">")
 	if _, _, err := gun.Send(m); err != nil {
 		return err
 	}

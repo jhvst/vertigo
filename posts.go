@@ -347,7 +347,6 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 	var user User
 	user, err := user.Session(db, s)
 	if err != nil {
-		log.Println(err)
 		return post, err
 	}
 	// if post.Content is empty, the user has used Markdown editor
@@ -359,10 +358,9 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
-	db.Create(&post)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return post, db.Error
+	query := db.Create(&post)
+	if query.Error != nil {
+		return post, query.Error
 	}
 	return post, nil
 }
@@ -371,10 +369,12 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 // Requires db session as a parameter.
 // Returns Post and error object.
 func (post Post) Get(db *gorm.DB) (Post, error) {
-	db.Find(&post, Post{Slug: post.Slug})
-	if db.Error != nil {
-		log.Println(db.Error)
-		return post, db.Error
+	query := db.Find(&post, Post{Slug: post.Slug})
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return post, nil
+		}		
+		return post, query.Error
 	}
 	return post, nil
 }
@@ -386,7 +386,6 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 	var user User
 	user, err := user.Session(db, s)
 	if err != nil {
-		log.Println(err)
 		return post, err
 	}
 	if post.Author == user.ID {
@@ -399,10 +398,9 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 			// entry.Markdown = Markdown of entry.Content
 		}
 		entry.Excerpt = Excerpt(entry.Content)
-		db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
-		if db.Error != nil {
-			log.Println(db.Error)
-			return post, db.Error
+		query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
+		if query.Error != nil {
+			return post, query.Error
 		}
 		return post, nil
 	}
@@ -416,14 +414,12 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 	var user User
 	user, err := user.Session(db, s)
 	if err != nil {
-		log.Println(err)
 		return err
 	}
 	if post.Author == user.ID {
-		db.Where(&Post{Slug: post.Slug}).Delete(&post)
-		if db.Error != nil {
-			log.Println(db.Error)
-			return db.Error
+		query := db.Where(&Post{Slug: post.Slug}).Delete(&post)
+		if query.Error != nil {
+			return query.Error
 		}
 	} else {
 		return errors.New("unauthorized")
@@ -435,10 +431,13 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 // Returns []Post and error object.
 func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 	var posts []Post
-	db.Find(&posts)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return posts, db.Error
+	query := db.Find(&posts)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			posts = make([]Post, 0)
+			return posts, nil
+		}		
+		return posts, query.Error
 	}
 	return posts, nil
 }
@@ -448,8 +447,8 @@ func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 func (post Post) Increment(db *gorm.DB) {
 	var entry Post
 	entry.Viewcount = post.Viewcount + 1
-	db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
-	if db.Error != nil {
-		log.Println("analytics", db.Error)
+	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
+	if query.Error != nil {
+		log.Println("analytics", query.Error)
 	}
 }
