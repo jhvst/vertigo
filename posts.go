@@ -399,7 +399,7 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 			// see https://github.com/9uuso/vertigo/issues/7
 			// entry.Markdown = Markdown of entry.Content
 		}
-		entry.Excerpt = Excerpt(entry.Content)		
+		entry.Excerpt = Excerpt(entry.Content)
 		db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
 		if db.Error != nil {
 			log.Println(db.Error)

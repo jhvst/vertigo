@@ -398,7 +398,7 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
-				Expect(post).To(Equal(*globalpost))				
+				Expect(post).To(Equal(*globalpost))
 			})
 		})
 
@@ -408,7 +408,7 @@ var _ = Describe("Vertigo", func() {
 				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Second post", "content": "This is second post"}`))
 				if err != nil {
 					panic(err)
-				}			
+				}
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
@@ -427,7 +427,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(post.Date).Should(BeNumerically(">", int64(0)))
 				Expect(post.Excerpt).To(Equal("This is second post"))
 				Expect(post.Viewcount).To(Equal(uint(0)))
-				*globalpost = post		
+				*globalpost = post
 				flag.Set("postslug", post.Slug)
 			})
 		})
@@ -441,7 +441,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				globalpost.Title = "Second post edited"
 				globalpost.Content = "This is edited second post"
-				globalpost.Excerpt = "This is edited second post"					
+				globalpost.Excerpt = "This is edited second post"
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
@@ -749,7 +749,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(post.Author).To(Equal(int64(1)))
 				Expect(post.Date).Should(BeNumerically(">", int64(0)))
 				Expect(post.Viewcount).To(Equal(uint(0)))
-				*globalpost = post		
+				*globalpost = post
 				flag.Set("postslug", post.Slug)
 			})
 
