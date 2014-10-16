@@ -352,7 +352,6 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 	}
 	// if post.Content is empty, the user has used Markdown editor
 	if Settings.Markdown {
-		post.Markdown = post.Content
 		post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
 	}
 	post.Author = user.ID
