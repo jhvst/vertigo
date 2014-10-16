@@ -5,10 +5,14 @@
 		<label>Allow new registrations</label>
 		<p>Unchecking the box below will disable registration for new users.</p>
 		{{if eq .AllowRegistrations true}}
-    	<input name="allowregistrations" type="checkbox" checked="{{.AllowRegistrations}}"> Allow new registrations?
-    	{{else}}
-    	<input name="allowregistrations" type="checkbox"> Allow new registrations?
-    	{{end}}
+		<input type="radio" name="allowregistrations" value="true" checked> Allow
+		<br>
+		<input type="radio" name="allowregistrations" value="false"> Disallow
+		{{else}}
+		<input type="radio" name="allowregistrations" value="true"> Allow
+		<br>
+		<input type="radio" name="allowregistrations" value="false" checked> Disallow
+		{{end}}		
 
 		<br><br>		
 
