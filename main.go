@@ -46,6 +46,12 @@ func NewServer() Server {
 			}
 			return os.Getenv(s)
 		},
+		"Markdown": func() bool {
+			if Settings.Markdown {
+				return true
+			}
+			return false
+		},
 	}
 
 	m := martini.Classic()

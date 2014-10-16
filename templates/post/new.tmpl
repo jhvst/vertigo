@@ -2,8 +2,12 @@
 <form method="post" name="new" onsubmit="copy()">
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" placeholder="Title"></h1>
-		<textarea name="content"></textarea>
-		<div id="text" contenteditable="true"></div>
+		{{if Markdown}}
+		<textarea name="markdown"></textarea>
+		{{else}}
+		<textarea name="content"></textarea>		
+		{{end}}		
+		<section id="text" contenteditable="true"></section>
 	</fieldset>
 </form>
 <script type="text/javascript">
@@ -46,7 +50,11 @@
 		localStorage.removeItem("t");
 		localStorage.removeItem("c");
 		var html = document.getElementById("text").innerHTML;
+		{{if Markdown}}
+		document.new.markdown.value = html;
+		{{else}}		
 		document.new.content.value = html;
+		{{end}}
 		return
 	}
 </script>

@@ -3,16 +3,31 @@
 	<fieldset>
 
 		<label>Allow new registrations</label>
-		<p>Unchecking the box below will disable registration for new users.</p>
+		<p>Below you can choose whether you'd like disable registration for new users.</p>
 		{{if eq .AllowRegistrations true}}
-		<input type="radio" name="allowregistrations" value="true" checked> Allow
+		<input type="radio" name="allowregistrations" value="true" checked> Allow registrations
 		<br>
-		<input type="radio" name="allowregistrations" value="false"> Disallow
+		<input type="radio" name="allowregistrations" value="false"> Disallow registrations
 		{{else}}
-		<input type="radio" name="allowregistrations" value="true"> Allow
+		<input type="radio" name="allowregistrations" value="true"> Allow registrations
 		<br>
-		<input type="radio" name="allowregistrations" value="false" checked> Disallow
+		<input type="radio" name="allowregistrations" value="false" checked> Disallow registrations
 		{{end}}		
+
+		<br><br>
+
+		<label>Use Markdown instead of HTML</label>
+		<p>Below you can choose whether you want to use <a href="http://daringfireball.net/projects/markdown/">Markdown</a> or plain HTML when creating and editing posts.</p>
+		<p><strong>WARNING</strong> Switching from Markdown to HTML does not really work. If you switch to Markdown, there is no content to be shown on posts, because Go has no Markdown to HTML preprocessor.</p>
+		{{if eq .Markdown true}}
+		<input type="radio" name="markdown" value="true" checked> Markdown
+		<br>
+		<input type="radio" name="markdown" value="false"> HTML
+		{{else}}
+		<input type="radio" name="markdown" value="true"> Markdown
+		<br>
+		<input type="radio" name="markdown" value="false" checked> HTML
+		{{end}}
 
 		<br><br>		
 

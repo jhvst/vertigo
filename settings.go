@@ -29,6 +29,7 @@ type Vertigo struct {
 	Firstrun           bool            `json:"firstrun,omitempty"`
 	CookieHash         string          `json:"cookiehash,omitempty"`
 	AllowRegistrations bool            `json:"allowregistrations" form:"allowregistrations"`
+	Markdown           bool            `json:"markdown" form:"markdown"`
 	Description        string          `json:"description" form:"description" binding:"required"`
 	Mailer             MailgunSettings `json:"mailgun"`
 }
@@ -137,7 +138,6 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 			return
 		}
 		settings.CookieHash = Settings.CookieHash
-		settings.Hostname = Settings.Hostname
 		settings.Firstrun = Settings.Firstrun
 		err = settings.Save()
 		if err != nil {

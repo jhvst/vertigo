@@ -2,8 +2,13 @@
 <form method="post" name="new" onsubmit="copy()">
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" value="{{.Title}}"></h1>
-		<textarea name="content"></textarea>
-		<div id="text" contenteditable="true">{{unescape .Content}}</div>
+		{{if Markdown}}
+		<textarea name="markdown"></textarea>
+		<section id="text" contenteditable="true">{{unescape .Markdown}}</section>
+		{{else}}
+		<textarea name="content"></textarea>		
+		<section id="text" contenteditable="true">{{unescape .Content}}</section>
+		{{end}}
 	</fieldset>
 </form>
 <script type="text/javascript">
@@ -50,7 +55,11 @@
 		localStorage.removeItem({{.Slug}});
 		localStorage.removeItem({{.Title}});
 		var html = document.getElementById("text").innerHTML;
+		{{if Markdown}}
+		document.new.markdown.value = html;
+		{{else}}		
 		document.new.content.value = html;
+		{{end}}
 		return
 	}
 </script>

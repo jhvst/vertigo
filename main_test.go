@@ -15,6 +15,7 @@ import (
 
 var sessioncookie *string = flag.String("sessioncookie", "", "global flag for test sessioncookie")
 var postslug *string = flag.String("postslug", "", "global flag for test postslug")
+var globalpost *Post = &Post{}
 
 var _ = Describe("Vertigo", func() {
 
@@ -96,6 +97,8 @@ var _ = Describe("Vertigo", func() {
 
 			It("the settings.json should have all fields populated", func() {
 				Expect(Settings.Hostname).To(Equal("example.com"))
+				Expect(Settings.AllowRegistrations).To(Equal(true))
+				Expect(Settings.Markdown).To(Equal(false))
 				Expect(Settings.Name).To(Equal("Foo Blog"))
 				Expect(Settings.Description).To(Equal("Foo's test blog"))
 				Expect(Settings.Mailer.Domain).To(Equal("foo"))
@@ -138,18 +141,40 @@ var _ = Describe("Vertigo", func() {
 		Context("creation", func() {
 
 			It("should return HTTP 200", func() {
-				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`))
+				payload := `{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`
+				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
 				if err != nil {
 					panic(err)
 				}
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"foo@example.com","posts":[]}`))
 			})
 
 		})
 
 		Context("reading", func() {
+
+			It("should shown up when requesting by ID", func() {
+				request, err := http.NewRequest("GET", "/api/user/1", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"foo@example.com","posts":[]}`))
+			})
+
+			It("non-existent ID should return not found", func() {
+				request, err := http.NewRequest("GET", "/api/user/3", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"User not found"}`))
+			})
 
 			It("should be then listed on /users", func() {
 				request, err := http.NewRequest("GET", "/api/users", nil)
@@ -157,17 +182,7 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				server.ServeHTTP(recorder, request)
-				var users []User
-				if err := json.Unmarshal(recorder.Body.Bytes(), &users); err != nil {
-					panic(err)
-				}
-				Expect(recorder.Code).To(Equal(200))
-				fmt.Println(recorder.Body)
-				for i, user := range users {
-					Expect(i).To(Equal(0))
-					Expect(user.Name).To(Equal("Juuso"))
-					Expect(user.ID).To(Equal(int64(0)))
-				}
+				Expect(recorder.Body.String()).To(Equal(`[{"id":1,"name":"Juuso","email":"foo@example.com","posts":[]}]`))
 			})
 		})
 
@@ -198,7 +213,7 @@ var _ = Describe("Vertigo", func() {
 				flag.Set("sessioncookie", cookie)
 				fmt.Println("User sessioncookie:", *sessioncookie)
 				Expect(recorder.Code).To(Equal(200))
-
+				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"foo@example.com","posts":[]}`))
 			})
 		})
 
@@ -223,7 +238,8 @@ var _ = Describe("Vertigo", func() {
 		Context("creation", func() {
 
 			It("should return HTTP 200", func() {
-				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "First post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				payload := `{"title": "First post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(payload))
 				if err != nil {
 					panic(err)
 				}
@@ -236,6 +252,16 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
+				Expect(post.ID).To(Equal(int64(1)))
+				Expect(post.Title).To(Equal("First post"))
+				Expect(post.Content).To(Equal(`This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place.`))
+				Expect(post.Markdown).To(Equal(""))
+				Expect(post.Slug).To(Equal("first-post"))
+				Expect(post.Author).To(Equal(int64(1)))
+				Expect(post.Date).Should(BeNumerically(">", int64(0)))
+				Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
+				Expect(post.Viewcount).To(Equal(uint(0)))
+				*globalpost = post
 				flag.Set("postslug", post.Slug)
 			})
 		})
@@ -249,6 +275,11 @@ var _ = Describe("Vertigo", func() {
 				}
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				Expect(post).To(Equal(*globalpost))
 			})
 		})
 
@@ -271,6 +302,7 @@ var _ = Describe("Vertigo", func() {
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
 				Expect(recorder.Code).To(Equal(200))
 			})
 
@@ -290,6 +322,27 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
+		Context("owner of the first post", func() {
+
+			It("should have the post listed in their account", func() {
+				request, err := http.NewRequest("GET", "/api/user/1", nil)
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var user User
+				if err := json.Unmarshal(recorder.Body.Bytes(), &user); err != nil {
+					panic(err)
+				}
+				Expect(user.ID).To(Equal(int64(1)))
+				Expect(user.Name).To(Equal("Juuso"))
+				Expect(user.Email).To(Equal("foo@example.com"))
+				Expect(user.Posts[0]).To(Equal(*globalpost))
+			})
+		})
+
 		Context("reading after publishing", func() {
 
 			It("should display the new post", func() {
@@ -298,18 +351,13 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body).NotTo(Equal("null"))
 				var posts []Post
 				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
 					panic(err)
 				}
 				for i, post := range posts {
 					Expect(i).To(Equal(0))
-					Expect(post.Slug).To(Equal(*postslug))
-					Expect(post.Title).To(Equal("First post"))
-					Expect(post.Viewcount).To(Equal(uint(0)))
-					Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
-					Expect(post.Content).To(Equal("This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."))
+					Expect(post).To(Equal(*globalpost))
 				}
 			})
 		})
@@ -321,6 +369,9 @@ var _ = Describe("Vertigo", func() {
 				if err != nil {
 					panic(err)
 				}
+				globalpost.Title = "First post edited"
+				globalpost.Content = "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."
+				globalpost.Excerpt = "This is an EDITED example post with HTML elements like bold and italics in place."
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
@@ -330,8 +381,7 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
-				Expect(post.Title).To(Equal("First post edited"))
-				flag.Set("postslug", post.Slug)
+				Expect(post).To(Equal(*globalpost))
 			})
 		})
 
@@ -344,6 +394,11 @@ var _ = Describe("Vertigo", func() {
 				}
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				Expect(post).To(Equal(*globalpost))				
 			})
 		})
 
@@ -353,7 +408,7 @@ var _ = Describe("Vertigo", func() {
 				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Second post", "content": "This is second post"}`))
 				if err != nil {
 					panic(err)
-				}
+				}			
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
@@ -363,6 +418,16 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
+				Expect(post.ID).To(Equal(int64(2)))
+				Expect(post.Title).To(Equal("Second post"))
+				Expect(post.Content).To(Equal(`This is second post`))
+				Expect(post.Markdown).To(Equal(""))
+				Expect(post.Slug).To(Equal("second-post"))
+				Expect(post.Author).To(Equal(int64(1)))
+				Expect(post.Date).Should(BeNumerically(">", int64(0)))
+				Expect(post.Excerpt).To(Equal("This is second post"))
+				Expect(post.Viewcount).To(Equal(uint(0)))
+				*globalpost = post		
 				flag.Set("postslug", post.Slug)
 			})
 		})
@@ -374,6 +439,9 @@ var _ = Describe("Vertigo", func() {
 				if err != nil {
 					panic(err)
 				}
+				globalpost.Title = "Second post edited"
+				globalpost.Content = "This is edited second post"
+				globalpost.Excerpt = "This is edited second post"					
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
@@ -383,8 +451,7 @@ var _ = Describe("Vertigo", func() {
 				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
 					panic(err)
 				}
-				Expect(post.Title).To(Equal("Second post edited"))
-				flag.Set("postslug", post.Slug)
+				Expect(post).To(Equal(*globalpost))
 			})
 
 		})
@@ -518,7 +585,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 
-			It("after deletion, it should only list two posts on user control panel", func() {
+			It("should after deletion, only list two posts on user control panel", func() {
 				request, err := http.NewRequest("GET", "/user", nil)
 				if err != nil {
 					panic(err)
@@ -563,7 +630,7 @@ var _ = Describe("Vertigo", func() {
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":true,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":true,"markdown":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
 				Expect(recorder.Code).To(Equal(200))
 			})
 
@@ -599,7 +666,7 @@ var _ = Describe("Vertigo", func() {
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"markdown":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
 				Expect(recorder.Code).To(Equal(200))
 			})
 		})
@@ -618,6 +685,72 @@ var _ = Describe("Vertigo", func() {
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(403))
+			})
+
+		})
+
+	})
+
+	Describe("Markdown", func() {
+
+		Context("switching to Markdown", func() {
+
+			It("changing settings should return HTTP 200", func() {
+				request, err := http.NewRequest("POST", "/api/settings", strings.NewReader(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"markdown":true,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should change global Settings variable", func() {
+				request, err := http.NewRequest("GET", "/api/settings", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"markdown":true,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
+				Expect(recorder.Code).To(Equal(200))
+				Expect(Settings.Markdown).To(Equal(true))
+				Expect(Settings.AllowRegistrations).To(Equal(false))
+			})
+		})
+
+		Context("posts", func() {
+
+			It("creating one should return 200", func() {
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Markdown post", "content": "### foo\n*foo* foo **foo**"}`))
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				var post Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
+					panic(err)
+				}
+				Expect(post.ID).To(Equal(int64(3)))
+				Expect(post.Title).To(Equal("Markdown post"))
+				fmt.Println("post.Content from Markdown processor", post.Content)
+				Expect(len([]byte(post.Content))).To(Equal(59))
+				fmt.Println("post.Markdown from Markdown processor", post.Markdown)
+				Expect(len([]byte(post.Markdown))).To(Equal(25))
+				Expect(post.Slug).To(Equal("markdown-post"))
+				Expect(post.Author).To(Equal(int64(1)))
+				Expect(post.Date).Should(BeNumerically(">", int64(0)))
+				Expect(post.Viewcount).To(Equal(uint(0)))
+				*globalpost = post		
+				flag.Set("postslug", post.Slug)
 			})
 
 		})

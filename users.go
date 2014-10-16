@@ -25,7 +25,7 @@ import (
 // A complete User struct also includes Posts field (type []Post) which includes
 // all posts made by the user.
 type User struct {
-	ID       int64  `json:"id"`
+	ID       int64  `json:"id" gorm:"primary_key:yes"`
 	Name     string `json:"name" form:"name" binding:"required"`
 	Password string `json:"-" form:"password" sql:"-"`
 	Recovery string `json:"-"`
@@ -114,8 +114,12 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		user.ID = int64(id)
 		user, err := user.Get(db)
 		if err != nil {
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			log.Println(err)
+			if err.Error() == "not found" {
+				res.JSON(404, map[string]interface{}{"error": "User not found"})
+				return
+			}
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
 		res.JSON(200, user)
@@ -265,6 +269,10 @@ func (user User) Login(db *gorm.DB) (User, error) {
 	if !CompareHash(user.Digest, password) {
 		return user, errors.New("wrong username or password")
 	}
+	user, err := user.Get(db)
+	if err != nil {
+		return user, err
+	}
 	return user, nil
 }
 
@@ -338,15 +346,20 @@ func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 // with post information merged.
 func (user User) Get(db *gorm.DB) (User, error) {
 	var posts []Post
-	db.Where([]int64{user.ID}).Find(&user)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query := db.Where(&User{ID: user.ID}).First(&user)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return user, errors.New("not found")
+		}
+		return user, query.Error
 	}
-	db.Where(&Post{Author: user.ID}).Find(&posts)
-	if db.Error != nil {
-		log.Println(db.Error)
-		return user, db.Error
+	query = db.Where(&Post{Author: user.ID}).Find(&posts)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			user.Posts = make([]Post, 0)
+			return user, nil
+		}
+		return user, query.Error
 	}
 	user.Posts = posts
 	return user, nil
@@ -393,6 +406,7 @@ func (user User) Insert(db *gorm.DB) (User, error) {
 		return user, err
 	}
 	user.Digest = digest
+	user.Posts = make([]Post, 0)
 	db.Create(&user)
 	if db.Error != nil {
 		log.Println(db.Error)
@@ -405,6 +419,13 @@ func (user User) Insert(db *gorm.DB) (User, error) {
 func (user User) GetAll(db *gorm.DB) ([]User, error) {
 	var users []User
 	db.Find(&users)
+	for i, user := range users {
+		user, err := user.Get(db)
+		if err != nil {
+			return users, err
+		}
+		users[i] = user
+	}
 	if db.Error != nil {
 		log.Println(db.Error)
 		return users, db.Error

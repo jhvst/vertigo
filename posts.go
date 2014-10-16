@@ -31,9 +31,10 @@ import (
 // Form field refers to frontend POST form `name` fields which martini uses to read data from.
 // Binding defines whether the field is required when inserting or updating the object.
 type Post struct {
-	ID        int64  `json:"id"`
+	ID        int64  `json:"id" gorm:"primary_key:yes"`
 	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" form:"content" binding:"required"`
+	Content   string `json:"content" form:"content"`
+	Markdown  string `json:"markdown" form:"markdown"`
 	Date      int64  `json:"date"`
 	Slug      string `json:"slug"`
 	Author    int64  `json:"author"`
@@ -204,6 +205,9 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	if post.Published {
 		go post.Increment(db)
 	}
+	if Settings.Markdown {
+		post.Content = string(blackfriday.MarkdownCommon([]byte(sanitize.HTML(post.Markdown))))
+	}
 	switch root(req) {
 	case "api":
 		res.JSON(200, post)
@@ -346,9 +350,11 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 		log.Println(err)
 		return post, err
 	}
-	log.Println(post.Content)
-	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Content)))
-	log.Println(post.Content)	
+	// if post.Content is empty, the user has used Markdown editor
+	if Settings.Markdown {
+		post.Markdown = post.Content
+		post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
+	}
 	post.Author = user.ID
 	post.Date = time.Now().Unix()
 	post.Excerpt = Excerpt(post.Content)
@@ -385,12 +391,15 @@ func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, erro
 		return post, err
 	}
 	if post.Author == user.ID {
-		log.Println(entry.Content)
-		entry.Content = strings.TrimLeft(entry.Content, "<p>")
-		entry.Content = strings.TrimRight(entry.Content, "</p>")	
-		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Content)))
-		log.Println(entry.Content)
-		entry.Content = "<p>"+entry.Content+"</p>"
+		if Settings.Markdown {
+			entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
+		}
+		if Settings.Markdown == false {
+			// this closure would need a call to convert HTML to Markdown
+			// see https://github.com/9uuso/vertigo/issues/7
+			// entry.Markdown = Markdown of entry.Content
+		}
+		entry.Excerpt = Excerpt(entry.Content)		
 		db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
 		if db.Error != nil {
 			log.Println(db.Error)
