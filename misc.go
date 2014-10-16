@@ -26,6 +26,7 @@ func init() {
 	// If database or tables do exist, nothing will happen to the original ones.
 	db.CreateTable(&User{})
 	db.CreateTable(&Post{})
+	db.AutoMigrate(&User{}, &Post{})
 }
 
 func sessionchecker() martini.Handler {
