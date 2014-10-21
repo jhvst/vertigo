@@ -373,7 +373,7 @@ func (post Post) Get(db *gorm.DB) (Post, error) {
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			return post, nil
-		}		
+		}
 		return post, query.Error
 	}
 	return post, nil
@@ -436,7 +436,7 @@ func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 		if query.Error == gorm.RecordNotFound {
 			posts = make([]Post, 0)
 			return posts, nil
-		}		
+		}
 		return posts, query.Error
 	}
 	return posts, nil

@@ -416,12 +416,12 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 	if query.Error != nil {
 		return users, query.Error
 	}
-	for i, user := range users {
+	for index, user := range users {
 		user, err := user.Get(db)
 		if err != nil {
 			return users, err
 		}
-		users[i] = user
+		users[index] = user
 	}
 	return users, nil
 }
