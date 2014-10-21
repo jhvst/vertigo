@@ -67,6 +67,7 @@ MAILGUN_SMTP_LOGIN - Another Mailgun API key (declared by default with Heroku Ma
 - Auto-saving of posts to LocalStorage
 - RSS and Atom feeds
 - Password recovery with Mailgun
+- [Partial](https://github.com/9uuso/vertigo/issues/7) Markdown support
 
 ##License
 
