@@ -44,10 +44,10 @@ Note: By default the HTTP server starts on port 3000. This can changed by declar
 5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ###Environment variables
-PORT - the HTTP server port
-MARTINI_ENV - used by Martini to enable production optimizations such as template caching
-MAILGUN_API_KEY - Mailgun API key (declared by default with Heroku Mailgun Addon)
-MAILGUN_SMTP_LOGIN - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
+* PORT - the HTTP server port
+* MARTINI_ENV - used by Martini to enable production optimizations such as template caching
+* MAILGUN_API_KEY - Mailgun API key (declared by default with Heroku Mailgun Addon)
+* MAILGUN_SMTP_LOGIN - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
 
 ##Screenshots
 
