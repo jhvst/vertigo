@@ -11,6 +11,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
+	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -73,10 +74,10 @@ func SessionRedirect(res http.ResponseWriter, req *http.Request, session session
 
 // ProtectedPage makes sure that the user is logged in. Use on pages which need authentication
 // or which have to deal with user structure later on.
-func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.Session) {
+func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.Session, render render.Render) {
 	if !sessionIsAlive(session) {
 		session.Delete("user")
-		http.Redirect(res, req, "/", 302)
+		render.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 	}
 }
 

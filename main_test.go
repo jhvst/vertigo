@@ -194,7 +194,7 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
+				Expect(recorder.Code).To(Equal(401))
 			})
 		})
 
@@ -618,7 +618,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
+				Expect(recorder.Code).To(Equal(401))
 			})
 
 			It("reading with sessioncookies it should return 200", func() {
@@ -641,7 +641,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
+				Expect(recorder.Code).To(Equal(401))
 			})
 
 			It("updaring without sessioncookie", func() {
