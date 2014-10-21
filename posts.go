@@ -244,15 +244,16 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
 // Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
-func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB, post Post) {
+func UpdatePost(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, entry Post) {
+	var post Post
 	post.Slug = params["title"]
-	entry, err := post.Get(db)
+	post, err := post.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
-	post, err = entry.Update(db, s, post)
+	post, err = post.Update(db, entry)
 	if err != nil {
 		if err.Error() == "unauthorized" {
 			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
@@ -279,22 +280,36 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
 	post.Slug = params["title"]
-	post.Published = true
-	old, err := post.Get(db)
+	post, err := post.Get(db)
 	if err != nil {
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
 		return
 	}
-	post, err = old.Update(db, s, post)
+
+	var user User
+	user, err = user.Session(db, s)
 	if err != nil {
-		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
-			return
-		}
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+
+	if post.Author == user.ID {
+		var entry Post
+		entry.Published = true
+		post, err = post.Update(db, entry)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
+		}
+	} else {
+		log.Println("unauthorized attempt to publish post with post", post, "and user", user)
+		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
 	switch root(req) {
 	case "api":
 		res.JSON(200, map[string]interface{}{"success": "Post published"})
@@ -382,29 +397,20 @@ func (post Post) Get(db *gorm.DB) (Post, error) {
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (post Post) Update(db *gorm.DB, s sessions.Session, entry Post) (Post, error) {
-	var user User
-	user, err := user.Session(db, s)
-	if err != nil {
-		return post, err
+func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
+	if Settings.Markdown {
+		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
+	} else {
+		// this closure would need a call to convert HTML to Markdown
+		// see https://github.com/9uuso/vertigo/issues/7
+		// entry.Markdown = Markdown of entry.Content
 	}
-	if post.Author == user.ID {
-		if Settings.Markdown {
-			entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-		}
-		if Settings.Markdown == false {
-			// this closure would need a call to convert HTML to Markdown
-			// see https://github.com/9uuso/vertigo/issues/7
-			// entry.Markdown = Markdown of entry.Content
-		}
-		entry.Excerpt = Excerpt(entry.Content)
-		query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
-		if query.Error != nil {
-			return post, query.Error
-		}
-		return post, nil
+	entry.Excerpt = Excerpt(entry.Content)
+	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
+	if query.Error != nil {
+		return post, query.Error
 	}
-	return post, errors.New("unauthorized")
+	return post, nil
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.
@@ -447,8 +453,8 @@ func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 func (post Post) Increment(db *gorm.DB) {
 	var entry Post
 	entry.Viewcount = post.Viewcount + 1
-	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
-	if query.Error != nil {
-		log.Println("analytics", query.Error)
+	_, err := post.Update(db, entry)
+	if err != nil {
+		log.Println("analytics error:", err)
 	}
 }
