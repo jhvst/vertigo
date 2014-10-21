@@ -154,6 +154,22 @@ var _ = Describe("Vertigo", func() {
 
 		})
 
+		Context("creating second user with same email", func() {
+
+			It("should return HTTP 422", func() {
+				payload := `{"name": "Juuso", "password": "foo", "email": "foo@example.com"}`
+				request, err := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(422))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Email already in use"}`))
+			})
+
+		})
+
 		Context("reading", func() {
 
 			It("should shown up when requesting by ID", func() {

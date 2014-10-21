@@ -30,7 +30,7 @@ type User struct {
 	Password string `json:"-" form:"password" sql:"-"`
 	Recovery string `json:"-"`
 	Digest   []byte `json:"-"`
-	Email    string `json:"email,omitempty" form:"email" binding:"required"`
+	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
 	Posts    []Post `json:"posts"`
 }
 
@@ -50,13 +50,16 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 	}
-	if user.Unique(db) == false {
-		res.JSON(422, map[string]interface{}{"error": "Email already in use"})
-		return
-	}
 	user, err := user.Insert(db)
 	if err != nil {
+		log.Println(err)
+		if err.Error() == "UNIQUE constraint failed: users.email" {
+			res.JSON(422, map[string]interface{}{"error": "Email already in use"})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
 		log.Println(err)
 		return
 	}
@@ -149,16 +152,6 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 		return
 	}
 	res.JSON(200, users)
-}
-
-// EmailIsUnique returns bool value acoording to whether user email already exists in database with called user struct.
-// The function is used to make sure two users do not register under the same email. This limitation could however be removed,
-// as by default primary key for tables used by Vertigo is ID, not email.
-func (user User) Unique(db *gorm.DB) bool {
-	if db.Where(&User{Email: user.Email}).First(&user).RecordNotFound() {
-		return true
-	}
-	return false
 }
 
 // LoginUser is a route which compares plaintext password sent with POST request with
