@@ -60,15 +60,24 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+	user, err = user.Login(db)
+	if err != nil {
 		log.Println(err)
+		if err.Error() == "wrong username or password" {
+			res.HTML(401, "user/login", "Wrong username or password.")
+			return
+		}
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	switch root(req) {
 	case "api":
+		s.Set("user", user.ID)
 		res.JSON(200, user)
 		return
 	case "user":
-		res.Redirect("/user/login", 302)
+		s.Set("user", user.ID)
+		res.Redirect("/user", 302)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -221,7 +230,13 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 	}
 	if entry.Recovery == params["recovery"] {
 		entry.Password = user.Password
-		_, err := user.Update(db, entry)
+		digest, err := GenerateHash(entry.Password)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		}
+		entry.Digest = digest
+		_, err = user.Update(db, entry)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -263,17 +278,12 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 // If the .Password and .Digest match, the function returns the requested User struct, but with
 // the .Password and .Digest omitted.
 func (user User) Login(db *gorm.DB) (User, error) {
-	password := user.Password
-	query := db.Where(&User{Email: user.Email}).First(&user)
-	if query.Error != nil {
-		return user, query.Error
-	}
-	if !CompareHash(user.Digest, password) {
-		return user, errors.New("wrong username or password")
-	}
-	user, err := user.Get(db)
+	user, err := user.GetByEmail(db)
 	if err != nil {
 		return user, err
+	}
+	if !CompareHash(user.Digest, user.Password) {
+		return user, errors.New("wrong username or password")
 	}
 	return user, nil
 }
@@ -282,21 +292,11 @@ func (user User) Login(db *gorm.DB) (User, error) {
 // Can only used to update Name and Digest fields because of how user.Get works.
 // Currently not used elsewhere than in password Recovery, that's why the Digest generation.
 func (user User) Update(db *gorm.DB, entry User) (User, error) {
-	digest, err := GenerateHash(entry.Password)
-	if err != nil {
-		return user, err
-	}
-	query := db.Where(&User{ID: user.ID}).First(&user)
+	query := db.Where(&User{ID: user.ID}).Find(&user).Updates(entry)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			return user, errors.New("not found")
 		}
-		return user, query.Error
-	}
-	entry.Digest = digest
-	query = db.Where(&User{ID: user.ID}).Find(&user).Updates(entry)
-	if query.Error != nil {
-		log.Println(query.Error)
 		return user, query.Error
 	}
 	return user, nil
@@ -306,13 +306,15 @@ func (user User) Update(db *gorm.DB, entry User) (User, error) {
 // The function will insert user.Recovery field with generated UUID string and dispatch an email
 // to the corresponding user.Email address. It will also add TTL to Recovery field.
 func (user User) Recover(db *gorm.DB) (User, error) {
-	query := db.Where(&User{Email: user.Email}).First(&user)
-	if query.Error != nil {
-		log.Println(query.Error)
-		return user, query.Error
+
+	user, err := user.GetByEmail(db)
+	if err != nil {
+		return user, err
 	}
 
-	err := user.InsertRecoveryHash(db)
+	var entry User
+	entry.Recovery = uuid.New()
+	user, err = user.Update(db, entry)
 	if err != nil {
 		log.Println(err)
 		return user, err
@@ -345,6 +347,27 @@ func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 func (user User) Get(db *gorm.DB) (User, error) {
 	var posts []Post
 	query := db.Where(&User{ID: user.ID}).First(&user)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return user, errors.New("not found")
+		}
+		return user, query.Error
+	}
+	query = db.Where(&Post{Author: user.ID}).Find(&posts)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			user.Posts = make([]Post, 0)
+			return user, nil
+		}
+		return user, query.Error
+	}
+	user.Posts = posts
+	return user, nil
+}
+
+func (user User) GetByEmail(db *gorm.DB) (User, error) {
+	var posts []Post
+	query := db.Where(&User{Email: user.Email}).First(&user)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			return user, errors.New("not found")
@@ -429,19 +452,6 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 func (user User) DeleteRecoveryHash(db *gorm.DB) error {
 	// should probably be replaced with user.Update call
 	query := db.Where([]int64{user.ID}).Find(&user).Updates(User{Recovery: ""})
-	if query.Error != nil {
-		return query.Error
-	}
-	return nil
-}
-
-func (user User) InsertRecoveryHash(db *gorm.DB) error {
-	// should probably be replaced with user.Update call
-	query := db.Where([]int64{user.ID}).Find(&user)
-	if query.Error != nil {
-		return query.Error
-	}
-	query = db.Model(&user).Updates(User{Recovery: uuid.New()})
 	if query.Error != nil {
 		return query.Error
 	}
