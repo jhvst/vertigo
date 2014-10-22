@@ -22,6 +22,5 @@ _testmain.go
 *.exe
 *.test
 vertigo
-rethinkdb_data
 settings.json
 vertigo.db
