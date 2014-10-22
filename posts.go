@@ -454,7 +454,7 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 // Returns []Post and error object.
 func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 	var posts []Post
-	query := db.Find(&posts)
+	query := db.Order("date desc").Find(&posts)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			posts = make([]Post, 0)
