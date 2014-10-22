@@ -69,6 +69,10 @@ Note: By default the HTTP server starts on port 3000. This can changed by declar
 - Password recovery with Mailgun
 - [Partial](https://github.com/9uuso/vertigo/issues/7) Markdown support
 
+##Support
+
+There are no real support channels existing right now, but I've tried to document the code as much as possible. Top of that, you can visit [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) to page me personally.
+
 ##License
 
 MIT
