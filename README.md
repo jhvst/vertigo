@@ -35,6 +35,8 @@ Note: By default the HTTP server starts on port 3000. This can changed by declar
 
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
+For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/vertigo/wiki/Advanced-Heroku-deployment)
+
 ###Source
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
