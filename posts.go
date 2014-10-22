@@ -205,9 +205,6 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	if post.Published {
 		go post.Increment(db)
 	}
-	if Settings.Markdown {
-		post.Content = string(blackfriday.MarkdownCommon([]byte(sanitize.HTML(post.Markdown))))
-	}
 	switch root(req) {
 	case "api":
 		res.JSON(200, post)
@@ -366,7 +363,9 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 	}
 	// if post.Content is empty, the user has used Markdown editor
 	if Settings.Markdown {
-		post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
+		post.Content = string(blackfriday.MarkdownCommon([]byte(cleanup(post.Markdown))))
+	} else {
+		post.Content = cleanup(post.Content)
 	}
 	post.Author = user.ID
 	post.Date = time.Now().Unix()
@@ -394,13 +393,31 @@ func (post Post) Get(db *gorm.DB) (Post, error) {
 	return post, nil
 }
 
+// This function brings sanity to contenteditable. It mainly removes unnecessary <br> lines from the input source.
+// Part of the sanitize package, but this one fixes issues with <code> blocks having &nbsp;'s all over.
+// https://github.com/kennygrant/sanitize/blob/master/sanitize.go#L106
+func cleanup(s string) string {
+	// First remove line breaks etc as these have no meaning outside html tags (except pre)
+	// this means pre sections will lose formatting... but will result in less uninentional paras.
+	s = strings.Replace(s, "\n", "", -1)
+
+	// Then replace line breaks with newlines, to preserve that formatting
+	s = strings.Replace(s, "</p>", "\n", -1)
+	s = strings.Replace(s, "<br>", "\n", -1)
+	s = strings.Replace(s, "</br>", "\n", -1)
+	s = strings.Replace(s, "<br/>", "\n", -1)
+
+	return s
+}
+
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
 func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 	if Settings.Markdown {
-		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
+		entry.Content = string(blackfriday.MarkdownCommon([]byte(cleanup(entry.Markdown))))
 	} else {
+		entry.Content = cleanup(entry.Content)
 		// this closure would need a call to convert HTML to Markdown
 		// see https://github.com/9uuso/vertigo/issues/7
 		// entry.Markdown = Markdown of entry.Content
