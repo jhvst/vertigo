@@ -52,6 +52,12 @@ func NewServer() Server {
 			}
 			return false
 		},
+		"ReadOnly": func(p Post) bool {
+			if Settings.Markdown && p.Markdown == "" {
+				return true
+			}
+			return false
+		},
 	}
 
 	m := martini.Classic()

@@ -6,6 +6,13 @@ body {
 	font-size: 1.3em;
 }
 
+.readonly {
+	text-decoration: none;
+	pointer-events: none;
+	cursor: default;
+	color: grey;
+}
+
 @media only screen and (max-width: 400px) {
 	body { font-size:90%;}
 }
