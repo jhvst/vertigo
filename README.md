@@ -15,7 +15,7 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 
 ##How is Vertigo's frontend code handled?
 
-The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on a few pages, such as the post edit page, where it is used to provide backup for any writings you make. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices. That being said, Vertigo works fine even with NoScript enabled.
+The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on a few pages, such as the post edit page, where it is used to provide backup for any writings you make. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices.
 
 Vertigo's routes by default can lead to either HTML templates or JSON endpoints depending on what URL is used. This means that as features as implemented, they are both available on /api/ and the normal frontend site. This makes it easy to add your preferred JavaScript MVC's on top of Vertigo. You can also code your own plugins or generate your own widgets from the data accessible from /api/ endpoint. This means that you create users, submit posts and read user data even without writing a single line of Go code. So basically, one could write a SPA application on top of the Go code with only using JavaScript. Whether you want to take that path or just edit the template files found in /templates/ is up to you.
 
