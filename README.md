@@ -11,8 +11,6 @@ Written Go, Vertigo is not only fast, but can be run on all major operating syst
 
 It is. Not only is the source code available online for anyone to use on MIT license, you can also deploy Vertigo to Heroku free of charge. Just click the [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy) to get started. If you are worried that Heroku might own your content, you can also deploy Vertigo to a normal server or even run it privately on your own desktop. More at [Install instructions](https://github.com/9uuso/vertigo#install-instructions).
 
-Note: To deploy to Heroku you need to have a credit card linked to them. If you wish not to link one, you may follow instructions on [here](https://github.com/9uuso/vertigo/issues/8) to remove Mailgun from Heroku add-ons list. If you remove Mailgun you cannot use password reminder, but everything else should work.
-
 ##How is Vertigo's frontend code handled?
 
 The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on a few pages, such as the post edit page, where it is used to provide backup for any writings you make. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices.
@@ -36,6 +34,8 @@ Note: By default the HTTP server starts on port 3000. This can changed by declar
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/vertigo/wiki/Advanced-Heroku-deployment)
+
+Note: To deploy to Heroku you need to have a credit card linked to them. If you wish not to link one, you may follow instructions on [here](https://github.com/9uuso/vertigo/issues/8) to remove Mailgun from Heroku add-ons list. If you remove Mailgun you cannot use password reminder, but everything else should work.
 
 ###Source
 
