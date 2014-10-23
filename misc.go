@@ -4,7 +4,9 @@
 package main
 
 import (
+	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/go-martini/martini"
@@ -17,17 +19,35 @@ import (
 )
 
 func init() {
-	db, err := gorm.Open("sqlite3", "./vertigo.db")
+	if os.Getenv("DATABASE_URL") != "" {
+		db, err := gorm.Open("postgres", os.Getenv("DATABASE_URL"))
 
-	if err != nil {
-		panic(err)
+		log.Println("Using PostgreSQL")
+
+		if err != nil {
+			panic(err)
+		}
+
+		// Here database and tables are created in case they do not exist yet.
+		// If database or tables do exist, nothing will happen to the original ones.
+		db.CreateTable(&User{})
+		db.CreateTable(&Post{})
+		db.AutoMigrate(&User{}, &Post{})
+	} else {
+		db, err := gorm.Open("sqlite3", "./vertigo.db")
+
+		log.Println("Using SQLite")
+
+		if err != nil {
+			panic(err)
+		}
+
+		// Here database and tables are created in case they do not exist yet.
+		// If database or tables do exist, nothing will happen to the original ones.
+		db.CreateTable(&User{})
+		db.CreateTable(&Post{})
+		db.AutoMigrate(&User{}, &Post{})
 	}
-
-	// Here database and tables are created in case they do not exist yet.
-	// If database or tables do exist, nothing will happen to the original ones.
-	db.CreateTable(&User{})
-	db.CreateTable(&Post{})
-	db.AutoMigrate(&User{}, &Post{})
 }
 
 func sessionchecker() martini.Handler {
