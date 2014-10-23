@@ -3,9 +3,9 @@
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" placeholder="Title"></h1>
 		{{if Markdown}}
-		<textarea name="markdown"></textarea>
+		<textarea class="markdown" name="markdown"></textarea>
 		{{else}}
-		<textarea name="content"></textarea>		
+		<textarea class="hidden" name="content"></textarea>		
 		{{end}}		
 		<section id="text" contenteditable="true"></section>
 	</fieldset>
@@ -15,6 +15,24 @@
 	// LocalStorage loops(?) to save both post title and content to cache.
 	// Looks ugly, but better than AJAX based failover, right?
 	// Modified version of this: https://gist.github.com/addyosmani/d1f3ca715ac902788c2d
+	{{if .Markdown}}
+
+	with({
+		l: localStorage // Alias for localStorage, where we'll store text content
+	// This is some sort of variable initialization. It also checks whether there is anything in cache already.
+	}) with(document.getElementById("text")) if (l.getItem("c") != null) {
+		value = [l.c], // Replace placeholder text with localstorage content.
+		oninput = function () {
+			l.c = value // Save HTML context to localStorage.
+		}
+	} else {
+		oninput = function () {
+			l.c = value
+		}
+	}
+
+	{{else}}
+
 	with({
 		l: localStorage // Alias for localStorage, where we'll store text content
 	// This is some sort of variable initialization. It also checks whether there is anything in cache already.
@@ -29,10 +47,12 @@
 		}
 	}
 
+	{{end}}
+
 	// For a yet another unknown reason we need two instances of localstorage.
 	// Fundamentally analogous to the loop above.
 	with({
-		l2: localStorage
+		l2: localStorage,
 	}) with(document.getElementById("title")) if (l2.getItem("t") != null) {
 		document.new.title.value = [l2.t],
 		oninput = function () {
@@ -51,7 +71,6 @@
 		localStorage.removeItem("c");
 		var html = document.getElementById("text").innerHTML;
 		{{if Markdown}}
-		document.new.markdown.value = html;
 		{{else}}		
 		document.new.content.value = html;
 		{{end}}

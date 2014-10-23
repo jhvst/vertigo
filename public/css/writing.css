@@ -10,11 +10,14 @@ a.homepage-link, fieldset.search {
 	display: none;
 }
 
-textarea {
+textarea.hidden {
+	display: none;
+}
+
+textarea.markdown {
 	height: 70vh;
 	resize: none;
 	overflow: auto;
-	display: none;
 }
 
 *:focus {

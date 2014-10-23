@@ -415,7 +415,8 @@ func cleanup(s string) string {
 // Returns updated Post object and an error object.
 func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 	if Settings.Markdown {
-		entry.Content = string(blackfriday.MarkdownCommon([]byte(cleanup(entry.Markdown))))
+		entry.Markdown = cleanup(entry.Markdown)
+		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
 	} else {
 		entry.Content = cleanup(entry.Content)
 		// this closure would need a call to convert HTML to Markdown
