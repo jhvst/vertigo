@@ -8,7 +8,7 @@
   ],
   "addons": [
     "mailgun",
-    "postgresql"
+    "heroku-postgresql"
   ],
   "env": {
   	"BUILDPACK_URL": "https://github.com/kr/heroku-buildpack-go"
