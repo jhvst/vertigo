@@ -33,8 +33,8 @@ import (
 type Post struct {
 	ID        int64  `json:"id" gorm:"primary_key:yes"`
 	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" form:"content"`
-	Markdown  string `json:"markdown" form:"markdown"`
+	Content   string `json:"content" form:"content" sql:"type:text"`
+	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
 	Date      int64  `json:"date"`
 	Slug      string `json:"slug"`
 	Author    int64  `json:"author"`

@@ -19,35 +19,28 @@ import (
 )
 
 func init() {
+
 	if os.Getenv("DATABASE_URL") != "" {
-		db, err := gorm.Open("postgres", os.Getenv("DATABASE_URL"))
-
+		os.Setenv("driver", "postgres")
+		os.Setenv("dbsource", os.Getenv("DATABASE_URL"))
 		log.Println("Using PostgreSQL")
-
-		if err != nil {
-			panic(err)
-		}
-
-		// Here database and tables are created in case they do not exist yet.
-		// If database or tables do exist, nothing will happen to the original ones.
-		db.CreateTable(&User{})
-		db.CreateTable(&Post{})
-		db.AutoMigrate(&User{}, &Post{})
 	} else {
-		db, err := gorm.Open("sqlite3", "./vertigo.db")
-
-		log.Println("Using SQLite")
-
-		if err != nil {
-			panic(err)
-		}
-
-		// Here database and tables are created in case they do not exist yet.
-		// If database or tables do exist, nothing will happen to the original ones.
-		db.CreateTable(&User{})
-		db.CreateTable(&Post{})
-		db.AutoMigrate(&User{}, &Post{})
+		os.Setenv("driver", "sqlite3")
+		os.Setenv("dbsource", "./vertigo.db")
+		log.Println("Using SQLite3")
 	}
+
+	db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
+
+	if err != nil {
+		panic(err)
+	}
+
+	// Here database and tables are created in case they do not exist yet.
+	// If database or tables do exist, nothing will happen to the original ones.
+	db.CreateTable(&User{})
+	db.CreateTable(&Post{})
+	db.AutoMigrate(&User{}, &Post{})
 }
 
 func sessionchecker() martini.Handler {
@@ -64,7 +57,7 @@ func sessionchecker() martini.Handler {
 
 // Middleware function hooks the database to be accessible for Martini routes.
 func middleware() martini.Handler {
-	db, err := gorm.Open("sqlite3", "./vertigo.db")
+	db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
 	if err != nil {
 		panic(err)
 	}
