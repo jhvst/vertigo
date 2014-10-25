@@ -151,7 +151,7 @@ func (search Search) Get(db *gorm.DB) ([]Post, error) {
 // API response contains the created post object and normal request redirects to "/user" page.
 // Does not publish the post automatically. See PublishPost for more.
 func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.Render, post Post) {
-	entry, err := post.Insert(db, s)
+	post, err := post.Insert(db, s)
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -159,7 +159,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.R
 	}
 	switch root(req) {
 	case "api":
-		res.JSON(200, entry)
+		res.JSON(200, post)
 		return
 	case "post":
 		res.Redirect("/user", 302)
@@ -199,6 +199,10 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
+		if err.Error() == "not found" {
+			res.JSON(404, map[string]interface{}{"error": "Post not found"})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -250,7 +254,15 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	entry.Published = false	
+	err = post.Unpublish(db)
+	if err != nil {
+		if err.Error() == "not found" {
+			res.JSON(404, map[string]interface{}{"error": "Post not found"})
+			return
+		}
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
 	post, err = post.Update(db, entry)
 	if err != nil {
 		log.Println(err)
@@ -389,7 +401,7 @@ func (post Post) Get(db *gorm.DB) (Post, error) {
 	query := db.Find(&post, Post{Slug: post.Slug})
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
-			return post, nil
+			return post, errors.New("not found")
 		}
 		return post, query.Error
 	}
@@ -432,6 +444,18 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 		return post, query.Error
 	}
 	return post, nil
+}
+
+// Unpublishes a post
+func (post Post) Unpublish(db *gorm.DB) error {
+	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Update("published", false)
+	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return errors.New("not found")
+		}		
+		return query.Error
+	}
+	return nil
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.

@@ -284,7 +284,17 @@ var _ = Describe("Vertigo", func() {
 
 		Context("reading", func() {
 
-			It("should return HTTP 200", func() {
+			It("non-existent slug should return not found", func() {
+				request, err := http.NewRequest("GET", "/api/post/foo", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Post not found"}`))
+			})
+
+			It("post which exists should return 200 OK", func() {
 				request, err := http.NewRequest("GET", "/api/post/"+*postslug, nil)
 				if err != nil {
 					panic(err)
@@ -320,7 +330,7 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
 				Expect(recorder.Code).To(Equal(200))
-			})
+			})		
 
 			It("after publishing, the post should be displayed on frontpage", func() {
 				request, err := http.NewRequest("GET", "/", nil)
@@ -336,6 +346,22 @@ var _ = Describe("Vertigo", func() {
 				sel := doc.Find("article h1").Text()
 				Expect(sel).To(Equal("First post"))
 			})
+
+			It("after publishing, the post should be displayed trough API", func() {
+				request, err := http.NewRequest("GET", "/api/posts", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				var posts []Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
+					panic(err)
+				}
+				for i, post := range posts {
+					Expect(i).To(Equal(0))
+					Expect(post).To(Equal(*globalpost))
+				}
+			})			
 		})
 
 		Context("owner of the first post", func() {
@@ -359,25 +385,6 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
-		Context("reading after publishing", func() {
-
-			It("should display the new post", func() {
-				request, err := http.NewRequest("GET", "/api/posts", nil)
-				if err != nil {
-					panic(err)
-				}
-				server.ServeHTTP(recorder, request)
-				var posts []Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
-					panic(err)
-				}
-				for i, post := range posts {
-					Expect(i).To(Equal(0))
-					Expect(post).To(Equal(*globalpost))
-				}
-			})
-		})
-
 		Context("updating", func() {
 
 			It("should return the updated post structure", func() {
@@ -398,6 +405,21 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				Expect(post).To(Equal(*globalpost))
+			})
+
+			It("after updating, the post should not be displayed on frontpage", func() {
+				request, err := http.NewRequest("GET", "/", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("article h1").Text()
+				Expect(sel).To(Equal(""))
 			})
 		})
 
@@ -742,7 +764,7 @@ var _ = Describe("Vertigo", func() {
 		Context("posts", func() {
 
 			It("creating one should return 200", func() {
-				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Markdown post", "content": "### foo\n*foo* foo **foo**"}`))
+				request, err := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Markdown post", "markdown": "### foo\n*foo* foo **foo**"}`))
 				if err != nil {
 					panic(err)
 				}
@@ -757,10 +779,8 @@ var _ = Describe("Vertigo", func() {
 				}
 				Expect(post.ID).To(Equal(int64(3)))
 				Expect(post.Title).To(Equal("Markdown post"))
-				fmt.Println("post.Content from Markdown processor", post.Content)
-				Expect(len([]byte(post.Content))).To(Equal(0))
-				fmt.Println("post.Markdown from Markdown processor", post.Markdown)
-				Expect(len([]byte(post.Markdown))).To(Equal(0))
+				Expect(post.Content).To(Equal("\u003ch3\u003efoo\u003cem\u003efoo\u003c/em\u003e foo \u003cstrong\u003efoo\u003c/strong\u003e\u003c/h3\u003e\n"))
+				Expect(post.Markdown).To(Equal("### foo\n*foo* foo **foo**"))
 				Expect(post.Slug).To(Equal("markdown-post"))
 				Expect(post.Author).To(Equal(int64(1)))
 				Expect(post.Date).Should(BeNumerically(">", int64(0)))
