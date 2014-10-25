@@ -306,6 +306,7 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				Expect(post).To(Equal(*globalpost))
+				globalpost.Viewcount = uint(globalpost.Viewcount + 1)
 			})
 		})
 
