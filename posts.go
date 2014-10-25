@@ -206,9 +206,7 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	if post.Published {
-		go post.Increment(db)
-	}
+	go post.Increment(db)
 	switch root(req) {
 	case "api":
 		res.JSON(200, post)
