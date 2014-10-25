@@ -61,8 +61,8 @@ func Homepage(res render.Render, db *gorm.DB) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	res.HTML(200, "home", posts)
@@ -87,8 +87,8 @@ func Excerpt(input string) string {
 func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search) {
 	posts, err := search.Get(db)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	switch root(req) {
@@ -153,8 +153,8 @@ func (search Search) Get(db *gorm.DB) ([]Post, error) {
 func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.Render, post Post) {
 	entry, err := post.Insert(db, s)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	switch root(req) {
@@ -174,15 +174,15 @@ func ReadPosts(res render.Render, db *gorm.DB) {
 	var post Post
 	var published []Post
 	posts, err := post.GetAll(db)
+	if err != nil {
+		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}	
 	for _, post := range posts {
 		if post.Published {
 			published = append(published, post)
 		}
-	}
-	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
-		return
 	}
 	res.JSON(200, published)
 }
@@ -198,8 +198,8 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	if post.Published {
@@ -224,8 +224,8 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
+		log.Println(err)		
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -246,12 +246,13 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
+		log.Println(err)		
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	post, err = post.Update(db, entry)
 	if err != nil {
+		log.Println(err)
 		if err.Error() == "unauthorized" {
 			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
 			return
@@ -279,8 +280,8 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
+		log.Println(err)		
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 
@@ -327,12 +328,13 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
+		log.Println(err)		
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	err = post.Delete(db, s)
 	if err != nil {
+		log.Println(err)
 		if err.Error() == "unauthorized" {
 			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 			return

@@ -89,14 +89,14 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 func DeleteUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
 	user, err := user.Login(db)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	err = user.Delete(db, s)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	switch root(req) {
@@ -121,7 +121,8 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 	case "api":
 		id, err := strconv.Atoi(params["id"])
 		if err != nil {
-			panic(err)
+			log.Println(err)
+			res.JSON(400, map[string]interface{}{"error": "The user ID could not be parsed from the request URL."})
 		}
 		user.ID = int64(id)
 		user, err := user.Get(db)
@@ -139,9 +140,9 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 	case "user":
 		user, err := user.Session(db, s)
 		if err != nil {
+			log.Println(err)
 			s.Set("user", -1)
 			res.HTML(500, "error", err)
-			log.Println(err)
 			return
 		}
 		res.HTML(200, "user/index", user)
@@ -156,8 +157,8 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 	var user User
 	users, err := user.GetAll(db)
 	if err != nil {
-		res.JSON(500, err)
 		log.Println(err)
+		res.JSON(500, err)
 		return
 	}
 	res.JSON(200, users)
@@ -166,17 +167,17 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 // LoginUser is a route which compares plaintext password sent with POST request with
 // hash stored in database. On successful request returns session cookie named "user", which contains
 // user's ID encrypted, which is the primary key used in database table.
-// When called by API it responds with user struct without post data merged.
-// On frontend call it redirect the client to "/user" page.
+// When called by API it responds with user struct.
+// On frontend call it redirects the client to "/user" page.
 func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
 	user, err := user.Login(db)
 	if err != nil {
+		log.Println(err)
 		if err.Error() == "wrong username or password" {
 			res.HTML(401, "user/login", "Wrong username or password.")
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		log.Println(err)
 		return
 	}
 	switch root(req) {
@@ -194,7 +195,7 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gor
 
 // RecoverUser is a route of the first step of account recovery, which sends out the recovery
 // email etc. associated function calls.
-func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
+func RecoverUser(req *http.Request, res render.Render, db *gorm.DB, user User) {
 	user, err := user.Recover(db)
 	if err != nil {
 		log.Println(err)
@@ -217,15 +218,15 @@ func RecoverUser(req *http.Request, s sessions.Session, res render.Render, db *g
 func ResetUserPassword(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, user User) {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	user.ID = int64(id)
 	entry, err := user.Get(db)
 	if err != nil {
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	if entry.Recovery == params["recovery"] {
@@ -316,13 +317,11 @@ func (user User) Recover(db *gorm.DB) (User, error) {
 	entry.Recovery = uuid.New()
 	user, err = user.Update(db, entry)
 	if err != nil {
-		log.Println(err)
 		return user, err
 	}
 
 	err = user.SendRecoverMail()
 	if err != nil {
-		log.Println(err)
 		return user, err
 	}
 
@@ -411,6 +410,9 @@ func (user User) Delete(db *gorm.DB, s sessions.Session) error {
 	}
 	query := db.Delete(&user)
 	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return errors.New("not found")
+		}		
 		return query.Error
 	}
 	return nil

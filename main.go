@@ -40,18 +40,21 @@ func NewServer() Server {
 		"date": func(d int64) string {
 			return time.Unix(d, 0).String()
 		},
+		// Env helper returns environment variable of s.
 		"env": func(s string) string {
 			if s == "MAILGUN_SMTP_LOGIN" {
 				return strings.TrimLeft(os.Getenv(s), "postmaster@")
 			}
 			return os.Getenv(s)
 		},
+		// Markdown returns whether user has Markdown enabled from settings.
 		"Markdown": func() bool {
 			if Settings.Markdown {
 				return true
 			}
 			return false
 		},
+		// ReadOnly checks whether a post is safe to edit with current settings.
 		"ReadOnly": func(p Post) bool {
 			if Settings.Markdown && p.Markdown == "" {
 				return true

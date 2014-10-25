@@ -96,7 +96,7 @@ func (settings *Vertigo) Save() error {
 		return err
 	}
 	if err := json.Unmarshal(data, &old); err != nil {
-		panic(err)
+		return err
 	}
 	Settings = settings
 	settings.CookieHash = old.CookieHash // this to assure that cookiehash cannot be overwritten even if system is hacked
@@ -133,8 +133,8 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 		var user User
 		user, err := user.Session(db, s)
 		if err != nil {
-			res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time. :)"})
 			log.Println(err)
+			res.JSON(406, map[string]interface{}{"error": "You are not allowed to change the settings this time."})
 			return
 		}
 		settings.CookieHash = Settings.CookieHash
