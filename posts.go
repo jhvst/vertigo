@@ -178,7 +178,7 @@ func ReadPosts(res render.Render, db *gorm.DB) {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
-	}	
+	}
 	for _, post := range posts {
 		if post.Published {
 			published = append(published, post)
@@ -228,7 +228,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
-		log.Println(err)		
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -250,7 +250,7 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
-		log.Println(err)		
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -293,7 +293,7 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
-		log.Println(err)		
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -341,7 +341,7 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 	post.Slug = params["title"]
 	post, err := post.Get(db)
 	if err != nil {
-		log.Println(err)		
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -452,7 +452,7 @@ func (post Post) Unpublish(db *gorm.DB) error {
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			return errors.New("not found")
-		}		
+		}
 		return query.Error
 	}
 	return nil

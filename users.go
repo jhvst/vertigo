@@ -412,7 +412,7 @@ func (user User) Delete(db *gorm.DB, s sessions.Session) error {
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			return errors.New("not found")
-		}		
+		}
 		return query.Error
 	}
 	return nil

@@ -330,7 +330,7 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
 				Expect(recorder.Code).To(Equal(200))
-			})		
+			})
 
 			It("after publishing, the post should be displayed on frontpage", func() {
 				request, err := http.NewRequest("GET", "/", nil)
@@ -361,7 +361,7 @@ var _ = Describe("Vertigo", func() {
 					Expect(i).To(Equal(0))
 					Expect(post).To(Equal(*globalpost))
 				}
-			})			
+			})
 		})
 
 		Context("owner of the first post", func() {
