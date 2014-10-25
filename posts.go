@@ -250,6 +250,7 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+	entry.Published = false	
 	post, err = post.Update(db, entry)
 	if err != nil {
 		log.Println(err)
