@@ -3,12 +3,11 @@
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" value="{{.Title}}"></h1>
 		{{if Markdown}}
-		<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
 		<script src="/js/he.js"></script>
 		<script src="/js/to-markdown.js"></script>
 		<textarea class="markdown" name="markdown" id="text"></textarea>
 		<script type="text/javascript">
-			$("#text").val(toMarkdown({{unescape .Content}}))
+			document.getElementById("text").value = toMarkdown({{unescape .Content}})
 		</script>		
 		{{else}}
 		<textarea class="hidden" name="content"></textarea>
