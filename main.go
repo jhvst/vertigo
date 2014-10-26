@@ -5,6 +5,7 @@ package main
 import (
 	"html"
 	"html/template"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -167,6 +168,7 @@ func NewServer() Server {
 	})
 
 	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
+	m.NotFound(http.NotFound)
 	return m
 }
 
