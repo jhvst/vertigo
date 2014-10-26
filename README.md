@@ -69,7 +69,7 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 - Auto-saving of posts to LocalStorage
 - RSS and Atom feeds
 - Password recovery with Mailgun
-- [Partial](https://github.com/9uuso/vertigo/issues/7) Markdown support
+- Markdown support
 
 ##Support
 
