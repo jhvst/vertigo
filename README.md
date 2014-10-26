@@ -46,10 +46,12 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ###Environment variables
-* PORT - the HTTP server port
-* MARTINI_ENV - used by Martini to enable production optimizations such as template caching
-* MAILGUN_API_KEY - Mailgun API key (declared by default with Heroku Mailgun Addon)
-* MAILGUN_SMTP_LOGIN - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
+* `DEV` - required to run `go test`
+* `PORT` - the HTTP server port
+* `MARTINI_ENV` - used by Martini to enable production optimizations such as template caching
+* `MAILGUN_API_KEY` - Mailgun API key (declared by default with Heroku Mailgun Addon)
+* `MAILGUN_SMTP_LOGIN` - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
+* `DATABASE_URL` - Database connection URL for PostgreSQL - if not declared, SQLite will be used
 
 ##Screenshots
 
@@ -63,7 +65,7 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 
 - Installation wizard
 - JSON API
-- SQLite, MySQL and PostgreSQL support
+- SQLite and PostgreSQL support
 - Search
 - Multiple account support
 - Auto-saving of posts to LocalStorage
