@@ -1,17 +1,13 @@
-<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/styles/default.min.css">
-<script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/8.3/highlight.min.js"></script>
-<script>hljs.initHighlightingOnLoad();</script>
-
 <h1>JSON API index</h1>
 <h2>Users</h2>
 
 <pre><code class="go">type User struct {
-	ID       int64  `json:"id"`
+	ID       int64  `json:"id" gorm:"primary_key:yes"`
 	Name     string `json:"name" form:"name" binding:"required"`
 	Password string `json:"-" form:"password" sql:"-"`
 	Recovery string `json:"-"`
 	Digest   []byte `json:"-"`
-	Email    string `json:"email,omitempty" form:"email" binding:"required"`
+	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
 	Posts    []Post `json:"posts"`
 }
 </code></pre>
@@ -49,9 +45,10 @@
 <h2>Posts</h2>
 
 <pre><code class="go">type Post struct {
-	ID        int64  `json:"id"`
+	ID        int64  `json:"id" gorm:"primary_key:yes"`
 	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" form:"content" binding:"required"`
+	Content   string `json:"content" form:"content" sql:"type:text"`
+	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
 	Date      int64  `json:"date"`
 	Slug      string `json:"slug"`
 	Author    int64  `json:"author"`
@@ -120,7 +117,8 @@
 	Hostname           string          `json:"hostname" form:"hostname" binding:"required"`
 	Firstrun           bool            `json:"firstrun,omitempty"`
 	CookieHash         string          `json:"cookiehash,omitempty"`
-	AllowRegistrations bool            `json:"allowregistrations"`
+	AllowRegistrations bool            `json:"allowregistrations" form:"allowregistrations"`
+	Markdown           bool            `json:"markdown" form:"markdown"`
 	Description        string          `json:"description" form:"description" binding:"required"`
 	Mailer             MailgunSettings `json:"mailgun"`
 }
