@@ -70,6 +70,13 @@ var _ = Describe("Vertigo", func() {
 				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))
 			})
 		})
+
+		Context("loading JSON API index", func() {
+			It("returns a status code of 200", func() {
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
 	})
 
 	Describe("Settings", func() {
@@ -250,6 +257,13 @@ var _ = Describe("Vertigo", func() {
 	})
 
 	Describe("Posts", func() {
+
+		Context("loading the creation page", func() {
+
+			It("should return HTTP 200", func() {
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
 
 		Context("creation", func() {
 
@@ -773,6 +787,53 @@ var _ = Describe("Vertigo", func() {
 			})
 
 		})
+
+
+	Describe("Feeds", func() {
+
+		Context("reading feeds without defining feed type", func() {
+
+			It("should redirect to RSS", func() {
+				request, err := http.NewRequest("GET", "/feeds", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
+				Expect(recorder.HeaderMap["Location"][0]).To(Equal("/feeds/rss"))
+			})
+
+		})
+
+		Context("reading RSS feed", func() {
+
+			It("should redirect to RSS", func() {
+				request, err := http.NewRequest("GET", "/feeds/rss", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.HeaderMap["Content-Type"][0]).To(Equal("application/xml"))
+			})
+
+		})
+
+		Context("reading Atom feed", func() {
+
+			It("should redirect to RSS", func() {
+				request, err := http.NewRequest("GET", "/feeds/atom", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.HeaderMap["Content-Type"][0]).To(Equal("application/xml"))
+			})
+
+		})
+
+	})
 
 	})
 
