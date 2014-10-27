@@ -48,7 +48,7 @@ type Post struct {
 type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
 	Score float64
-	Post  Post
+	Posts []Post
 }
 
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
@@ -85,7 +85,7 @@ func Excerpt(input string) string {
 // SearchPost is a route which returns all posts and aggregates the ones which contain
 // the POSTed search query in either Title or Content field.
 func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search) {
-	posts, err := search.Get(db)
+	search, err := search.Get(db)
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -93,10 +93,10 @@ func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search
 	}
 	switch root(req) {
 	case "api":
-		res.JSON(200, posts)
+		res.JSON(200, search.Posts)
 		return
 	case "post":
-		res.HTML(200, "search", posts)
+		res.HTML(200, "search", search.Posts)
 		return
 	}
 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -105,21 +105,25 @@ func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search
 // Get or search.Get returns all posts which contain parameter search.Query in either
 // post.Title or post.Content.
 // Returns []Post and error object.
-func (search Search) Get(db *gorm.DB) ([]Post, error) {
-	var matched []Post
+func (search Search) Get(db *gorm.DB) (Search, error) {
 	var post Post
 	posts, err := post.GetAll(db)
 	if err != nil {
 		log.Println(err)
-		return matched, err
+		return search, err
 	}
 	for _, post := range posts {
 		if post.Published {
 			// posts are searched for a match in both content and title, so here
 			// we declare two scanners for them
 			content := bufio.NewScanner(strings.NewReader(post.Content))
-			content.Split(bufio.ScanWords)
 			title := bufio.NewScanner(strings.NewReader(post.Title))
+			// Blackfriday makes smartypants corrections some characters, which break the search
+			if Settings.Markdown {
+				content = bufio.NewScanner(strings.NewReader(post.Markdown))
+				title = bufio.NewScanner(strings.NewReader(post.Title))
+			}
+			content.Split(bufio.ScanWords)
 			title.Split(bufio.ScanWords)
 			// content is scanned trough Jaro-Winkler distance with
 			// quite strict matching score of 0.9/1
@@ -131,20 +135,23 @@ func (search Search) Get(db *gorm.DB) ([]Post, error) {
 			// duplicate search result
 			for content.Scan() {
 				if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
-					matched = append(matched, post)
+					search.Posts = append(search.Posts, post)
 					goto End
 				}
 			}
 			for title.Scan() {
 				if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
-					matched = append(matched, post)
+					search.Posts = append(search.Posts, post)
 					goto End
 				}
 			}
 		}
 	End:
 	}
-	return matched, nil
+	if len(search.Posts) == 0 {
+		search.Posts = make([]Post, 0)
+	}
+	return search, nil
 }
 
 // CreatePost is a route which creates a new post according to the posted data.

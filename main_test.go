@@ -788,6 +788,23 @@ var _ = Describe("Vertigo", func() {
 
 		})
 
+		Context("publishing", func() {
+
+			It("with session data should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/api/post/markdown-post/publish", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
+
+	})
 
 	Describe("Feeds", func() {
 
@@ -834,6 +851,84 @@ var _ = Describe("Vertigo", func() {
 		})
 
 	})
+
+	Describe("Search", func() {
+
+		Context("searching for the published Markdown post", func() {
+
+			It("should return it", func() {
+				request, err := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "markdown"}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				var posts []Post
+				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
+					panic(err)
+				}
+				for i, post := range posts {
+					Expect(i).To(Equal(0))
+					Expect(post).To(Equal(*globalpost))
+				}
+			})
+
+		})
+
+		Context("searching with a query which is not contained in any post", func() {
+
+			It("should return empty array in JSON", func() {
+				request, err := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "foofoobarbar"}`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal("[]"))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
+
+		Context("searching for the published Markdown post on frontend", func() {
+
+			It("should return it", func() {
+				request, err := http.NewRequest("POST", "/post/search", strings.NewReader(`query=markdown`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("h1").Text()
+				Expect(sel).To(Equal("Markdown post"))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
+
+		Context("searching with a query which is not contained in any post on frontend", func() {
+
+			It("should display nothing found page", func() {
+				request, err := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foofoobarbar`))
+				if err != nil {
+					panic(err)
+				}
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("h2").Text()
+				Expect(sel).To(Equal("Nothing found."))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+		})
 
 	})
 

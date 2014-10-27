@@ -96,11 +96,11 @@
 <pre><code class="go">type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
 	Score float64
-	Post  Post
+	Posts []Post
 }
 </code></pre>
 
-<h3>POST /api/post/search/:query</h3>
+<h3>POST /api/post/search</h3>
 <p>Uses site's search to find posts with given query. Example payload:</p>
 
 <pre><code class="json">{

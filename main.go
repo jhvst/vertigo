@@ -104,7 +104,7 @@ func NewServer() Server {
 		r.Get("/:title/delete", ProtectedPage, DeletePost)
 		r.Get("/:title/publish", ProtectedPage, PublishPost)
 		r.Post("/new", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
-		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), SearchPost)
+		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
 	})
 
@@ -162,7 +162,7 @@ func NewServer() Server {
 		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, UpdatePost)
 		r.Get("/post/:title/delete", ProtectedPage, DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
-		r.Post("/post/search/:query", strict.ContentType("application/json"), binding.Json(Search{}), SearchPost)
+		r.Post("/post/search", strict.ContentType("application/json"), binding.Json(Search{}), binding.ErrorHandler, SearchPost)
 
 	})
 
