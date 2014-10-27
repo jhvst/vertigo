@@ -26,3 +26,7 @@ build:
         name: go test
         code: |
           go test ./...
+
+  steps:
+     - tcnksm/goveralls:
+       token: $COVERALLS_TOKEN
