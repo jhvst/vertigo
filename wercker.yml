@@ -27,5 +27,5 @@ build:
         code: |
           go test ./...
 
-     - tcnksm/goveralls:
-       token: $COVERALLS_TOKEN
+    - tcnksm/goveralls:
+        token: $COVERALLS_TOKEN
