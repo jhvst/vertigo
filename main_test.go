@@ -39,7 +39,7 @@ var _ = Describe("Vertigo", func() {
 		BeforeEach(func() {
 			request, _ = http.NewRequest("GET", "/", nil)
 			server.ServeHTTP(recorder, request)
-			Expect(recorder.Code).To(Equal(200))			
+			Expect(recorder.Code).To(Equal(200))
 		})
 
 		Context("loading the homepage", func() {
@@ -49,7 +49,7 @@ var _ = Describe("Vertigo", func() {
 				Expect(sel).To(Equal("Home"))
 
 				sel = doc.Find("h1").First().Text()
-				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))				
+				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))
 			})
 		})
 	})
@@ -57,12 +57,12 @@ var _ = Describe("Vertigo", func() {
 	Describe("Pages without data should return 200", func() {
 		AfterEach(func() {
 			server.ServeHTTP(recorder, request)
-			Expect(recorder.Code).To(Equal(200))			
+			Expect(recorder.Code).To(Equal(200))
 		})
 
 		Context("API index page", func() {
 			It("should respond fine", func() {
-				request, _ = http.NewRequest("GET", "/api", nil)							
+				request, _ = http.NewRequest("GET", "/api", nil)
 			})
 		})
 	})
