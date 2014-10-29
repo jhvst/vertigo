@@ -198,11 +198,11 @@ func ReadPosts(res render.Render, db *gorm.DB) {
 // Returns post data on JSON call and displays a formatted page on frontend.
 func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render, db *gorm.DB) {
 	var post Post
-	if params["title"] == "new" {
+	if params["slug"] == "new" {
 		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
 		return
 	}
-	post.Slug = params["title"]
+	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
@@ -230,7 +230,7 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 // Analogous to ReadPost. Could be replaced at some point.
 func EditPost(req *http.Request, params martini.Params, res render.Render, db *gorm.DB) {
 	var post Post
-	post.Slug = params["title"]
+	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
@@ -252,7 +252,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 // Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
 func UpdatePost(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, entry Post) {
 	var post Post
-	post.Slug = params["title"]
+	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
@@ -295,7 +295,7 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 // Requires active session cookie.
 func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
-	post.Slug = params["title"]
+	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
@@ -343,7 +343,7 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 // Requires active session cookie.
 func DeletePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
 	var post Post
-	post.Slug = params["title"]
+	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)

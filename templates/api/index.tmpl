@@ -61,7 +61,7 @@
 <h3><a href="/api/posts">GET /api/posts</a></h3>
 <p>Displays all posts</p>
 
-<h3>GET /api/posts/:id</h3>
+<h3>GET /api/post/:slug</h3>
 <p>Displays a single post</p>
 
 <h3>POST /api/post</h3>
@@ -73,10 +73,10 @@
 }
 </code></pre>
 
-<h3>GET /api/posts/:id/publish</h3>
+<h3>GET /api/post/:slug/publish</h3>
 <p>Publishes a post. Requires active session. Requires post slug as parameter.</p>
 
-<h3>POST /api/posts/:id/edit</h3>
+<h3>POST /api/post/:slug/edit</h3>
 <p>Updates a post. Requires active session. Required parameters are slug, content and title.</p>
 
 <pre><code class="json">{
@@ -86,7 +86,7 @@
 }
 </code></pre>
 
-<h3>GET /api/posts/:id/delete</h3>
+<h3>GET /api/post/:slug/delete</h3>
 <p>Deletes a post. Requires active session. Requires post slug as parameter.</p>
 
 <hr>

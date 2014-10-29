@@ -92,17 +92,17 @@ func NewServer() Server {
 
 	m.Group("/post", func(r martini.Router) {
 
-		// Please note that `/new` route has to be before the `/:title` route. Otherwise the program will try
+		// Please note that `/new` route has to be before the `/:slug` route. Otherwise the program will try
 		// to fetch for Post named "new".
 		// For now I'll keep it this way to streamline route naming.
 		r.Get("/new", ProtectedPage, func(res render.Render) {
 			res.HTML(200, "post/new", nil)
 		})
-		r.Get("/:title", ReadPost)
-		r.Get("/:title/edit", ProtectedPage, EditPost)
-		r.Post("/:title/edit", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
-		r.Get("/:title/delete", ProtectedPage, DeletePost)
-		r.Get("/:title/publish", ProtectedPage, PublishPost)
+		r.Get("/:slug", ReadPost)
+		r.Get("/:slug/edit", ProtectedPage, EditPost)
+		r.Post("/:slug/edit", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
+		r.Get("/:slug/delete", ProtectedPage, DeletePost)
+		r.Get("/:slug/publish", ProtectedPage, PublishPost)
 		r.Post("/new", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
 		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
@@ -156,11 +156,11 @@ func NewServer() Server {
 		r.Get("/user/logout", LogoutUser)
 
 		r.Get("/posts", ReadPosts)
-		r.Get("/post/:title", ReadPost)
+		r.Get("/post/:slug", ReadPost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
-		r.Get("/post/:title/publish", ProtectedPage, PublishPost)
-		r.Post("/post/:title/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, UpdatePost)
-		r.Get("/post/:title/delete", ProtectedPage, DeletePost)
+		r.Get("/post/:slug/publish", ProtectedPage, PublishPost)
+		r.Post("/post/:slug/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, UpdatePost)
+		r.Get("/post/:slug/delete", ProtectedPage, DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
 		r.Post("/post/search", strict.ContentType("application/json"), binding.Json(Search{}), binding.ErrorHandler, SearchPost)
 
