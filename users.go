@@ -246,23 +246,29 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+	// this ensures that accounts won't be compromised by posting recovery string as empty,
+	// which would otherwise result in succesful password reset
+	UUID := uuid.Parse(params["recovery"])
+	if UUID == nil {
+		log.Println("there was a problem trying to verify password reset UUID for", entry.Email)
+		res.JSON(400, map[string]interface{}{"error": "Could not parse UUID from the request."})
+		return
+	}
 	if entry.Recovery == params["recovery"] {
 		entry.Password = user.Password
 		digest, err := GenerateHash(entry.Password)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
 		}
 		entry.Digest = digest
+		entry.Recovery = " "
 		_, err = user.Update(db, entry)
 		if err != nil {
 			log.Println(err)
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		}
-		err = user.DeleteRecoveryHash(db)
-		if err != nil {
-			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
 		}
 		switch root(req) {
 		case "api":
@@ -351,7 +357,10 @@ func (user User) Recover(db *gorm.DB) (User, error) {
 // This function is supposed to be run as goroutine to avoid blocking exection for t.
 func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 	time.Sleep(t)
-	err := user.DeleteRecoveryHash(db)
+
+	var entry Post
+	entry.Recovery = " "
+	_, err := user.Update(db, entry)
 	if err != nil {
 		log.Println(err)
 	}
@@ -466,15 +475,6 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 		users[index] = user
 	}
 	return users, nil
-}
-
-func (user User) DeleteRecoveryHash(db *gorm.DB) error {
-	// should probably be replaced with user.Update call
-	query := db.Where([]int64{user.ID}).Find(&user).Updates(User{Recovery: ""})
-	if query.Error != nil {
-		return query.Error
-	}
-	return nil
 }
 
 // SendRecoverMail or user.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
