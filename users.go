@@ -176,11 +176,11 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gor
 		if err != nil {
 			log.Println(err)
 			if err.Error() == "wrong username or password" {
-				res.JSON(401, "user/login", "Wrong username or password.")
+				res.JSON(401, map[string]interface{}{"error": "Wrong username or password."})
 				return
 			}
 			if err.Error() == "not found" {
-				res.HTML(401, "user/login", "User with that email does not exist.")
+				res.JSON(401, map[string]interface{}{"error": "User with that email does not exist."})
 				return
 			}
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -358,7 +358,7 @@ func (user User) Recover(db *gorm.DB) (User, error) {
 func (user User) ExpireRecovery(db *gorm.DB, t time.Duration) {
 	time.Sleep(t)
 
-	var entry Post
+	var entry User
 	entry.Recovery = " "
 	_, err := user.Update(db, entry)
 	if err != nil {
