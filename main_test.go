@@ -54,15 +54,69 @@ var _ = Describe("Vertigo", func() {
 		})
 	})
 
-	Describe("Pages without data should return 200", func() {
+	Describe("Static pages", func() {
 		AfterEach(func() {
 			server.ServeHTTP(recorder, request)
 			Expect(recorder.Code).To(Equal(200))
 		})
 
 		Context("API index page", func() {
-			It("should respond fine", func() {
+			It("should respond 200 OK", func() {
 				request, _ = http.NewRequest("GET", "/api", nil)
+			})
+		})
+
+		Context("User register", func() {
+			It("should respond 200 OK", func() {
+				request, _ = http.NewRequest("GET", "/user/register", nil)
+			})
+		})
+
+		Context("User recover", func() {
+			It("should respond 200 OK", func() {
+				request, _ = http.NewRequest("GET", "/user/recover", nil)
+			})
+		})
+
+		Context("User recover", func() {
+			It("should respond 200 OK", func() {
+				request, _ = http.NewRequest("GET", "/user/login", nil)
+			})
+		})
+	})
+
+	Describe("Empty public API routes", func() {
+		Context("pages with arrays", func() {
+
+			AfterEach(func() {
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal("[]"))
+			})
+
+			It("should respond with []", func() {
+				request, _ = http.NewRequest("GET", "/api/posts", nil)
+			})
+
+			It("should respond with []", func() {
+				request, _ = http.NewRequest("GET", "/api/users", nil)
+			})
+		})
+
+		Context("pages with single item", func() {
+
+			AfterEach(func() {
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
+			})
+
+			It("should respond with []", func() {
+				request, _ = http.NewRequest("GET", "/api/post/0", nil)
+			})
+
+			It("should respond with []", func() {
+				request, _ = http.NewRequest("GET", "/api/user/0", nil)
 			})
 		})
 	})
@@ -184,7 +238,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"User not found"}`))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
 			})
 
 			It("should be then listed on /users", func() {
@@ -249,6 +303,13 @@ var _ = Describe("Vertigo", func() {
 		Context("loading the creation page", func() {
 
 			It("should return HTTP 200", func() {
+				request, err := http.NewRequest("GET", "/post/new", nil)
+				if err != nil {
+					panic(err)
+				}
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
 			})
 		})
@@ -293,7 +354,7 @@ var _ = Describe("Vertigo", func() {
 				}
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Post not found"}`))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
 			})
 
 			It("post which exists should return 200 OK", func() {
@@ -308,6 +369,16 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				Expect(post).To(Equal(*globalpost))
+				globalpost.Viewcount = uint(globalpost.Viewcount + 1)
+			})
+
+			It("on frontend, post which exists should return 200 OK", func() {
+				request, err := http.NewRequest("GET", "/post/"+*postslug, nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
 				globalpost.Viewcount = uint(globalpost.Viewcount + 1)
 			})
 		})
@@ -423,6 +494,16 @@ var _ = Describe("Vertigo", func() {
 				}
 				sel := doc.Find("article h1").Text()
 				Expect(sel).To(Equal(""))
+			})
+
+			It("after updating, the post should not be displayed trough API", func() {
+				request, err := http.NewRequest("GET", "/api/posts", nil)
+				if err != nil {
+					panic(err)
+				}
+				server.ServeHTTP(recorder, request)
+				fmt.Println(recorder.Body)
+				Expect(recorder.Body.String()).To(Equal("[]"))
 			})
 		})
 
