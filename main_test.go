@@ -38,43 +38,31 @@ var _ = Describe("Vertigo", func() {
 		// in this describe block.
 		BeforeEach(func() {
 			request, _ = http.NewRequest("GET", "/", nil)
+			server.ServeHTTP(recorder, request)
+			Expect(recorder.Code).To(Equal(200))			
 		})
 
 		Context("loading the homepage", func() {
-			It("returns a status code of 200", func() {
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
 			It("first link's value should be 'Home'", func() {
-				server.ServeHTTP(recorder, request)
-
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-
+				doc, _ := goquery.NewDocumentFromReader(recorder.Body)
 				sel := doc.Find("a").First().Text()
 				Expect(sel).To(Equal("Home"))
-			})
 
-			It("page's should display installation wizard", func() {
-				server.ServeHTTP(recorder, request)
-
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-
-				sel := doc.Find("h1").First().Text()
-				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))
+				sel = doc.Find("h1").First().Text()
+				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))				
 			})
 		})
+	})
 
-		Context("loading JSON API index", func() {
-			It("returns a status code of 200", func() {
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
+	Describe("Pages without data should return 200", func() {
+		AfterEach(func() {
+			server.ServeHTTP(recorder, request)
+			Expect(recorder.Code).To(Equal(200))			
+		})
+
+		Context("API index page", func() {
+			It("should respond fine", func() {
+				request, _ = http.NewRequest("GET", "/api", nil)							
 			})
 		})
 	})
