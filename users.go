@@ -171,21 +171,38 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 // On frontend call it redirects the client to "/user" page.
 func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
 	user, err := user.Login(db)
-	if err != nil {
-		log.Println(err)
-		if err.Error() == "wrong username or password" {
-			res.HTML(401, "user/login", "Wrong username or password.")
-			return
-		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
 	switch root(req) {
 	case "api":
+		if err != nil {
+			log.Println(err)
+			if err.Error() == "wrong username or password" {
+				res.JSON(401, "user/login", "Wrong username or password.")
+				return
+			}
+			if err.Error() == "not found" {
+				res.HTML(401, "user/login", "User with that email does not exist.")
+				return
+			}
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
+		}
 		s.Set("user", user.ID)
 		res.JSON(200, user)
 		return
 	case "user":
+		if err != nil {
+			log.Println(err)
+			if err.Error() == "wrong username or password" {
+				res.HTML(401, "user/login", "Wrong username or password.")
+				return
+			}
+			if err.Error() == "not found" {
+				res.HTML(401, "user/login", "User with that email does not exist.")
+				return
+			}
+			res.HTML(500, "user/login", "Internal server error. Please try again.")
+			return
+		}
 		s.Set("user", user.ID)
 		res.Redirect("/user", 302)
 		return
