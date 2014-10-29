@@ -63,10 +63,6 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 	user, err = user.Login(db)
 	if err != nil {
 		log.Println(err)
-		if err.Error() == "wrong username or password" {
-			res.HTML(401, "user/login", "Wrong username or password.")
-			return
-		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -129,7 +125,7 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		if err != nil {
 			log.Println(err)
 			if err.Error() == "not found" {
-				res.JSON(404, map[string]interface{}{"error": "User not found"})
+				res.JSON(404, NotFound())
 				return
 			}
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -465,6 +461,10 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 	var users []User
 	query := db.Find(&users)
 	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			users = make([]User, 0)
+			return users, nil
+		}
 		return users, query.Error
 	}
 	for index, user := range users {

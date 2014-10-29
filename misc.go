@@ -18,6 +18,10 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+func NotFound() map[string]interface{} {
+	return map[string]interface{}{"error": "Not found"}
+}
+
 func init() {
 
 	if os.Getenv("DATABASE_URL") != "" {

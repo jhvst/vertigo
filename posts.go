@@ -179,7 +179,7 @@ func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.R
 // Not available on frontend, so therefore it only returns a JSON response.
 func ReadPosts(res render.Render, db *gorm.DB) {
 	var post Post
-	var published []Post
+	published := make([]Post, 0)
 	posts, err := post.GetAll(db)
 	if err != nil {
 		log.Println(err)
@@ -207,7 +207,7 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
-			res.JSON(404, map[string]interface{}{"error": "Post not found"})
+			res.JSON(404, NotFound())
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
@@ -262,7 +262,7 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 	err = post.Unpublish(db)
 	if err != nil {
 		if err.Error() == "not found" {
-			res.JSON(404, map[string]interface{}{"error": "Post not found"})
+			res.JSON(404, NotFound())
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
