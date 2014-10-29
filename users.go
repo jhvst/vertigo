@@ -82,31 +82,31 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 // DeleteUser is a route which deletes a user from database according to session cookie.
 // The function calls Login function inside, so it also requires password in POST data.
 // Currently unavailable function on both API and frontend side.
-func DeleteUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
-	user, err := user.Login(db)
-	if err != nil {
-		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
-	err = user.Delete(db, s)
-	if err != nil {
-		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
-	switch root(req) {
-	case "api":
-		s.Delete("user")
-		res.JSON(200, map[string]interface{}{"status": "User successfully deleted"})
-		return
-	case "user":
-		s.Delete("user")
-		res.HTML(200, "User successfully deleted", nil)
-		return
-	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-}
+// func DeleteUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Session, user User) {
+// 	user, err := user.Login(db)
+// 	if err != nil {
+// 		log.Println(err)
+// 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+// 		return
+// 	}
+// 	err = user.Delete(db, s)
+// 	if err != nil {
+// 		log.Println(err)
+// 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+// 		return
+// 	}
+// 	switch root(req) {
+// 	case "api":
+// 		s.Delete("user")
+// 		res.JSON(200, map[string]interface{}{"status": "User successfully deleted"})
+// 		return
+// 	case "user":
+// 		s.Delete("user")
+// 		res.HTML(200, "User successfully deleted", nil)
+// 		return
+// 	}
+// 	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+// }
 
 // ReadUser is a route which fetches user according to parameter "id" on API side and according to retrieved
 // session cookie on frontend side.
@@ -212,6 +212,10 @@ func RecoverUser(req *http.Request, res render.Render, db *gorm.DB, user User) {
 	user, err := user.Recover(db)
 	if err != nil {
 		log.Println(err)
+		if err.Error() == "not found" {
+			res.JSON(401, map[string]interface{}{"error": "User with that email does not exist."})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -425,20 +429,20 @@ func (user User) Session(db *gorm.DB, s sessions.Session) (User, error) {
 }
 
 // Delete or user.Delete deletes the user with given ID from the database.
-func (user User) Delete(db *gorm.DB, s sessions.Session) error {
-	user, err := user.Session(db, s)
-	if err != nil {
-		return err
-	}
-	query := db.Delete(&user)
-	if query.Error != nil {
-		if query.Error == gorm.RecordNotFound {
-			return errors.New("not found")
-		}
-		return query.Error
-	}
-	return nil
-}
+// func (user User) Delete(db *gorm.DB, s sessions.Session) error {
+// 	user, err := user.Session(db, s)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	query := db.Delete(&user)
+// 	if query.Error != nil {
+// 		if query.Error == gorm.RecordNotFound {
+// 			return errors.New("not found")
+// 		}
+// 		return query.Error
+// 	}
+// 	return nil
+// }
 
 // Insert or user.Insert inserts a new User struct into the database.
 // The function creates .Digest hash from .Password.
