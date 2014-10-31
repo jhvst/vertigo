@@ -40,6 +40,8 @@ func init() {
 		panic(err)
 	}
 
+	db.LogMode(false)
+
 	// Here database and tables are created in case they do not exist yet.
 	// If database or tables do exist, nothing will happen to the original ones.
 	db.CreateTable(&User{})
@@ -62,6 +64,7 @@ func sessionchecker() martini.Handler {
 // Middleware function hooks the database to be accessible for Martini routes.
 func middleware() martini.Handler {
 	db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
+	db.LogMode(false)
 	if err != nil {
 		panic(err)
 	}
