@@ -149,11 +149,11 @@ func NewServer() Server {
 		r.Post("/settings", strict.ContentType("application/json"), binding.Json(Vertigo{}), binding.ErrorHandler, ProtectedPage, UpdateSettings)
 		r.Post("/installation", strict.ContentType("application/json"), binding.Json(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 		r.Get("/users", ReadUsers)
+		r.Get("/user/logout", LogoutUser)
 		r.Get("/user/:id", ReadUser)
 		//r.Delete("/user", DeleteUser)
 		r.Post("/user", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, CreateUser)
 		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, LoginUser)
-		r.Get("/user/logout", LogoutUser)
 
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:slug", ReadPost)
