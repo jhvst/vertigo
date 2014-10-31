@@ -94,7 +94,7 @@ func SessionRedirect(res http.ResponseWriter, req *http.Request, session session
 
 // ProtectedPage makes sure that the user is logged in. Use on pages which need authentication
 // or which have to deal with user structure later on.
-func ProtectedPage(res http.ResponseWriter, req *http.Request, session sessions.Session, render render.Render) {
+func ProtectedPage(req *http.Request, session sessions.Session, render render.Render) {
 	if !sessionIsAlive(session) {
 		session.Delete("user")
 		render.JSON(401, map[string]interface{}{"error": "Unauthorized"})
