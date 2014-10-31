@@ -152,7 +152,6 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 			res.Redirect("/user", 302)
 			return
 		}
-		return
 	}
 	settings.Firstrun = false
 	settings.AllowRegistrations = true
