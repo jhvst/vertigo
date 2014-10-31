@@ -85,6 +85,12 @@ var _ = Describe("Vertigo", func() {
 				request, _ = http.NewRequest("GET", "/user/login", nil)
 			})
 		})
+
+		Context("User reset", func() {
+			It("should respond 200 OK", func() {
+				request, _ = http.NewRequest("GET", "/user/reset/1/aaa", nil)
+			})
+		})
 	})
 
 	Describe("Empty public API routes", func() {
@@ -266,6 +272,17 @@ var _ = Describe("Vertigo", func() {
 				request.AddCookie(cookie)
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+		Context("accessing sessionredirected page like registration after signing", func() {
+
+			It("should return HTTP 302", func() {
+				request, _ := http.NewRequest("GET", "/user/login", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
 			})
 		})
 	})
@@ -661,6 +678,14 @@ var _ = Describe("Vertigo", func() {
 				settingsWithoutCookieHash = *Settings
 				settingsWithoutCookieHash.CookieHash = ""
 				Expect(settings).To(Equal(settingsWithoutCookieHash))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("frontend, reading with sessioncookies it should return 200", func() {
+				request, _ := http.NewRequest("GET", "/user/settings", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
 			})
 
