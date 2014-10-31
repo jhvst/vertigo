@@ -48,7 +48,6 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 			res.HTML(403, "user/login", "New registrations are not allowed at this time.")
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 	}
 	user, err := user.Insert(db)
 	if err != nil {
@@ -76,7 +75,6 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 		res.Redirect("/user", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // DeleteUser is a route which deletes a user from database according to session cookie.
@@ -144,7 +142,6 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		res.HTML(200, "user/index", user)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // ReadUsers is a route only available on API side, which fetches all users with post data merged.
@@ -203,7 +200,6 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gor
 		res.Redirect("/user", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // RecoverUser is a route of the first step of account recovery, which sends out the recovery
@@ -227,7 +223,6 @@ func RecoverUser(req *http.Request, res render.Render, db *gorm.DB, user User) {
 		res.Redirect("/user/login", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // ResetUserPassword is a route which is called when accessing the page generated dispatched with
@@ -279,7 +274,6 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 			return
 		}
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // LogoutUser is a route which deletes session cookie "user", from the given client.
@@ -294,7 +288,6 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 		res.Redirect("/", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // Login or user.Login is a function which retrieves user according to given .Email field.

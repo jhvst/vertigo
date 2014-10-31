@@ -124,7 +124,6 @@ func ReadSettings(req *http.Request, res render.Render, s sessions.Session) {
 		res.HTML(200, "settings", safesettings)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // UpdateSettings is a route which updates the local .json settings file.
@@ -153,7 +152,6 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 			res.Redirect("/user", 302)
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	settings.Firstrun = false
@@ -172,5 +170,4 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 		res.Redirect("/user/register", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }

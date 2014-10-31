@@ -99,7 +99,6 @@ func SearchPost(req *http.Request, db *gorm.DB, res render.Render, search Search
 		res.HTML(200, "search", search.Posts)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // Get or search.Get returns all posts which contain parameter search.Query in either
@@ -172,7 +171,6 @@ func CreatePost(req *http.Request, s sessions.Session, db *gorm.DB, res render.R
 		res.Redirect("/user", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // ReadPosts is a route which returns all posts without merged owner data (although the object does include author field)
@@ -222,7 +220,6 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 		res.HTML(200, "post/display", post)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // EditPost is a route which returns a post object to be displayed and edited on frontend.
@@ -237,15 +234,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	switch root(req) {
-	case "api":
-		res.JSON(403, map[string]interface{}{"error": "To edit a post POST to /api/post/:title/edit instead."})
-		return
-	case "post":
-		res.HTML(200, "post/edit", post)
-		return
-	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+	res.HTML(200, "post/edit", post)
 }
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
@@ -256,15 +245,16 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 	post, err := post.Get(db)
 	if err != nil {
 		log.Println(err)
+		if err.Error() == "not found" {
+			res.JSON(404, NotFound())
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	err = post.Unpublish(db)
 	if err != nil {
-		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
-			return
-		}
+		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -286,7 +276,6 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 		res.Redirect("/user", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // PublishPost is a route which publishes a post and therefore making it appear on frontpage and search.
@@ -298,7 +287,10 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
-		log.Println(err)
+		if err.Error() == "not found" {
+			res.JSON(404, NotFound())
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -334,7 +326,6 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 		res.Redirect("/post/"+post.Slug, 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // DeletePost is a route which deletes a post according to martini parameter "title".
@@ -368,7 +359,6 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 		res.Redirect("/user", 302)
 		return
 	}
-	res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 }
 
 // Insert or post.Insert inserts Post object into database.
