@@ -410,6 +410,34 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Code).To(Equal(200))
 			})
 
+			It("should return 401 without authorization", func() {
+				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+
+			It("should return 401 without malformed authorization", func() {
+				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				cookie := &http.Cookie{Name: "user", Value: "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+
+			It("should return 404 with non-existent post", func() {
+				request, _ := http.NewRequest("POST", "/api/post/foobar/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
+			})
+
 			It("should return the updated post structure", func() {
 				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
 				globalpost.Title = "First post edited"
@@ -439,7 +467,7 @@ var _ = Describe("Vertigo", func() {
 			It("after updating, the post should not be displayed trough API", func() {
 				request, _ := http.NewRequest("GET", "/api/posts", nil)
 				server.ServeHTTP(recorder, request)
-				fmt.Println(recorder.Body)
+				Expect(recorder.Code).To(Equal(200))
 				Expect(recorder.Body.String()).To(Equal("[]"))
 			})
 		})
@@ -691,10 +719,6 @@ var _ = Describe("Vertigo", func() {
 
 	Describe("Markdown", func() {
 
-		AfterEach(func() {
-			Expect(recorder.Code).To(Equal(200))
-		})
-
 		Context("switching to Markdown", func() {
 
 			It("changing settings should return HTTP 200", func() {
@@ -707,6 +731,7 @@ var _ = Describe("Vertigo", func() {
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
 				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
 			})
 
 			It("should change global Settings variable", func() {
@@ -716,6 +741,7 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(Settings.Markdown).To(Equal(true))
 				Expect(Settings.AllowRegistrations).To(Equal(false))
+				Expect(recorder.Code).To(Equal(200))
 			})
 		})
 
@@ -741,10 +767,27 @@ var _ = Describe("Vertigo", func() {
 				Expect(post.Viewcount).To(Equal(uint(0)))
 				*globalpost = post
 				flag.Set("postslug", post.Slug)
+				Expect(recorder.Code).To(Equal(200))
 			})
 		})
 
 		Context("publishing", func() {
+
+			It("should return error on non-existent ID", func() {
+				request, _ := http.NewRequest("GET", "/api/post/foo-post/publish", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
+				Expect(recorder.Code).To(Equal(404))
+			})
+
+			It("should return error without authentication", func() {
+				request, _ := http.NewRequest("GET", "/api/post/markdown-post/publish", nil)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+				Expect(recorder.Code).To(Equal(401))
+			})
 
 			It("with session data should return HTTP 200", func() {
 				request, _ := http.NewRequest("GET", "/api/post/markdown-post/publish", nil)
@@ -752,6 +795,7 @@ var _ = Describe("Vertigo", func() {
 				request.AddCookie(cookie)
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
+				Expect(recorder.Code).To(Equal(200))
 			})
 		})
 	})
