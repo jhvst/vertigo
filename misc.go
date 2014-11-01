@@ -1,7 +1,7 @@
 // This file contains bunch of miscful helper functions.
 // The functions here are either too rare to be assiociated to some known file
 // or are met more or less everywhere across the code.
-package main
+package vertigo
 
 import (
 	"log"

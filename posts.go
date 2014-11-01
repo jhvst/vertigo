@@ -1,7 +1,7 @@
 // This file contains about everything related to posts. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
 // to the ones in users.go.
-package main
+package vertigo
 
 import (
 	"bufio"

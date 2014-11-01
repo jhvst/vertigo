@@ -1,2 +1,2 @@
 // Blog in Go
-package main
+package vertigo
