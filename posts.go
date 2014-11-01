@@ -337,6 +337,10 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 	post.Slug = params["slug"]
 	post, err := post.Get(db)
 	if err != nil {
+		if err.Error() == "not found" {
+			res.JSON(404, NotFound())
+			return
+		}
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
@@ -464,6 +468,9 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 	}
 	if post.Author == user.ID {
 		query := db.Where(&Post{Slug: post.Slug}).Delete(&post)
+		if query.Error == gorm.RecordNotFound {
+			return errors.New("not found")
+		}
 		if query.Error != nil {
 			return query.Error
 		}

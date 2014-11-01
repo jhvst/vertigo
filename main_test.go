@@ -29,6 +29,7 @@ var _ = Describe("Vertigo", func() {
 	var server Server
 	var request *http.Request
 	var recorder *httptest.ResponseRecorder
+	var malformedsessioncookie = "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="
 
 	BeforeEach(func() {
 		// Set up a new server, connected to a test database,
@@ -437,7 +438,7 @@ var _ = Describe("Vertigo", func() {
 
 			It("should return 401 without malformed authorization", func() {
 				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				cookie := &http.Cookie{Name: "user", Value: "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="}
+				cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
 				request.AddCookie(cookie)
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
@@ -625,14 +626,25 @@ var _ = Describe("Vertigo", func() {
 
 		Context("deleting third post", func() {
 
-			It("without sessioncookies it should return 401", func() {
+			It("should return 401 without sessioncookies", func() {
 				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
 				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
 			})
 
-			It("with sessioncookies it should return 200", func() {
+			It("should return 404 when trying to delete non-existent post", func() {
+				request, _ := http.NewRequest("GET", "/api/post/foobar/delete", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
+			})
+
+			It("should return 200 with sessioncookies", func() {
 				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
 				request.AddCookie(cookie)
