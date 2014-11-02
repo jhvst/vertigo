@@ -30,6 +30,7 @@ var _ = Describe("Vertigo", func() {
 	var request *http.Request
 	var recorder *httptest.ResponseRecorder
 	var malformedsessioncookie = "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="
+	var secondusersessioncookie string
 
 	BeforeEach(func() {
 		// Set up a new server, connected to a test database,
@@ -634,6 +635,16 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
 			})
 
+			It("should return when using malformed sessioncookie", func() {
+				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
+				cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+
 			It("should return 404 when trying to delete non-existent post", func() {
 				request, _ := http.NewRequest("GET", "/api/post/foobar/delete", nil)
 				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
@@ -1077,4 +1088,84 @@ var _ = Describe("Vertigo", func() {
 		})
 	})
 
+	Describe("Second user", func() {
+
+		Context("creation", func() {
+
+			It("updating with sessioncookie", func() {
+				var settings Vertigo
+				settings = *Settings
+				settings.AllowRegistrations = true
+				payload, _ := json.Marshal(settings)
+				request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Body.String()).To(Equal(`{"success":"Settings were successfully saved"}`))
+				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should return HTTP 200", func() {
+				payload := `{"name": "Juuso", "password": "foo", "email": "vertigo-test2@mailinator.com"}`
+				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal(`{"id":2,"name":"Juuso","email":"vertigo-test2@mailinator.com","posts":[]}`))
+			})
+		})
+
+		Context("signing in", func() {
+
+			It("should return HTTP 200", func() {
+				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "vertigo-test2@mailinator.com"}`))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				// i assure, nothing else worked
+				cookie := strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
+				secondusersessioncookie = cookie
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal(`{"id":2,"name":"Juuso","email":"vertigo-test2@mailinator.com","posts":[]}`))
+			})
+		})
+
+		Context("updating a post of another user", func() {
+
+			It("should return the updated post structure", func() {
+				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited twice", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+		})
+
+		Context("publishing a post of another user", func() {
+
+			It("should return 401", func() {
+				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
+				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+		})
+
+		Context("deleting a post of another user", func() {
+
+			It("should return 401", func() {
+				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
+				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
+			})
+		})
+	})
 })

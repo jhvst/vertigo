@@ -239,7 +239,7 @@ func EditPost(req *http.Request, params martini.Params, res render.Render, db *g
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
 // Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
-func UpdatePost(req *http.Request, params martini.Params, res render.Render, db *gorm.DB, entry Post) {
+func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB, entry Post) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get(db)
@@ -252,9 +252,13 @@ func UpdatePost(req *http.Request, params martini.Params, res render.Render, db 
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	err = post.Unpublish(db)
+	err = post.Unpublish(db, s)
 	if err != nil {
 		log.Println(err)
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -313,7 +317,6 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 			return
 		}
 	} else {
-		log.Println("unauthorized attempt to publish post with post", post, "and user", user)
 		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 		return
 	}
@@ -446,13 +449,22 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 }
 
 // Unpublishes a post
-func (post Post) Unpublish(db *gorm.DB) error {
-	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Update("published", false)
-	if query.Error != nil {
-		if query.Error == gorm.RecordNotFound {
-			return errors.New("not found")
+func (post Post) Unpublish(db *gorm.DB, s sessions.Session) error {
+	var user User
+	user, err := user.Session(db, s)
+	if err != nil {
+		return err
+	}
+	if post.Author == user.ID {
+		query := db.Where(&Post{Slug: post.Slug}).Find(&post).Update("published", false)
+		if query.Error != nil {
+			if query.Error == gorm.RecordNotFound {
+				return errors.New("not found")
+			}
+			return query.Error
 		}
-		return query.Error
+	} else {
+		return errors.New("unauthorized")
 	}
 	return nil
 }
