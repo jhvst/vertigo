@@ -26,8 +26,8 @@ import (
 // all posts made by the user.
 type User struct {
 	ID       int64  `json:"id" gorm:"primary_key:yes"`
-	Name     string `json:"name" form:"name" binding:"required"`
-	Password string `json:"-" form:"password" sql:"-"`
+	Name     string `json:"name" form:"name"`
+	Password string `json:"password,omitempty" form:"password" sql:"-"`
 	Recovery string `json:"-"`
 	Digest   []byte `json:"-"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
@@ -68,6 +68,7 @@ func CreateUser(req *http.Request, res render.Render, db *gorm.DB, s sessions.Se
 	switch root(req) {
 	case "api":
 		s.Set("user", user.ID)
+		user.Password = ""
 		res.JSON(200, user)
 		return
 	case "user":
@@ -117,6 +118,7 @@ func ReadUser(req *http.Request, params martini.Params, res render.Render, s ses
 		if err != nil {
 			log.Println(err)
 			res.JSON(400, map[string]interface{}{"error": "The user ID could not be parsed from the request URL."})
+			return
 		}
 		user.ID = int64(id)
 		user, err := user.Get(db)
@@ -163,9 +165,9 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 // When called by API it responds with user struct.
 // On frontend call it redirects the client to "/user" page.
 func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gorm.DB, user User) {
-	user, err := user.Login(db)
 	switch root(req) {
 	case "api":
+		user, err := user.Login(db)
 		if err != nil {
 			log.Println(err)
 			if err.Error() == "wrong username or password" {
@@ -173,16 +175,18 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gor
 				return
 			}
 			if err.Error() == "not found" {
-				res.JSON(401, map[string]interface{}{"error": "User with that email does not exist."})
+				res.JSON(404, map[string]interface{}{"error": "User with that email does not exist."})
 				return
 			}
 			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
 		s.Set("user", user.ID)
+		user.Password = ""
 		res.JSON(200, user)
 		return
 	case "user":
+		user, err := user.Login(db)
 		if err != nil {
 			log.Println(err)
 			if err.Error() == "wrong username or password" {
@@ -190,7 +194,7 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, db *gor
 				return
 			}
 			if err.Error() == "not found" {
-				res.HTML(401, "user/login", "User with that email does not exist.")
+				res.HTML(404, "user/login", "User with that email does not exist.")
 				return
 			}
 			res.HTML(500, "user/login", "Internal server error. Please try again.")
@@ -231,13 +235,17 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		res.JSON(400, map[string]interface{}{"error": "User ID could not be parsed from request URL."})
 		return
 	}
 	user.ID = int64(id)
 	entry, err := user.Get(db)
 	if err != nil {
 		log.Println(err)
+		if err.Error() == "not found" {
+			res.JSON(404, map[string]interface{}{"error": "User with that ID does not exist."})
+			return
+		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -295,11 +303,12 @@ func LogoutUser(req *http.Request, s sessions.Session, res render.Render) {
 // If the .Password and .Digest match, the function returns the requested User struct, but with
 // the .Password and .Digest omitted.
 func (user User) Login(db *gorm.DB) (User, error) {
+	password := user.Password
 	user, err := user.GetByEmail(db)
 	if err != nil {
 		return user, err
 	}
-	if !CompareHash(user.Digest, user.Password) {
+	if !CompareHash(user.Digest, password) {
 		return user, errors.New("wrong username or password")
 	}
 	return user, nil

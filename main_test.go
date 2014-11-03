@@ -235,6 +235,13 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
 			})
 
+			It("malformed ID should return HTTP 400", func() {
+				request, _ := http.NewRequest("GET", "/api/user/foobar", nil)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(400))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"The user ID could not be parsed from the request URL."}`))
+			})
+
 			It("should be then listed on /users", func() {
 				request, _ := http.NewRequest("GET", "/api/users", nil)
 				server.ServeHTTP(recorder, request)
@@ -252,6 +259,36 @@ var _ = Describe("Vertigo", func() {
 		})
 
 		Context("signing in", func() {
+
+			It("should return 401 with wrong password on frontend", func() {
+				request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=foobar&email=vertigo-test@mailinator.com`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+			})
+
+			It("should return 401 with wrong password", func() {
+				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "vertigo-test@mailinator.com"}`))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(401))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Wrong username or password."}`))
+			})
+
+			It("should return 404 with non-existent email", func() {
+				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "foobar@mailinator.com"}`))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"User with that email does not exist."}`))
+			})
+
+			It("should return 404 with non-existent email on frontend", func() {
+				request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=Juuso&email=foobar@mailinator.com`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+			})
 
 			It("should return HTTP 200", func() {
 				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "vertigo-test@mailinator.com"}`))
@@ -1000,6 +1037,30 @@ var _ = Describe("Vertigo", func() {
 		})
 
 		Context("resetting the password", func() {
+
+			It("should return HTTP 400 when ID is malformed", func() {
+				request, _ := http.NewRequest("POST", "/user/reset/foobar/"+recovery, strings.NewReader(`password=newpassword`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(400))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"User ID could not be parsed from request URL."}`))
+			})
+
+			It("should return HTTP 400 when recovery UUID is malformed", func() {
+				request, _ := http.NewRequest("POST", "/user/reset/1/foobar", strings.NewReader(`password=newpassword`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(400))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"Could not parse UUID from the request."}`))
+			})
+
+			It("should return HTTP 404 when ID is non-existent", func() {
+				request, _ := http.NewRequest("POST", "/user/reset/5/"+recovery, strings.NewReader(`password=newpassword`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(404))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"User with that ID does not exist."}`))
+			})
 
 			It("the route should redirect", func() {
 				request, _ := http.NewRequest("POST", "/user/reset/1/"+recovery, strings.NewReader(`password=newpassword`))
