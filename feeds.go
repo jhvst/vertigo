@@ -1,5 +1,5 @@
 // Feeds.go contain HTTP routes for rendering RSS and Atom feeds.
-package vertigo
+package main
 
 import (
 	"log"

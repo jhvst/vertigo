@@ -1,6 +1,6 @@
 // Main.go contains settings related to the web server, such as
 // template helper functions, HTTP routes and Martini settings.
-package vertigo
+package main
 
 import (
 	"html"

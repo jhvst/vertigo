@@ -1,6 +1,6 @@
 // This file contains two cryptographic functions for both storing and comparing passwords.
 // You should not modify this file unless you know what you are doing.
-package vertigo
+package main
 
 import (
 	"code.google.com/p/go.crypto/bcrypt"

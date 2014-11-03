@@ -1,6 +1,6 @@
 // Settings.go includes everything you would think site-wide settings need. It also contains a installation wizard
 // route at the bottom of the file. You generally should not need to change anything in here.
-package vertigo
+package main
 
 import (
 	"encoding/json"
