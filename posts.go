@@ -265,10 +265,6 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 	post, err = post.Update(db, entry)
 	if err != nil {
 		log.Println(err)
-		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "You are not allowed to do that"})
-			return
-		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
