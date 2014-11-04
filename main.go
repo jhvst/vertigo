@@ -101,10 +101,10 @@ func NewServer() Server {
 		})
 		r.Get("/:slug", ReadPost)
 		r.Get("/:slug/edit", ProtectedPage, EditPost)
-		r.Post("/:slug/edit", switchroute, ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
+		r.Post("/:slug/edit", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/:slug/delete", ProtectedPage, DeletePost)
 		r.Get("/:slug/publish", ProtectedPage, PublishPost)
-		r.Post("/new", switchroute, ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
+		r.Post("/new", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
 		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
 	})
@@ -139,7 +139,7 @@ func NewServer() Server {
 		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), LoginUser)
 		r.Get("/logout", LogoutUser)
 
-	}, switchroute)
+	})
 
 	m.Group("/api", func(r martini.Router) {
 
@@ -165,7 +165,7 @@ func NewServer() Server {
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
 		r.Post("/post/search", strict.ContentType("application/json"), binding.Json(Search{}), binding.ErrorHandler, SearchPost)
 
-	}, switchroute)
+	})
 
 	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
 	return m

@@ -107,13 +107,3 @@ func ProtectedPage(req *http.Request, session sessions.Session, render render.Re
 func root(req *http.Request) string {
 	return strings.Split(strings.TrimPrefix(req.URL.String(), "/"), "/")[0]
 }
-
-func switchroute(req *http.Request, render render.Render) {
-	switch root(req) {
-	case "api":
-		return
-	case "user":
-		return
-	}
-	render.JSON(400, map[string]interface{}{"error": "Request URL path does not start with /api/ or /user/."})
-}
