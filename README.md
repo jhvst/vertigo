@@ -55,14 +55,6 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 * `MAILGUN_SMTP_LOGIN` - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
 * `DATABASE_URL` - Database connection URL for PostgreSQL - if not declared, SQLite will be used
 
-##Screenshots
-
-![](http://i.imgur.com/EGlBhjP.png)
-![](http://i.imgur.com/0AfvQnW.png)
-![](http://i.imgur.com/AeC9xml.png)
-![](http://i.imgur.com/rDlM9IX.png)
-![](http://i.imgur.com/EwFcRfq.png)
-
 ##Features
 
 - Installation wizard
