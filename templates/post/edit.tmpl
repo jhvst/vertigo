@@ -8,9 +8,10 @@
 		<textarea class="markdown" name="markdown" id="text"></textarea>
 		<script type="text/javascript">
 			document.getElementById("text").value = toMarkdown({{unescape .Content}})
-		</script>		
+		</script>
 		{{else}}
 		<textarea class="hidden" name="content"></textarea>
+		<textarea class="hidden" name="markdown"></textarea>
 		<section id="text" contenteditable="true">{{unescape .Content}}</section>
 		{{end}}
 	</fieldset>
@@ -56,7 +57,7 @@
 		}
 	}
 
-	{{end}}	
+	{{end}}
 
 	// For a yet another unknown reason we need two instances of localstorage.
 	// Fundamentally analogous to the loop above.

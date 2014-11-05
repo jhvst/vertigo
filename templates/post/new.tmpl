@@ -5,8 +5,8 @@
 		{{if Markdown}}
 		<textarea class="markdown" name="markdown"></textarea>
 		{{else}}
-		<textarea class="hidden" name="content"></textarea>		
-		{{end}}		
+		<textarea class="hidden" name="content"></textarea>
+		{{end}}
 		<section id="text" contenteditable="true"></section>
 	</fieldset>
 </form>
@@ -71,7 +71,7 @@
 		localStorage.removeItem("c");
 		var html = document.getElementById("text").innerHTML;
 		{{if Markdown}}
-		{{else}}		
+		{{else}}
 		document.new.content.value = html;
 		{{end}}
 		return
