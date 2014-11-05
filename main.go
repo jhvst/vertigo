@@ -17,9 +17,8 @@ import (
 	"github.com/pkg/browser"
 )
 
-type Server *martini.ClassicMartini
-
-func NewServer() Server {
+// NewServer spaws a new Vertigo server
+func NewServer() *martini.ClassicMartini {
 
 	helpers := template.FuncMap{
 		// Unescape unescapes and parses HTML from database objects.

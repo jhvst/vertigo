@@ -49,7 +49,7 @@ func init() {
 // You can call it globally anywhere by simply using the Settings keyword. For example
 // fmt.Println(Settings.Name) will print out your site's name.
 // As mentioned in the Vertigo struct, be careful when dealing with the Firstun and CookieHash values.
-var Settings *Vertigo = VertigoSettings()
+var Settings = VertigoSettings()
 
 // VertigoSettings populates the global namespace with data from settings.json.
 // If the file does not exist, it creates it.
@@ -87,7 +87,7 @@ func VertigoSettings() *Vertigo {
 	return settings
 }
 
-// Save() or Settings.Save() is a method which replaces the global Settings structure with the structure is is called with.
+// Save or Settings.Save is a method which replaces the global Settings structure with the structure is is called with.
 // It has builtin variable declaration which prevents you from overwriting CookieHash field.
 func (settings *Vertigo) Save() error {
 	var old Vertigo

@@ -392,6 +392,8 @@ func (user User) Get(db *gorm.DB) (User, error) {
 	return user, nil
 }
 
+// GetByEmail or user.GetByEmail returns User object according to given .Email
+// with post information merged.
 func (user User) GetByEmail(db *gorm.DB) (User, error) {
 	var posts []Post
 	query := db.Where(&User{Email: user.Email}).First(&user)

@@ -444,7 +444,8 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 	return post, nil
 }
 
-// Unpublishes a post
+// Unpublish or post.Unpublish unpublishes a post by updating the Published value to false.
+// Gorm specific, declared only because the libaray has a bug.
 func (post Post) Unpublish(db *gorm.DB, s sessions.Session) error {
 	var user User
 	user, err := user.Session(db, s)

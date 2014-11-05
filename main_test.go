@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
+	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
@@ -26,7 +27,7 @@ var globalpost *Post = &Post{}
 
 var _ = Describe("Vertigo", func() {
 
-	var server Server
+	var server *martini.ClassicMartini
 	var request *http.Request
 	var recorder *httptest.ResponseRecorder
 	var malformedsessioncookie = "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="

@@ -18,6 +18,7 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// NotFound is a shorthand JSON response for HTTP 404 errors.
 func NotFound() map[string]interface{} {
 	return map[string]interface{}{"error": "Not found"}
 }
