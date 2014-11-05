@@ -197,7 +197,7 @@ func ReadPosts(res render.Render, db *gorm.DB) {
 func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render, db *gorm.DB) {
 	var post Post
 	if params["slug"] == "new" {
-		res.JSON(406, map[string]interface{}{"error": "You cant name a post with colliding route name!"})
+		res.JSON(400, map[string]interface{}{"error": "There can't be a post called 'new'."})
 		return
 	}
 	post.Slug = params["slug"]
@@ -476,10 +476,10 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 	}
 	if post.Author == user.ID {
 		query := db.Where(&Post{Slug: post.Slug}).Delete(&post)
-		if query.Error == gorm.RecordNotFound {
-			return errors.New("not found")
-		}
 		if query.Error != nil {
+			if query.Error == gorm.RecordNotFound {
+				return errors.New("not found")
+			}
 			return query.Error
 		}
 	} else {

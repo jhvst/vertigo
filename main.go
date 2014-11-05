@@ -155,6 +155,8 @@ func NewServer() Server {
 		//r.Delete("/user", DeleteUser)
 		r.Post("/user", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, CreateUser)
 		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, LoginUser)
+		r.Post("/user/recover", strict.ContentType("application/json"), binding.Json(User{}), RecoverUser)
+		r.Post("/user/reset/:id/:recovery", strict.ContentType("application/json"), binding.Json(User{}), ResetUserPassword)
 
 		r.Get("/posts", ReadPosts)
 		r.Get("/post/:slug", ReadPost)

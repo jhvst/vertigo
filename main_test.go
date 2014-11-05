@@ -122,11 +122,11 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
 			})
 
-			It("should respond with []", func() {
+			It("should respond with 404", func() {
 				request, _ = http.NewRequest("GET", "/api/post/0", nil)
 			})
 
-			It("should respond with []", func() {
+			It("should respond with 404", func() {
 				request, _ = http.NewRequest("GET", "/api/user/0", nil)
 			})
 		})
@@ -375,6 +375,13 @@ var _ = Describe("Vertigo", func() {
 				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
 			})
 
+			It("should return 406 when accessing slug called `new`", func() {
+				request, _ := http.NewRequest("GET", "/api/post/new", nil)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(400))
+				Expect(recorder.Body.String()).To(Equal(`{"error":"There can't be a post called 'new'."}`))
+			})
+
 			It("post which exists should return 200 OK", func() {
 				request, _ := http.NewRequest("GET", "/api/post/"+*postslug, nil)
 				server.ServeHTTP(recorder, request)
@@ -492,6 +499,15 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(404))
 				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
+			})
+
+			It("should return HTTP 302 when using frontend", func() {
+				request, _ := http.NewRequest("POST", "/post/"+*postslug+"/edit", strings.NewReader(`title=First post edited&content=This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
 			})
 
 			It("should return the updated post structure", func() {
@@ -632,6 +648,14 @@ var _ = Describe("Vertigo", func() {
 				request.AddCookie(cookie)
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should return 302 on frontend", func() {
+				request, _ := http.NewRequest("GET", "/post/third-post/publish", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
 			})
 		})
 
@@ -791,11 +815,18 @@ var _ = Describe("Vertigo", func() {
 
 	Describe("Users", func() {
 
-		Context("creation", func() {
+		Context("creation after allowregistrations is false", func() {
 
-			It("should return HTTP 403 because allowregistrations is false", func() {
+			It("should return HTTP 403", func() {
 				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "hello", "email": "bar@example.com"}`))
 				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(403))
+			})
+
+			It("should return HTTP 403 on frontend", func() {
+				request, _ := http.NewRequest("POST", "/user/register", strings.NewReader(`name=Juuso&password=hello&email=bar@example.com`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(403))
 			})
@@ -826,6 +857,28 @@ var _ = Describe("Vertigo", func() {
 				server.ServeHTTP(recorder, request)
 				Expect(Settings.Markdown).To(Equal(true))
 				Expect(Settings.AllowRegistrations).To(Equal(false))
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+		Context("accessing control panel after changing settings", func() {
+
+			It("should show that we can't edit pages", func() {
+				request, _ := http.NewRequest("GET", "/user", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+			})
+		})
+
+		Context("loading post creation page after changing settings", func() {
+
+			It("should check whether we have Markdown enabled", func() {
+				request, _ := http.NewRequest("GET", "/post/new", nil)
+				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
+				request.AddCookie(cookie)
+				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
 			})
 		})
@@ -963,6 +1016,21 @@ var _ = Describe("Vertigo", func() {
 			})
 		})
 
+		Context("searching for the published Markdown using the content", func() {
+
+			It("should return it", func() {
+				request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foo`))
+				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				server.ServeHTTP(recorder, request)
+				doc, err := goquery.NewDocumentFromReader(recorder.Body)
+				if err != nil {
+					panic(err)
+				}
+				sel := doc.Find("h1").Text()
+				Expect(sel).To(Equal("Markdown post"))
+			})
+		})
+
 		Context("searching with a query which is not contained in any post on frontend", func() {
 
 			It("should display nothing found page", func() {
@@ -985,9 +1053,14 @@ var _ = Describe("Vertigo", func() {
 
 			It("should return HTTP 200", func() {
 				request, _ := http.NewRequest("GET", "/api/user/logout", nil)
-				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(200))
+			})
+
+			It("should return HTTP 302 on frontend", func() {
+				request, _ := http.NewRequest("GET", "/user/logout", nil)
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(302))
 			})
 		})
 	})
@@ -1014,6 +1087,14 @@ var _ = Describe("Vertigo", func() {
 				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 				server.ServeHTTP(recorder, request)
 				Expect(recorder.Code).To(Equal(302))
+			})
+
+			It("should respond with success message", func() {
+				request, _ := http.NewRequest("POST", "/api/user/recover", strings.NewReader(`{"email":"vertigo-test@mailinator.com"}`))
+				request.Header.Set("Content-Type", "application/json")
+				server.ServeHTTP(recorder, request)
+				Expect(recorder.Code).To(Equal(200))
+				Expect(recorder.Body.String()).To(Equal(`{"success":"We've sent you a link to your email which you may use you reset your password."}`))
 			})
 		})
 
@@ -1063,10 +1144,10 @@ var _ = Describe("Vertigo", func() {
 			})
 
 			It("the route should redirect", func() {
-				request, _ := http.NewRequest("POST", "/user/reset/1/"+recovery, strings.NewReader(`password=newpassword`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+				request, _ := http.NewRequest("POST", "/api/user/reset/1/"+recovery, strings.NewReader(`{"password":"newpassword"}`))
+				request.Header.Set("Content-Type", "application/json")
 				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
+				Expect(recorder.Code).To(Equal(200))
 			})
 
 			It("should not have the recovery key in place", func() {
