@@ -3,8 +3,8 @@
 
 <pre><code class="go">type User struct {
 	ID       int64  `json:"id" gorm:"primary_key:yes"`
-	Name     string `json:"name" form:"name" binding:"required"`
-	Password string `json:"-" form:"password" sql:"-"`
+	Name     string `json:"name" form:"name"`
+	Password string `json:"password,omitempty" form:"password" sql:"-"`
 	Recovery string `json:"-"`
 	Digest   []byte `json:"-"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
