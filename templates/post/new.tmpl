@@ -3,11 +3,11 @@
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" placeholder="Title"></h1>
 		{{if Markdown}}
-		<textarea class="markdown" name="markdown"></textarea>
+		<textarea class="markdown" name="markdown" id="text"></textarea>
 		{{else}}
 		<textarea class="hidden" name="content"></textarea>
-		{{end}}
 		<section id="text" contenteditable="true"></section>
+		{{end}}
 	</fieldset>
 </form>
 <script type="text/javascript">
