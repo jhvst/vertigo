@@ -27,7 +27,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 	}
 
 	feed := &feeds.Feed{
-		Title:       Settings.Hostname,
+		Title:       Settings.Name,
 		Link:        &feeds.Link{Href: urlhost},
 		Description: Settings.Description,
 	}
