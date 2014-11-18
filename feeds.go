@@ -21,9 +21,14 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 
 	w.Header().Set("Content-Type", "application/xml")
 
+	urlhost := Settings.Hostname
+	if ! strings.HasPrefix(urlhost, "http://") && ! strings.HasPrefix(urlhost, "https://") {
+		urlhost = "http://" + urlhost
+	}
+
 	feed := &feeds.Feed{
 		Title:       Settings.Hostname,
-		Link:        &feeds.Link{Href: "http://" + Settings.Hostname},
+		Link:        &feeds.Link{Href: urlhost},
 		Description: Settings.Description,
 	}
 
@@ -48,9 +53,10 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 
 		// The email in &feeds.Author is not actually exported, as it is left out by user.Get().
 		// However, the package panics if too few values are exported, so that will do.
+	
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: "http://" + Settings.Hostname + "/" + post.Slug},
+			Link:        &feeds.Link{Href: urlhost + "/" + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Date, 0),
