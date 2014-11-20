@@ -21,10 +21,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 
 	w.Header().Set("Content-Type", "application/xml")
 
-	urlhost := Settings.Hostname
-	if ! strings.HasPrefix(urlhost, "http://") && ! strings.HasPrefix(urlhost, "https://") {
-		urlhost = "http://" + urlhost
-	}
+	urlhost := urlHost()
 
 	feed := &feeds.Feed{
 		Title:       Settings.Name,
@@ -56,7 +53,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 	
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: urlhost + "/" + post.Slug},
+			Link:        &feeds.Link{Href: urlhost + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Date, 0),
