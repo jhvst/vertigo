@@ -7,7 +7,6 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"strings"
 	"strconv"
 	"time"
 
@@ -491,12 +490,9 @@ func (user User) GetAll(db *gorm.DB) ([]User, error) {
 func (user User) SendRecoverMail() error {
 	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, "")
 	id := strconv.Itoa(int(user.ID))
-	urlhost := Settings.Hostname
-	if ! strings.HasPrefix(urlhost, "http://") && ! strings.HasPrefix(urlhost, "https://") {
-		urlhost = "http://" + urlhost
-	}
-	
-	m := mailgun.NewMessage("Password Reset <postmaster@"+Settings.Mailer.Domain+">", "Password Reset", "Somebody requested password recovery on this email. You may reset your password through this link: "+urlhost+"/user/reset/"+id+"/"+user.Recovery, "Recipient <"+user.Email+">")
+	urlhost := urlHost()
+
+	m := mailgun.NewMessage("Password Reset <postmaster@"+Settings.Mailer.Domain+">", "Password Reset", "Somebody requested password recovery on this email. You may reset your password through this link: "+urlhost+"user/reset/"+id+"/"+user.Recovery, "Recipient <"+user.Email+">")
 	if _, _, err := gun.Send(m); err != nil {
 		return err
 	}
