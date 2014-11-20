@@ -108,3 +108,15 @@ func ProtectedPage(req *http.Request, session sessions.Session, render render.Re
 func root(req *http.Request) string {
 	return strings.Split(strings.TrimPrefix(req.URL.String(), "/"), "/")[0]
 }
+
+// Gives a good clean standard urlHost
+func urlHost() (url string) {
+	url = Settings.Hostname
+	if ! strings.HasPrefix(url, "http://") && ! strings.HasPrefix(url, "https://") {
+		url = "http://" + url
+	}
+	if ! strings.HasSuffix(url, "/") {
+		url += "/"
+	}
+	return
+}
