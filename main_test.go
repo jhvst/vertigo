@@ -54,7 +54,7 @@ var _ = Describe("Vertigo", func() {
 					panic(err)
 				}
 				sel := doc.Find("h1").First().Text()
-				Expect(sel).To(Equal("Your settings file seems to miss some fields. Lets fix that."))
+				Expect(sel).To(Equal("Your settings file seems to be missing some fields. Lets fix that."))
 			})
 		})
 	})
