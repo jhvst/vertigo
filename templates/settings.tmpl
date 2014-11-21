@@ -31,8 +31,8 @@
 		<br><br>
 
 		<label>Hostname</label>
-		<p>Hostname is used to generate RSS and Atom links which lead somewhere. Also used in password reminder email template. Please leave out the http:// or https:// prefix.</p>
-		<input name="hostname" placeholder="example.com" required="required" value="{{.Hostname}}">
+		<p>The URL used to generate RSS and Atom links and any emails that link back to your site. This should be the absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
+		<input name="hostname" placeholder="http://example.com" required="required"  value="{{.Hostname}}">
 
 		<br><br>
 
