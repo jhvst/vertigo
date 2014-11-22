@@ -1,11 +1,11 @@
 <form action="/user/register" method="post">
 	<fieldset>
-		<legend>Register to Vertigo</legend>
+		<legend>Register to {{ title . }}</legend>
 
 		<input name="name" placeholder="Name" required="required" autofocus>
 		<input type="email" name="email" placeholder="Email" required="required">
 		<input type="password" name="password" placeholder="Password" required="required">
 
-		<button type="submit">Submit</button>
+		<button type="submit">Register</button>
 	</fieldset>
 </form>
