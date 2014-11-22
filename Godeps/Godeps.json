@@ -28,8 +28,8 @@
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
-			"Comment": "v0.3.2-30-g12a8512",
-			"Rev": "12a851277896ab3921778fea9543634284691034"
+			"Comment": "v0.3.2-58-gffa8a68",
+			"Rev": "ffa8a68c9f2882d21c77b65737c84e2f8690fa1f"
 		},
 		{
 			"ImportPath": "github.com/boj/redistore",
