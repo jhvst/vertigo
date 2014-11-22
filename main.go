@@ -27,13 +27,30 @@ func NewServer() *martini.ClassicMartini {
 			return template.HTML(html.UnescapeString(s))
 		},
 		// Title renders post name as a page title.
-		// Otherwise it defaults to Vertigo.
 		"title": func(t interface{}) string {
 			post, exists := t.(Post)
 			if exists {
 				return post.Title
 			}
 			return Settings.Name
+		},
+		// Page Title renders page title.
+		"pagetitle": func(t interface{}) string {
+			if Settings.Name == "" {
+				return "Vertigo"
+			}
+			return Settings.Name
+		},
+		// Description renders page description.
+		"description": func(t interface{}) string {
+			if Settings.Description == "" {
+				return "Blog in Go"
+			}
+			return Settings.Description
+		},
+		// Hostname renders page hostname.
+		"hostname": func(t interface{}) string {
+			return urlHost()
 		},
 		// Date helper returns unix date as more readable one in string format. Format of YYYY-MM-DD
 		// https://html.spec.whatwg.org/multipage/semantics.html#datetime-value
