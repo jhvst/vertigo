@@ -1,11 +1,12 @@
 package goquery
 
 import (
-	"code.google.com/p/go.net/html"
 	"errors"
 	"io"
 	"net/http"
 	"net/url"
+
+	"golang.org/x/net/html"
 )
 
 // Document represents an HTML document to be manipulated. Unlike jQuery, which
@@ -70,6 +71,11 @@ func NewDocumentFromResponse(res *http.Response) (*Document, error) {
 	return newDocument(root, res.Request.URL), nil
 }
 
+// CloneDocument creates a deep-clone of a document.
+func CloneDocument(doc *Document) *Document {
+	return newDocument(cloneNode(doc.rootNode), doc.Url)
+}
+
 // Private constructor, make sure all fields are correctly filled.
 func newDocument(root *html.Node, url *url.URL) *Document {
 	// Create and fill the document
@@ -95,4 +101,13 @@ func newEmptySelection(doc *Document) *Selection {
 // Helper constructor to create a selection of only one node
 func newSingleSelection(node *html.Node, doc *Document) *Selection {
 	return &Selection{[]*html.Node{node}, doc, nil}
+}
+
+// Matcher is an interface that defines the methods to match
+// HTML nodes against a compiled selector string. Cascadia's
+// Selector implements this interface.
+type Matcher interface {
+	Match(*html.Node) bool
+	MatchAll(*html.Node) []*html.Node
+	Filter([]*html.Node) []*html.Node
 }
