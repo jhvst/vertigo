@@ -8,24 +8,30 @@ build:
     - setup-go-workspace
 
     # Gets the dependencies
+
+    - script:
+        name: godep
+        code: |
+          cd $WERCKER_SOURCE_DIR
+          go get github.com/tools/godep
+
     - script:
         name: go get
         code: |
-          cd $WERCKER_SOURCE_DIR
           go version
-          go get -t ./...
+          godep get -t ./...
 
     # Build the project
     - script:
         name: go build
         code: |
-          go build ./...
+          godep go build ./...
 
     # Test the project
     - script:
         name: go test
         code: |
-          go test ./...
+          godep go test ./...
 
     - tcnksm/goveralls:
         token: $COVERALLS_TOKEN
