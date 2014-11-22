@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/9uuso/vertigo",
-	"GoVersion": "go1.2",
+	"GoVersion": "go1.3.3",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/cascadia",
@@ -14,11 +14,6 @@
 		},
 		{
 			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
-			"Comment": "null-192",
-			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
-		},
-		{
-			"ImportPath": "code.google.com/p/go.crypto/blowfish",
 			"Comment": "null-192",
 			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
 		},
@@ -37,12 +32,25 @@
 			"Rev": "12a851277896ab3921778fea9543634284691034"
 		},
 		{
+			"ImportPath": "github.com/boj/redistore",
+			"Comment": "v1",
+			"Rev": "9d1554b400d726c7aa54b6e4a836f273b72b97f7"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/inject",
 			"Rev": "9aea7a2fa5b79ef7fc00f63a575e72df33b4e886"
 		},
 		{
 			"ImportPath": "github.com/fiam/gounidecode/unidecode",
 			"Rev": "311ebb7422d3ff70cc1d064c5a297520ff5f304a"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/internal",
+			"Rev": "cca3df8fa0670249a3f746bcc062c69aeba0517c"
+		},
+		{
+			"ImportPath": "github.com/garyburd/redigo/redis",
+			"Rev": "cca3df8fa0670249a3f746bcc062c69aeba0517c"
 		},
 		{
 			"ImportPath": "github.com/go-martini/martini",
@@ -126,6 +134,10 @@
 			"Rev": "3ca2515afb00bc39bc77d27cdbce85a7caaf103e"
 		},
 		{
+			"ImportPath": "github.com/oxtoacart/bpool",
+			"Rev": "0f78ff9152c03745d1a47c9023af1b424e202c07"
+		},
+		{
 			"ImportPath": "github.com/pkg/browser",
 			"Rev": "2e6fb17d7a7cb6a81837ee68158214d9098de905"
 		},
@@ -133,6 +145,16 @@
 			"ImportPath": "github.com/russross/blackfriday",
 			"Comment": "v1.2-17-g05b8cef",
 			"Rev": "05b8cefd6a3cd87b81adb83479f5faadc0df2a67"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/blowfish",
+			"Comment": "null-236",
+			"Rev": "69e2a90ed92d03812364aeb947b7068dc42e561e"
+		},
+		{
+			"ImportPath": "golang.org/x/net/html",
+			"Comment": "null-223",
+			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
 		}
 	]
 }
