@@ -19,7 +19,7 @@ build:
         name: go get
         code: |
           go version
-          godep get -t ./...
+          godep get ./...
 
     # Build the project
     - script:
