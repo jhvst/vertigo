@@ -4,8 +4,8 @@
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/cascadia",
-			"Comment": "null-30",
-			"Rev": "4f03c71bc42ba0015a68bea86422f0ecbb71bf70"
+			"Comment": "null-31",
+			"Rev": "5d796540e3cb93ea0556c897e6a3c7690f614d35"
 		},
 		{
 			"ImportPath": "code.google.com/p/go-uuid/uuid",
@@ -19,8 +19,8 @@
 		},
 		{
 			"ImportPath": "code.google.com/p/go.net/html",
-			"Comment": "null-145",
-			"Rev": "81cc697d50c43e5525cf90ae3fa1699a51e02324"
+			"Comment": "null-223",
+			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
 		},
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
