@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"fmt"
+	"go/ast"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -25,11 +26,11 @@ func (scope *Scope) buildWhereCondition(clause map[string]interface{}) (str stri
 		} else {
 			str = value
 		}
-	case int, int64, int32:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return scope.primaryCondiation(scope.AddToVars(value))
 	case sql.NullInt64:
 		return scope.primaryCondiation(scope.AddToVars(value.Int64))
-	case []int64, []int, []int32, []string:
+	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
 		str = fmt.Sprintf("(%v in (?))", scope.Quote(scope.PrimaryKey()))
 		clause["args"] = []interface{}{value}
 	case map[string]interface{}:
@@ -84,9 +85,9 @@ func (scope *Scope) buildNotCondition(clause map[string]interface{}) (str string
 			str = fmt.Sprintf("(%v NOT IN (?))", scope.Quote(value))
 			notEqualSql = fmt.Sprintf("(%v <> ?)", scope.Quote(value))
 		}
-	case int, int64, int32:
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
 		return fmt.Sprintf("(%v <> %v)", scope.Quote(scope.PrimaryKey()), value)
-	case []int64, []int, []int32, []string:
+	case []int, []int8, []int16, []int32, []int64, []uint, []uint8, []uint16, []uint32, []uint64, []string:
 		if reflect.ValueOf(value).Len() > 0 {
 			str = fmt.Sprintf("(%v not in (?))", scope.Quote(scope.PrimaryKey()))
 			clause["args"] = []interface{}{value}
@@ -124,6 +125,34 @@ func (scope *Scope) buildNotCondition(clause map[string]interface{}) (str string
 				arg, _ = scanner.Value()
 			}
 			str = strings.Replace(notEqualSql, "?", scope.AddToVars(arg), 1)
+		}
+	}
+	return
+}
+
+func (scope *Scope) buildSelectQuery(clause map[string]interface{}) (str string) {
+	switch value := clause["query"].(type) {
+	case string:
+		str = value
+	case []string:
+		str = strings.Join(value, ", ")
+	}
+
+	args := clause["args"].([]interface{})
+	for _, arg := range args {
+		switch reflect.TypeOf(arg).Kind() {
+		case reflect.Slice:
+			values := reflect.ValueOf(arg)
+			var tempMarks []string
+			for i := 0; i < values.Len(); i++ {
+				tempMarks = append(tempMarks, scope.AddToVars(values.Index(i).Interface()))
+			}
+			str = strings.Replace(str, "?", strings.Join(tempMarks, ","), 1)
+		default:
+			if valuer, ok := interface{}(arg).(driver.Valuer); ok {
+				arg, _ = valuer.Value()
+			}
+			str = strings.Replace(str, "?", scope.AddToVars(arg), 1)
 		}
 	}
 	return
@@ -180,11 +209,18 @@ func (scope *Scope) whereSql() (sql string) {
 }
 
 func (s *Scope) selectSql() string {
-	if len(s.Search.Select) == 0 {
+	if len(s.Search.Selects) == 0 {
 		return "*"
-	} else {
-		return s.Search.Select
 	}
+
+	var selectQueries []string
+
+	for _, clause := range s.Search.Selects {
+		selectQueries = append(selectQueries, s.buildSelectQuery(clause))
+	}
+
+	return strings.Join(selectQueries, ", ")
+
 }
 
 func (s *Scope) orderSql() string {
@@ -475,7 +511,8 @@ func (scope *Scope) related(value interface{}, foreignKeys ...string) *Scope {
 
 				// has one
 				if foreignValue, err := scope.FieldValueByName(foreignKey); err == nil {
-					toScope.inlineCondition(foreignValue).callCallbacks(scope.db.parent.callback.queries)
+					sql := fmt.Sprintf("%v = ?", scope.Quote(toScope.PrimaryKey()))
+					toScope.inlineCondition(sql, foreignValue).callCallbacks(scope.db.parent.callback.queries)
 					return scope
 				}
 			}
@@ -511,12 +548,20 @@ func (scope *Scope) createJoinTable(field *Field) {
 
 func (scope *Scope) createTable() *Scope {
 	var sqls []string
-	for _, field := range scope.Fields() {
-		if field.IsNormal {
-			sqlTag := scope.sqlTagForField(field)
-			sqls = append(sqls, scope.Quote(field.DBName)+" "+sqlTag)
+	fields := scope.Fields()
+	scopeType := scope.IndirectValue().Type()
+	for i := 0; i < scopeType.NumField(); i++ {
+		if !ast.IsExported(scopeType.Field(i).Name) {
+			continue
 		}
-		scope.createJoinTable(field)
+		for _, field := range scope.fieldFromStruct(scopeType.Field(i), false) {
+			field = fields[field.DBName]
+			if field.IsNormal {
+				sqlTag := scope.sqlTagForField(field)
+				sqls = append(sqls, scope.Quote(field.DBName)+" "+sqlTag)
+			}
+			scope.createJoinTable(field)
+		}
 	}
 	scope.Raw(fmt.Sprintf("CREATE TABLE %v (%v)", scope.QuotedTableName(), strings.Join(sqls, ","))).Exec()
 	return scope

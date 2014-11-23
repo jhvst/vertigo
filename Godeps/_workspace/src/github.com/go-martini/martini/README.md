@@ -1,9 +1,15 @@
-# Martini  [![wercker status](https://app.wercker.com/status/174bef7e3c999e103cacfe2770102266 "wercker status")](https://app.wercker.com/project/bykey/174bef7e3c999e103cacfe2770102266) [![GoDoc](https://godoc.org/github.com/go-martini/martini?status.png)](http://godoc.org/github.com/go-martini/martini)
+# Martini  [![wercker status](https://app.wercker.com/status/9b7dbc6e2654b604cd694d191c3d5487/s/master "wercker status")](https://app.wercker.com/project/bykey/9b7dbc6e2654b604cd694d191c3d5487)[![GoDoc](https://godoc.org/github.com/go-martini/martini?status.png)](http://godoc.org/github.com/go-martini/martini)
 
 Martini is a powerful package for quickly writing modular web applications/services in Golang.
 
-Language Translations: [Simplified Chinese (zh_CN)](translations/README_zh_cn.md)
-
+Language Translations:
+* [简体中文](translations/README_zh_cn.md)
+* [Português Brasileiro (pt_BR)](translations/README_pt_br.md)
+* [Español](translations/README_es_ES.md)
+* [한국어 번역](translations/README_ko_kr.md)
+* [Русский](translations/README_ru_RU.md)
+* [日本語](translations/README_ja_JP.md)
+* [French](translations/README_fr_FR.md)
 
 ## Getting Started
 
@@ -41,6 +47,11 @@ Join the [Mailing list](https://groups.google.com/forum/#!forum/martini-go)
 
 Watch the [Demo Video](http://martini.codegangsta.io/#demo)
 
+Ask questions on Stackoverflow using the [martini tag](http://stackoverflow.com/questions/tagged/martini)
+
+GoDoc [documentation](http://godoc.org/github.com/go-martini/martini)
+
+
 ## Features
 * Extremely simple to use.
 * Non-intrusive design.
@@ -50,6 +61,7 @@ Watch the [Demo Video](http://martini.codegangsta.io/#demo)
 * Lots of good handlers/middlewares to use.
 * Great 'out of the box' feature set.
 * **Fully compatible with the [http.HandlerFunc](http://godoc.org/net/http#HandlerFunc) interface.**
+* Default document serving (e.g., for serving AngularJS apps in HTML5 mode).
 
 ## More Middleware
 For more middleware and functionality, check out the repositories in the  [martini-contrib](https://github.com/martini-contrib) organization.
@@ -103,7 +115,7 @@ m.Get("/", func() (int, string) {
 ~~~
 
 #### Service Injection
-Handlers are invoked via reflection. Martini makes use of *Dependency Injection* to resolve dependencies in a Handlers argument list. **This makes Martini completely  compatible with golang's `http.HandlerFunc` interface.** 
+Handlers are invoked via reflection. Martini makes use of *Dependency Injection* to resolve dependencies in a Handlers argument list. **This makes Martini completely  compatible with golang's `http.HandlerFunc` interface.**
 
 If you add an argument to your Handler, Martini will search its list of services and attempt to resolve the dependency via type assertion:
 ~~~ go
@@ -163,12 +175,20 @@ m.Get("/hello/:name", func(params martini.Params) string {
 })
 ~~~
 
-Routes can be matched with regular expressions and globs as well:
+Routes can be matched with globs:
 ~~~ go
 m.Get("/hello/**", func(params martini.Params) string {
   return "Hello " + params["_1"]
 })
 ~~~
+
+Regular expressions can be used as well:
+~~~go
+m.Get("/hello/(?P<name>[a-zA-Z]+)", func(params martini.Params) string {
+  return fmt.Sprintf ("Hello %s", params["name"])
+})
+~~~
+Take a look at the [Go documentation](http://golang.org/pkg/regexp/syntax/) for more info about regular expressions syntax .
 
 Route handlers can be stacked on top of each other, which is useful for things like authentication and authorization:
 ~~~ go
@@ -235,6 +255,20 @@ You can serve from more directories by adding more [martini.Static](http://godoc
 m.Use(martini.Static("assets")) // serve from the "assets" directory as well
 ~~~
 
+#### Serving a Default Document
+You can specify the URL of a local file to serve when the requested URL is not
+found. You can also specify an exclusion prefix so that certain URLs are ignored.
+This is useful for servers that serve both static files and have additional
+handlers defined (e.g., REST API). When doing so, it's useful to define the
+static handler as a part of the NotFound chain.
+
+The following example serves the `/index.html` file whenever any URL is
+requested that does not match any local file and does not start with `/api/v`:
+~~~ go
+static := martini.Static("assets", martini.StaticOptions{Fallback: "/index.html", Exclude: "/api/v"})
+r.NotFound(static, http.NotFound)
+~~~
+
 ## Middleware Handlers
 Middleware Handlers sit between the incoming http request and the router. In essence they are no different than any other Handler in Martini. You can add a middleware handler to the stack like so:
 ~~~ go
@@ -270,14 +304,14 @@ m.Use(func(c martini.Context, log *log.Logger){
   log.Println("before a request")
 
   c.Next()
-  
+
   log.Println("after a request")
 })
 ~~~
 
 ## Martini Env
 
-Some Martini handlers make use of the `martini.Env` global variable to provide special functionality for development environments vs production environments. It is reccomended that the `MARTINI_ENV=production` environment variable to be set when deploying a Martini server into a production environment.
+Some Martini handlers make use of the `martini.Env` global variable to provide special functionality for development environments vs production environments. It is recommended that the `MARTINI_ENV=production` environment variable to be set when deploying a Martini server into a production environment.
 
 ## FAQ
 
@@ -297,10 +331,11 @@ Start by looking in the [martini-contrib](https://github.com/martini-contrib) pr
 * [encoder](https://github.com/martini-contrib/encoder) - Encoder service for rendering data in several formats and content negotiation.
 * [cors](https://github.com/martini-contrib/cors) - Handler that enables CORS support.
 * [oauth2](https://github.com/martini-contrib/oauth2) - Handler that provides OAuth 2.0 login for Martini apps. Google Sign-in, Facebook Connect and Github login is supported.
+* [vauth](https://github.com/rafecolton/vauth) - Handlers for vender webhook authentication (currently GitHub and TravisCI)
 
 ### How do I integrate with existing servers?
 
-A Martini instance implements `http.Handler`, so it can easily be used to serve subtrees 
+A Martini instance implements `http.Handler`, so it can easily be used to serve subtrees
 on existing Go servers. For example this is a working Martini app for Google App Engine:
 
 ~~~ go

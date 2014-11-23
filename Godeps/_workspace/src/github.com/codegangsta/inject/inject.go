@@ -121,7 +121,7 @@ func (inj *injector) Apply(val interface{}) error {
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Field(i)
 		structField := t.Field(i)
-		if f.CanSet() && structField.Tag == "inject" {
+		if f.CanSet() && (structField.Tag == "inject" || structField.Tag.Get("inject") != "") {
 			ft := f.Type()
 			v := inj.Get(ft)
 			if !v.IsValid() {
@@ -157,10 +157,29 @@ func (i *injector) Set(typ reflect.Type, val reflect.Value) TypeMapper {
 
 func (i *injector) Get(t reflect.Type) reflect.Value {
 	val := i.values[t]
+
+	if val.IsValid() {
+		return val
+	}
+
+	// no concrete types found, try to find implementors
+	// if t is an interface
+	if t.Kind() == reflect.Interface {
+		for k, v := range i.values {
+			if k.Implements(t) {
+				val = v
+				break
+			}
+		}
+	}
+
+	// Still no type found, try to look it up on the parent
 	if !val.IsValid() && i.parent != nil {
 		val = i.parent.Get(t)
 	}
+
 	return val
+
 }
 
 func (i *injector) SetParent(parent Injector) {

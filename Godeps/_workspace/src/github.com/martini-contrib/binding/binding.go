@@ -1,5 +1,6 @@
-// Package binding transforms, with validation, a raw request into
-// a populated structure used by your application logic.
+// Package binding transforms a raw request into a struct
+// ready to be used your application. It can also perform
+// validation on the data and handle errors.
 package binding
 
 import (
@@ -15,16 +16,14 @@ import (
 )
 
 /*
-	To the land of Middle-ware Earth:
+	For the land of Middle-ware Earth:
 		One func to rule them all,
 		One func to find them,
 		One func to bring them all,
 		And in this package BIND them.
 */
 
-// Bind accepts a copy of an empty struct and populates it with
-// values from the request (if deserialization is successful). It
-// wraps up the functionality of the Form and Json middleware
+// Bind wraps up the functionality of the Form and Json middleware
 // according to the Content-Type and verb of the request.
 // A Content-Type is required for POST and PUT requests.
 // Bind invokes the ErrorHandler middleware to bail out if errors
@@ -44,13 +43,13 @@ func Bind(obj interface{}, ifacePtr ...interface{}) martini.Handler {
 			} else if strings.Contains(contentType, "json") {
 				context.Invoke(Json(obj, ifacePtr...))
 			} else {
-				errors := newErrors()
+				var errors Errors
 				if contentType == "" {
-					errors.Overall[ContentTypeError] = "Empty Content-Type"
+					errors.Add([]string{}, ContentTypeError, "Empty Content-Type")
 				} else {
-					errors.Overall[ContentTypeError] = "Unsupported Content-Type"
+					errors.Add([]string{}, ContentTypeError, "Unsupported Content-Type")
 				}
-				context.Map(*errors)
+				context.Map(errors)
 			}
 		} else {
 			context.Invoke(Form(obj, ifacePtr...))
@@ -71,9 +70,10 @@ func Bind(obj interface{}, ifacePtr ...interface{}) martini.Handler {
 // to map the struct to a specific interface.
 func Form(formStruct interface{}, ifacePtr ...interface{}) martini.Handler {
 	return func(context martini.Context, req *http.Request) {
+		var errors Errors
+
 		ensureNotPointer(formStruct)
 		formStruct := reflect.New(reflect.TypeOf(formStruct))
-		errors := newErrors()
 		parseErr := req.ParseForm()
 
 		// Format validation of the request body or the URL would add considerable overhead,
@@ -81,41 +81,44 @@ func Form(formStruct interface{}, ifacePtr ...interface{}) martini.Handler {
 		// Because an empty request body or url can also mean absence of all needed values,
 		// it is not in all cases a bad request, so let's return 422.
 		if parseErr != nil {
-			errors.Overall[DeserializationError] = parseErr.Error()
+			errors.Add([]string{}, DeserializationError, parseErr.Error())
 		}
-
 		mapForm(formStruct, req.Form, nil, errors)
-
 		validateAndMap(formStruct, context, errors, ifacePtr...)
 	}
 }
 
+// MultipartForm works much like Form, except it can parse multipart forms
+// and handle file uploads. Like the other deserialization middleware handlers,
+// you can pass in an interface to make the interface available for injection
+// into other handlers later.
 func MultipartForm(formStruct interface{}, ifacePtr ...interface{}) martini.Handler {
 	return func(context martini.Context, req *http.Request) {
+		var errors Errors
+
 		ensureNotPointer(formStruct)
 		formStruct := reflect.New(reflect.TypeOf(formStruct))
-		errors := newErrors()
 
-		// Workaround for multipart forms returning nil instead of an error
-		// when content is not multipart
-		// https://code.google.com/p/go/issues/detail?id=6334
-		multipartReader, err := req.MultipartReader()
-		if err != nil {
-			errors.Overall[DeserializationError] = err.Error()
-		} else {
-			form, parseErr := multipartReader.ReadForm(MaxMemory)
-
-			if parseErr != nil {
-				errors.Overall[DeserializationError] = parseErr.Error()
+		// This if check is necessary due to https://github.com/martini-contrib/csrf/issues/6
+		if req.MultipartForm == nil {
+			// Workaround for multipart forms returning nil instead of an error
+			// when content is not multipart; see https://code.google.com/p/go/issues/detail?id=6334
+			if multipartReader, err := req.MultipartReader(); err != nil {
+				// TODO: Cover this and the next error check with tests
+				errors.Add([]string{}, DeserializationError, err.Error())
+			} else {
+				form, parseErr := multipartReader.ReadForm(MaxMemory)
+				if parseErr != nil {
+					errors.Add([]string{}, DeserializationError, parseErr.Error())
+				}
+				req.MultipartForm = form
 			}
-
-			req.MultipartForm = form
 		}
 
 		mapForm(formStruct, req.MultipartForm.Value, req.MultipartForm.File, errors)
-
 		validateAndMap(formStruct, context, errors, ifacePtr...)
 	}
+
 }
 
 // Json is middleware to deserialize a JSON payload from the request
@@ -125,16 +128,18 @@ func MultipartForm(formStruct interface{}, ifacePtr ...interface{}) martini.Hand
 // to map the struct to a specific interface.
 func Json(jsonStruct interface{}, ifacePtr ...interface{}) martini.Handler {
 	return func(context martini.Context, req *http.Request) {
+		var errors Errors
+
 		ensureNotPointer(jsonStruct)
+
 		jsonStruct := reflect.New(reflect.TypeOf(jsonStruct))
-		errors := newErrors()
 
 		if req.Body != nil {
 			defer req.Body.Close()
-		}
-
-		if err := json.NewDecoder(req.Body).Decode(jsonStruct.Interface()); err != nil && err != io.EOF {
-			errors.Overall[DeserializationError] = err.Error()
+			err := json.NewDecoder(req.Body).Decode(jsonStruct.Interface())
+			if err != nil && err != io.EOF {
+				errors.Add([]string{}, DeserializationError, err.Error())
+			}
 		}
 
 		validateAndMap(jsonStruct, context, errors, ifacePtr...)
@@ -142,23 +147,47 @@ func Json(jsonStruct interface{}, ifacePtr ...interface{}) martini.Handler {
 }
 
 // Validate is middleware to enforce required fields. If the struct
-// passed in is a Validator, then the user-defined Validate method
+// passed in implements Validator, then the user-defined Validate method
 // is executed, and its errors are mapped to the context. This middleware
-// performs no error handling: it merely detects them and maps them.
+// performs no error handling: it merely detects errors and maps them.
 func Validate(obj interface{}) martini.Handler {
 	return func(context martini.Context, req *http.Request) {
-		errors := newErrors()
-		validateStruct(errors, obj)
+		var errors Errors
 
-		if validator, ok := obj.(Validator); ok {
-			validator.Validate(errors, req)
+		v := reflect.ValueOf(obj)
+		k := v.Kind()
+
+		if k == reflect.Interface || k == reflect.Ptr {
+
+			v = v.Elem()
+			k = v.Kind()
 		}
-		context.Map(*errors)
 
+		if k == reflect.Slice || k == reflect.Array {
+
+			for i := 0; i < v.Len(); i++ {
+
+				e := v.Index(i).Interface()
+				errors = validateStruct(errors, e)
+
+				if validator, ok := e.(Validator); ok {
+					errors = validator.Validate(errors, req)
+				}
+			}
+		} else {
+
+			errors = validateStruct(errors, obj)
+
+			if validator, ok := obj.(Validator); ok {
+				errors = validator.Validate(errors, req)
+			}
+		}
+		context.Map(errors)
 	}
 }
 
-func validateStruct(errors *Errors, obj interface{}) {
+// Performs required field checking on a struct
+func validateStruct(errors Errors, obj interface{}) Errors {
 	typ := reflect.TypeOf(obj)
 	val := reflect.ValueOf(obj)
 
@@ -170,31 +199,40 @@ func validateStruct(errors *Errors, obj interface{}) {
 	for i := 0; i < typ.NumField(); i++ {
 		field := typ.Field(i)
 
-		// Allow ignored fields in the struct
-		if field.Tag.Get("form") == "-" {
+		// Skip ignored and unexported fields in the struct
+		if field.Tag.Get("form") == "-" || !val.Field(i).CanInterface() {
 			continue
 		}
 
 		fieldValue := val.Field(i).Interface()
 		zero := reflect.Zero(field.Type).Interface()
 
+		// Validate nested and embedded structs (if pointer, only do so if not nil)
+		if field.Type.Kind() == reflect.Struct ||
+			(field.Type.Kind() == reflect.Ptr && !reflect.DeepEqual(zero, fieldValue) &&
+				field.Type.Elem().Kind() == reflect.Struct) {
+			errors = validateStruct(errors, fieldValue)
+		}
+
 		if strings.Index(field.Tag.Get("binding"), "required") > -1 {
-			if field.Type.Kind() == reflect.Struct {
-				validateStruct(errors, fieldValue)
-			} else if reflect.DeepEqual(zero, fieldValue) {
+			if reflect.DeepEqual(zero, fieldValue) {
 				name := field.Name
 				if j := field.Tag.Get("json"); j != "" {
 					name = j
 				} else if f := field.Tag.Get("form"); f != "" {
 					name = f
 				}
-				errors.Fields[name] = RequireError
+				errors.Add([]string{name}, RequiredError, "Required")
 			}
 		}
 	}
+	return errors
 }
 
-func mapForm(formStruct reflect.Value, form map[string][]string, formfile map[string][]*multipart.FileHeader, errors *Errors) {
+// Takes values from the form data and puts them into a struct
+func mapForm(formStruct reflect.Value, form map[string][]string,
+	formfile map[string][]*multipart.FileHeader, errors Errors) {
+
 	if formStruct.Kind() == reflect.Ptr {
 		formStruct = formStruct.Elem()
 	}
@@ -204,7 +242,13 @@ func mapForm(formStruct reflect.Value, form map[string][]string, formfile map[st
 		typeField := typ.Field(i)
 		structField := formStruct.Field(i)
 
-		if typeField.Type.Kind() == reflect.Struct {
+		if typeField.Type.Kind() == reflect.Ptr && typeField.Anonymous {
+			structField.Set(reflect.New(typeField.Type.Elem()))
+			mapForm(structField.Elem(), form, formfile, errors)
+			if reflect.DeepEqual(structField.Elem().Interface(), reflect.Zero(structField.Elem().Type()).Interface()) {
+				structField.Set(reflect.Zero(structField.Type()))
+			}
+		} else if typeField.Type.Kind() == reflect.Struct {
 			mapForm(structField, form, formfile, errors)
 		} else if inputFieldName := typeField.Tag.Get("form"); inputFieldName != "" {
 			if !structField.CanSet() {
@@ -247,20 +291,20 @@ func mapForm(formStruct reflect.Value, form map[string][]string, formfile map[st
 }
 
 // ErrorHandler simply counts the number of errors in the
-// context and, if more than 0, writes a 400 Bad Request
-// response and a JSON payload describing the errors with
-// the "Content-Type" set to "application/json".
+// context and, if more than 0, writes a response with an
+// error code and a JSON payload describing the errors.
+// The response will have a JSON content-type.
 // Middleware remaining on the stack will not even see the request
 // if, by this point, there are any errors.
 // This is a "default" handler, of sorts, and you are
 // welcome to use your own instead. The Bind middleware
 // invokes this automatically for convenience.
 func ErrorHandler(errs Errors, resp http.ResponseWriter) {
-	if errs.Count() > 0 {
-		resp.Header().Set("Content-Type", "application/json; charset=utf-8")
-		if _, ok := errs.Overall[DeserializationError]; ok {
+	if len(errs) > 0 {
+		resp.Header().Set("Content-Type", jsonContentType)
+		if errs.Has(DeserializationError) {
 			resp.WriteHeader(http.StatusBadRequest)
-		} else if _, ok := errs.Overall[ContentTypeError]; ok {
+		} else if errs.Has(ContentTypeError) {
 			resp.WriteHeader(http.StatusUnsupportedMediaType)
 		} else {
 			resp.WriteHeader(StatusUnprocessableEntity)
@@ -275,7 +319,7 @@ func ErrorHandler(errs Errors, resp http.ResponseWriter) {
 // matching value from the request (via Form middleware) in the
 // same type, so that not all deserialized values have to be strings.
 // Supported types are string, int, float, and bool.
-func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value, nameInTag string, errors *Errors) {
+func setWithProperType(valueKind reflect.Kind, val string, structField reflect.Value, nameInTag string, errors Errors) {
 	switch valueKind {
 	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
 		if val == "" {
@@ -283,7 +327,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		}
 		intVal, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
-			errors.Fields[nameInTag] = IntegerTypeError
+			errors.Add([]string{nameInTag}, TypeError, "Value could not be parsed as integer")
 		} else {
 			structField.SetInt(intVal)
 		}
@@ -293,7 +337,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		}
 		uintVal, err := strconv.ParseUint(val, 10, 64)
 		if err != nil {
-			errors.Fields[nameInTag] = IntegerTypeError
+			errors.Add([]string{nameInTag}, TypeError, "Value could not be parsed as unsigned integer")
 		} else {
 			structField.SetUint(uintVal)
 		}
@@ -303,7 +347,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		}
 		boolVal, err := strconv.ParseBool(val)
 		if err != nil {
-			errors.Fields[nameInTag] = BooleanTypeError
+			errors.Add([]string{nameInTag}, TypeError, "Value could not be parsed as boolean")
 		} else {
 			structField.SetBool(boolVal)
 		}
@@ -313,7 +357,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		}
 		floatVal, err := strconv.ParseFloat(val, 32)
 		if err != nil {
-			errors.Fields[nameInTag] = FloatTypeError
+			errors.Add([]string{nameInTag}, TypeError, "Value could not be parsed as 32-bit float")
 		} else {
 			structField.SetFloat(floatVal)
 		}
@@ -323,7 +367,7 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 		}
 		floatVal, err := strconv.ParseFloat(val, 64)
 		if err != nil {
-			errors.Fields[nameInTag] = FloatTypeError
+			errors.Add([]string{nameInTag}, TypeError, "Value could not be parsed as 64-bit float")
 		} else {
 			structField.SetFloat(floatVal)
 		}
@@ -333,7 +377,6 @@ func setWithProperType(valueKind reflect.Kind, val string, structField reflect.V
 }
 
 // Don't pass in pointers to bind to. Can lead to bugs. See:
-// https://github.com/codegangsta/martini-contrib/issues/40
 // https://github.com/codegangsta/martini-contrib/pull/34#issuecomment-29683659
 func ensureNotPointer(obj interface{}) {
 	if reflect.TypeOf(obj).Kind() == reflect.Ptr {
@@ -344,56 +387,32 @@ func ensureNotPointer(obj interface{}) {
 // Performs validation and combines errors from validation
 // with errors from deserialization, then maps both the
 // resulting struct and the errors to the context.
-func validateAndMap(obj reflect.Value, context martini.Context, errors *Errors, ifacePtr ...interface{}) {
+func validateAndMap(obj reflect.Value, context martini.Context, errors Errors, ifacePtr ...interface{}) {
 	context.Invoke(Validate(obj.Interface()))
-	errors.combine(getErrors(context))
-	context.Map(*errors)
+	errors = append(errors, getErrors(context)...)
+	context.Map(errors)
 	context.Map(obj.Elem().Interface())
 	if len(ifacePtr) > 0 {
 		context.MapTo(obj.Elem().Interface(), ifacePtr[0])
 	}
 }
 
-func newErrors() *Errors {
-	return &Errors{make(map[string]string), make(map[string]string)}
-}
-
+// getErrors simply gets the errors from the context (it's kind of a chore)
 func getErrors(context martini.Context) Errors {
 	return context.Get(reflect.TypeOf(Errors{})).Interface().(Errors)
 }
 
-func (this *Errors) combine(other Errors) {
-	for key, val := range other.Fields {
-		if _, exists := this.Fields[key]; !exists {
-			this.Fields[key] = val
-		}
-	}
-	for key, val := range other.Overall {
-		if _, exists := this.Overall[key]; !exists {
-			this.Overall[key] = val
-		}
-	}
-}
-
-// Total errors is the sum of errors with the request overall
-// and errors on individual fields.
-func (self Errors) Count() int {
-	return len(self.Overall) + len(self.Fields)
-}
-
 type (
-	// Errors represents the contract of the response body when the
-	// binding step fails before getting to the application.
-	Errors struct {
-		Overall map[string]string `json:"overall"`
-		Fields  map[string]string `json:"fields"`
-	}
-
-	// Implement the Validator interface to define your own input
-	// validation before the request even gets to your application.
-	// The Validate method will be executed during the validation phase.
+	// Implement the Validator interface to handle some rudimentary
+	// request validation logic so your application doesn't have to.
 	Validator interface {
-		Validate(*Errors, *http.Request)
+		// Validate validates that the request is OK. It is recommended
+		// that validation be limited to checking values for syntax and
+		// semantics, enough to know that you can make sense of the request
+		// in your application. For example, you might verify that a credit
+		// card number matches a valid pattern, but you probably wouldn't
+		// perform an actual credit card authorization here.
+		Validate(Errors, *http.Request) Errors
 	}
 )
 
@@ -404,12 +423,6 @@ var (
 )
 
 const (
-	RequireError         string = "Required"
-	ContentTypeError     string = "ContentTypeError"
-	DeserializationError string = "DeserializationError"
-	IntegerTypeError     string = "IntegerTypeError"
-	BooleanTypeError     string = "BooleanTypeError"
-	FloatTypeError       string = "FloatTypeError"
-
-	StatusUnprocessableEntity int = 422
+	jsonContentType           = "application/json; charset=utf-8"
+	StatusUnprocessableEntity = 422
 )

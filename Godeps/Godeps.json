@@ -9,22 +9,12 @@
 		},
 		{
 			"ImportPath": "code.google.com/p/go-uuid/uuid",
-			"Comment": "null-10",
-			"Rev": "5fac954758f5aa282478dc07fbb8709fe9575184"
-		},
-		{
-			"ImportPath": "code.google.com/p/go.crypto/bcrypt",
-			"Comment": "null-192",
-			"Rev": "2990fc550b9ff92bc33c848f92c87a305ae62934"
-		},
-		{
-			"ImportPath": "code.google.com/p/go.net/html",
-			"Comment": "null-223",
-			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
+			"Comment": "null-12",
+			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
 		},
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
-			"Rev": "dd956d58793a60e8b088fe73a405f36a0bf0c470"
+			"Rev": "6d62ea56a769d2c8447b5d2e4782f2f747ef2eb3"
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
@@ -38,7 +28,8 @@
 		},
 		{
 			"ImportPath": "github.com/codegangsta/inject",
-			"Rev": "9aea7a2fa5b79ef7fc00f63a575e72df33b4e886"
+			"Comment": "v1.0-rc1-4-g4b81725",
+			"Rev": "4b8172520a03fa190f427bbd284db01b459bfce7"
 		},
 		{
 			"ImportPath": "github.com/fiam/gounidecode/unidecode",
@@ -54,8 +45,8 @@
 		},
 		{
 			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v0.1-149-g7cea1b3",
-			"Rev": "7cea1b34e29976de64195b7cca1f668cad9abc8d"
+			"Comment": "v1.0-64-g9707286",
+			"Rev": "9707286a18c2d7d2c9c90b6bf19949e1d17d2cdb"
 		},
 		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
@@ -64,51 +55,51 @@
 		},
 		{
 			"ImportPath": "github.com/gorilla/context",
-			"Rev": "1be7a086a5fd6440ef16fe96baeda0c78282b980"
+			"Rev": "14f550f51af52180c2eefed15e5fd18d63c0a64a"
 		},
 		{
 			"ImportPath": "github.com/gorilla/feeds",
-			"Rev": "ced1bd794b051ade0f28996a2cdd7524676c5851"
+			"Rev": "2e133eb352fab1ff3569ee169e9a3a94f69c9081"
 		},
 		{
 			"ImportPath": "github.com/gorilla/securecookie",
-			"Rev": "972f32923fd3555b7f0ea39acdc4e3d4d5412ee8"
+			"Rev": "f0559d009e6943011cd1ba6eb16195cf5e0ed326"
 		},
 		{
 			"ImportPath": "github.com/gorilla/sessions",
-			"Rev": "c5bbe9d3d3c906d01de60189e5bfbba1d8164a80"
+			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
 		},
 		{
 			"ImportPath": "github.com/gosimple/slug",
-			"Rev": "9e21c95a064f1a57a6936f5be4026224568b2a4f"
+			"Rev": "778301ed3cec09460f140644f1d0fdcce4a1b2ba"
 		},
 		{
 			"ImportPath": "github.com/jinzhu/gorm",
-			"Rev": "0aaefebf4fdbd9ab9e8d8ad23b7a585987abdfb9"
+			"Rev": "84954e67798bd69748207dbab310c9800c29685a"
 		},
 		{
 			"ImportPath": "github.com/kennygrant/sanitize",
-			"Rev": "557f183f75194df5a90a2fb43fad35fddf0f3612"
+			"Rev": "f2c9d81a418ab09c76ed48965aae009c60e5ff67"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
-			"Rev": "c6325123e6d45115749734a8bc35060ebac74d0e"
+			"Rev": "7175accbed18058468c07811f76440d6e8d7cf19"
 		},
 		{
 			"ImportPath": "github.com/mailgun/mailgun-go",
-			"Rev": "2ca215da32e6862eb95230369e7b63eccbb9b71d"
+			"Rev": "722a32c61d08e5f3fffbb4b6ce05c61c2f72bc30"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/binding",
-			"Rev": "868aa3c906a9671878bf49eb1579bd14324456b9"
+			"Rev": "1928ed2850e7d65507ea4198d935597e43612c7d"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/render",
-			"Rev": "7b617783357fec5b5a6d4ecac82e747e4a14d1b5"
+			"Rev": "b65063311fac6cbf84d3538f5715f7847e648322"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/sessions",
-			"Rev": "5fb70e24200d12981048814d5f1732a59671fae4"
+			"Rev": "fa13114fbcf036dff8185d728651d85fcef772db"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/strict",
@@ -117,21 +108,21 @@
 		},
 		{
 			"ImportPath": "github.com/mattn/go-sqlite3",
-			"Rev": "a80c27ba3354e27b4c8dfbbd1165bc253ca7c522"
+			"Rev": "d10e2c8f62100097910367dee90a9bd89d426a44"
 		},
 		{
 			"ImportPath": "github.com/mbanzon/simplehttp",
-			"Rev": "6722b2563d432e901cc00a9d3786266501f1e5ec"
+			"Rev": "6894781bc95b6a11c8b4e4a83eedb06c8a0b4536"
 		},
 		{
 			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.1.0-11-ge809316",
-			"Rev": "e8093161dcbdab0a59dfe56f3f8c867d243ac75f"
+			"Comment": "v1.1.0-25-g9c7cbc4",
+			"Rev": "9c7cbc493e1b6f86b6c67d4538c1f42b2ac85d4f"
 		},
 		{
 			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-12-g3ca2515",
-			"Rev": "3ca2515afb00bc39bc77d27cdbce85a7caaf103e"
+			"Comment": "v1.0-25-g85936b2",
+			"Rev": "85936b29809b7df066a8d839dd105e158e510264"
 		},
 		{
 			"ImportPath": "github.com/oxtoacart/bpool",
@@ -143,8 +134,13 @@
 		},
 		{
 			"ImportPath": "github.com/russross/blackfriday",
-			"Comment": "v1.2-17-g05b8cef",
-			"Rev": "05b8cefd6a3cd87b81adb83479f5faadc0df2a67"
+			"Comment": "v1.2-21-g7c8f3c1",
+			"Rev": "7c8f3c1dcc7e0f87c62af34ee193fc3251f6d8a4"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/bcrypt",
+			"Comment": "null-236",
+			"Rev": "69e2a90ed92d03812364aeb947b7068dc42e561e"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/blowfish",

@@ -36,6 +36,11 @@ FAQ
     > You can pass some arguments into the connection string, for example, a URI.
     > See: https://github.com/mattn/go-sqlite3/issues/39
 
+* Do you want cross compiling? mingw on Linux or Mac?
+
+    > See: https://github.com/mattn/go-sqlite3/issues/106
+    > See also: http://www.limitlessfx.com/cross-compile-golang-app-for-windows-from-linux.html
+
 License
 -------
 

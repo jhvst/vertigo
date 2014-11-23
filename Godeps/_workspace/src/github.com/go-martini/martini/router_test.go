@@ -407,15 +407,54 @@ func Test_URLFor(t *testing.T) {
 		// Nothing
 	}).Name("bar")
 
+	router.Get("/baz/:id/(?P<name>[a-z]*)", func(params Params, routes Routes) {
+		// Nothing
+	}).Name("baz_id")
+
 	router.Get("/bar/:id/:name", func(params Params, routes Routes) {
 		expect(t, routes.URLFor("foo", nil), "/foo")
 		expect(t, routes.URLFor("bar", 5), "/bar/5")
+		expect(t, routes.URLFor("baz_id", 5, "john"), "/baz/5/john")
 		expect(t, routes.URLFor("bar_id", 5, "john"), "/bar/5/john")
 	}).Name("bar_id")
 
 	// code should be 200 if none is returned from the handler
 	recorder := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "http://localhost:3000/bar/foo/bar", nil)
+	context := New().createContext(recorder, req)
+	context.MapTo(router, (*Routes)(nil))
+	router.Handle(recorder, req, context)
+}
+
+func Test_AllRoutes(t *testing.T) {
+	router := NewRouter()
+
+	patterns := []string{"/foo", "/fee", "/fii"}
+	methods := []string{"GET", "POST", "DELETE"}
+	names := []string{"foo", "fee", "fii"}
+
+	router.Get("/foo", func() {}).Name("foo")
+	router.Post("/fee", func() {}).Name("fee")
+	router.Delete("/fii", func() {}).Name("fii")
+
+	for i, r := range router.All() {
+		expect(t, r.Pattern(), patterns[i])
+		expect(t, r.Method(), methods[i])
+		expect(t, r.GetName(), names[i])
+	}
+}
+
+func Test_ActiveRoute(t *testing.T) {
+	router := NewRouter()
+
+	router.Get("/foo", func(r Route) {
+		expect(t, r.Pattern(), "/foo")
+		expect(t, r.GetName(), "foo")
+	}).Name("foo")
+
+	// code should be 200 if none is returned from the handler
+	recorder := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "http://localhost:3000/foo", nil)
 	context := New().createContext(recorder, req)
 	context.MapTo(router, (*Routes)(nil))
 	router.Handle(recorder, req, context)

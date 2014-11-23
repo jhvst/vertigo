@@ -1,6 +1,6 @@
 package gorm
 
-import "strconv"
+import "fmt"
 
 type search struct {
 	db              *DB
@@ -12,7 +12,7 @@ type search struct {
 	HavingCondition map[string]interface{}
 	Orders          []string
 	Joins           string
-	Select          string
+	Selects         []map[string]interface{}
 	Offset          string
 	Limit           string
 	Group           string
@@ -30,7 +30,7 @@ func (s *search) clone() *search {
 		AssignAttrs:     s.AssignAttrs,
 		HavingCondition: s.HavingCondition,
 		Orders:          s.Orders,
-		Select:          s.Select,
+		Selects:         s.Selects,
 		Offset:          s.Offset,
 		Limit:           s.Limit,
 		Unscope:         s.Unscope,
@@ -75,8 +75,8 @@ func (s *search) order(value string, reorder ...bool) *search {
 	return s
 }
 
-func (s *search) selects(value interface{}) *search {
-	s.Select = s.getInterfaceAsSql(value)
+func (s *search) selects(query interface{}, args ...interface{}) *search {
+	s.Selects = append(s.Selects, map[string]interface{}{"query": query, "args": args})
 	return s
 }
 
@@ -125,17 +125,15 @@ func (s *search) table(name string) *search {
 }
 
 func (s *search) getInterfaceAsSql(value interface{}) (str string) {
-	switch value := value.(type) {
-	case string:
-		str = value
-	case int:
-		if value < 0 {
-			str = ""
-		} else {
-			str = strconv.Itoa(value)
-		}
+	switch value.(type) {
+	case string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		str = fmt.Sprintf("%v", value)
 	default:
 		s.db.err(InvalidSql)
+	}
+
+	if str == "-1" {
+		return ""
 	}
 	return
 }

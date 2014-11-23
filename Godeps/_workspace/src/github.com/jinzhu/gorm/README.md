@@ -101,7 +101,7 @@ import (
 )
 
 db, err := gorm.Open("postgres", "user=gorm dbname=gorm sslmode=disable")
-// db, err := gorm.Open("mysql", "gorm:gorm@/gorm?charset=utf8&parseTime=True")
+// db, err := gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True")
 // db, err := gorm.Open("sqlite3", "/tmp/gorm.db")
 
 // Get database connection handle [*sql.DB](http://golang.org/pkg/database/sql/#DB)
@@ -164,7 +164,7 @@ db.NewRecord(user) // => true
 
 db.Create(&user)
 
-// will ruturn false after `user` created
+// will return false after `user` created
 db.NewRecord(user) // => false
 
 // You could use `Save` to create record also if its primary key is null
@@ -609,6 +609,12 @@ db.Where(User{Name: "jinzhu"}).Assign(User{Age: 30}).FirstOrCreate(&user)
 ```go
 db.Select("name, age").Find(&users)
 //// SELECT name, age FROM users;
+
+db.Select([]string{"name", "age"}).Find(&users)
+//// SELECT name, age FROM users;
+
+db.Table("users").Select("COALESCE(age,?)", 42).Rows()
+//// SELECT COALESCE(age,'42') FROM users;
 ```
 
 ## Order
@@ -691,7 +697,7 @@ db.Exec("UPDATE orders SET shipped_at=? WHERE id IN (?)", time.Now, []int64{11,2
 
 ## Row & Rows
 
-You are even possible to get query result as `*sql.Row` or `*sql.Rows`
+It is even possible to get query result as `*sql.Row` or `*sql.Rows`
 
 ```go
 row := db.Table("users").Where("name = ?", "jinzhu").Select("name, age").Row() // (*sql.Row)
@@ -974,7 +980,8 @@ If you have an existing database schema, and the primary key field is different 
 ```go
 type Animal struct {
 	AnimalId     int64 `gorm:"primary_key:yes"`
-	Birthday     time.Time
+	Birthday     time.Time `sql:"DEFAULT:current_timestamp"`
+	Name         string `sql:"default:'galeone'"`
 	Age          int64
 }
 ```
@@ -988,6 +995,24 @@ type Animal struct {
 	Age         int64     `gorm:"column:age_of_the_beast"`
 }
 ```
+
+## Default values
+
+If you have defined a default value in the `sql` tag (see the struct Animal above) the generated create/update SQl will ignore these fields if is set blank data.
+
+Eg.
+
+```go
+db.Create(&Animal{Age: 99, Name: ""})
+```
+
+The generated query will be:
+
+```sql
+INSERT INTO animals("age") values('99');
+```
+
+The same thing occurs in update statements.
 
 ## More examples with query chain
 
@@ -1032,7 +1057,7 @@ db.Where("email = ?", "x@example.org").Attrs(User{RegisteredIp: "111.111.111.111
 * db.RegisterFuncation("Search", func() {})
   db.Model(&[]User{}).Limit(10).Do("Search", "search func's argument")
   db.Mode(&User{}).Do("EditForm").Get("edit_form_html")
-  DefaultValue, DefaultTimeZone, R/W Splitting, Validation
+  DefaultTimeZone, R/W Splitting, Validation
 * Github Pages
 * Includes
 * AlertColumn, DropColumn

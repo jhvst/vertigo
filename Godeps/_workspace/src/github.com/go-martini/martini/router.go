@@ -158,7 +158,14 @@ func (r *router) findRoute(name string) *route {
 type Route interface {
 	// URLWith returns a rendering of the Route's url with the given string params.
 	URLWith([]string) string
+	// Name sets a name for the route.
 	Name(string)
+	// GetName returns the name of the route.
+	GetName() string
+	// Pattern returns the pattern of the route.
+	Pattern() string
+	// Method returns the method of the route.
+	Method() string
 }
 
 type route struct {
@@ -218,13 +225,14 @@ func (r *route) Validate() {
 func (r *route) Handle(c Context, res http.ResponseWriter) {
 	context := &routeContext{c, 0, r.handlers}
 	c.MapTo(context, (*Context)(nil))
+	c.MapTo(r, (*Route)(nil))
 	context.run()
 }
 
 // URLWith returns the url pattern replacing the parameters for its values
 func (r *route) URLWith(args []string) string {
 	if len(args) > 0 {
-		reg := regexp.MustCompile(`:[^/#?()\.\\]+`)
+		reg := regexp.MustCompile(`:[^/#?()\.\\]+|\(\?P<[a-zA-Z0-9]+>.*\)`)
 		argCount := len(args)
 		i := 0
 		url := reg.ReplaceAllStringFunc(r.pattern, func(m string) string {
@@ -247,12 +255,26 @@ func (r *route) Name(name string) {
 	r.name = name
 }
 
+func (r *route) GetName() string {
+	return r.name
+}
+
+func (r *route) Pattern() string {
+	return r.pattern
+}
+
+func (r *route) Method() string {
+	return r.method
+}
+
 // Routes is a helper service for Martini's routing layer.
 type Routes interface {
 	// URLFor returns a rendered URL for the given route. Optional params can be passed to fulfill named parameters in the route.
 	URLFor(name string, params ...interface{}) string
 	// MethodsFor returns an array of methods available for the path
 	MethodsFor(path string) []string
+	// All returns an array with all the routes in the router.
+	All() []Route
 }
 
 // URLFor returns the url for the given route name.
@@ -278,6 +300,16 @@ func (r *router) URLFor(name string, params ...interface{}) string {
 	}
 
 	return route.URLWith(args)
+}
+
+func (r *router) All() []Route {
+	var ri = make([]Route, len(r.routes))
+
+	for i, route := range r.routes {
+		ri[i] = Route(route)
+	}
+
+	return ri
 }
 
 func hasMethod(methods []string, method string) bool {
