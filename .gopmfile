@@ -1,0 +1,23 @@
+[deps]
+code.google.com/p/go-uuid = 
+code.google.com/p/go.crypto = 
+github.com/9uuso/go-jaro-winkler-distance = 
+github.com/go-martini/martini = 
+github.com/go-sql-driver/mysql = 
+github.com/gorilla/feeds = 
+github.com/gosimple/slug = 
+github.com/jinzhu/gorm = 
+github.com/kennygrant/sanitize = 
+github.com/lib/pq = 
+github.com/mailgun/mailgun-go = 
+github.com/martini-contrib/binding = 
+github.com/martini-contrib/render = 
+github.com/martini-contrib/sessions = 
+github.com/martini-contrib/strict = 
+github.com/mattn/go-sqlite3 = 
+github.com/pkg/browser = 
+github.com/russross/blackfriday = 
+
+[res]
+include = templates|public
+
