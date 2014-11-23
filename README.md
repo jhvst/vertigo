@@ -43,13 +43,13 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 2. `go get github.com/tools/godep`
 3. `git clone github.com/9uuso/vertigo`
 4. `cd vertigo && godep get ./ && godep go build`
-5. Start Vertigo `PORT="80" MARTINI_ENV="production" ./vertigo`
+5. `PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ###Docker
 1. [Install docker](https://docs.docker.com/installation/)
-2. cd vertigo
-3. docker build -t "vertigo" .
-4. docker run -d -p 80:80 vertigo
+2. `cd vertigo`
+3. `docker build -t "vertigo" .`
+4. `docker run -d -p 80:80 vertigo`
 
 ###Environment variables
 * `DEV` - required to run `go test`
