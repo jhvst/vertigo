@@ -6,6 +6,7 @@ import (
 
 	"github.com/jinzhu/now"
 
+	"math/rand"
 	"testing"
 	"time"
 )
@@ -47,6 +48,19 @@ func TestFirstAndLastWithNoStdPrimaryKey(t *testing.T) {
 	DB.Order("counter desc").Find(&animal4)
 	if animal1.Counter != animal2.Counter || animal3.Counter != animal4.Counter {
 		t.Errorf("First and Last should work correctly")
+	}
+}
+
+func TestUIntPrimaryKey(t *testing.T) {
+	var animal Animal
+	DB.First(&animal, uint64(1))
+	if animal.Counter != 1 {
+		t.Errorf("Fetch a record from with a non-int primary key should work, but failed")
+	}
+
+	DB.Model(Animal{}).Where(Animal{Counter: uint64(2)}).Scan(&animal)
+	if animal.Counter != 2 {
+		t.Errorf("Fetch a record from with a non-int primary key should work, but failed")
 	}
 }
 
@@ -522,5 +536,27 @@ func TestSelectWithEscapedFieldName(t *testing.T) {
 
 	if len(names) != 3 {
 		t.Errorf("Expected 3 name, but got: %d", len(names))
+	}
+}
+
+func TestSelectWithVariables(t *testing.T) {
+	DB.Save(&User{Name: "jinzhu"})
+
+	randomNum := rand.Intn(1000000000)
+	rows, _ := DB.Table("users").Select("? as fake", randomNum).Where("fake = ?", randomNum).Rows()
+
+	if !rows.Next() {
+		t.Errorf("Should have returned at least one row")
+	}
+}
+
+func TestSelectWithArrayInput(t *testing.T) {
+	DB.Save(&User{Name: "jinzhu", Age: 42})
+
+	var user User
+	DB.Select([]string{"name", "age"}).Where("age = 42 AND name = 'jinzhu'").First(&user)
+
+	if user.Name != "jinzhu" || user.Age != 42 {
+		t.Errorf("Should have selected both age and name")
 	}
 }

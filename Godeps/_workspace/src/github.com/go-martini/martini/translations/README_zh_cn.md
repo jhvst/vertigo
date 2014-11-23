@@ -259,7 +259,7 @@ m.Use(func(c martini.Context, log *log.Logger){
 
 * [auth](https://github.com/martini-contrib/auth) - 认证处理器.
 * [binding](https://github.com/martini-contrib/binding) - 映射/验证raw请求到结构体(structure)里的处理器
-* [gzip](https://github.com/martini-contrib/gzip) - 加入giz支持的处理器
+* [gzip](https://github.com/martini-contrib/gzip) - 加入gzip支持的处理器
 * [render](https://github.com/martini-contrib/render) - 渲染JSON和HTML模板的处理器.
 * [acceptlang](https://github.com/martini-contrib/acceptlang) - 解析`Accept-Language` HTTP报头的处理器.
 * [sessions](https://github.com/martini-contrib/sessions) - 提供会话服务支持的处理器.
@@ -267,6 +267,9 @@ m.Use(func(c martini.Context, log *log.Logger){
 * [method](https://github.com/martini-contrib/method) - HTTP method overriding via Header or form fields.
 * [secure](https://github.com/martini-contrib/secure) - Implements a few quick security wins.
 * [encoder](https://github.com/martini-contrib/encoder) - Encoder service for rendering data in several formats and content negotiation.
+* [cors](https://github.com/martini-contrib/cors) - Handler that enables CORS support.
+* [oauth2](https://github.com/martini-contrib/oauth2) - Handler that provides OAuth 2.0 login for Martini apps. Google Sign-in, Facebook Connect and Github login is supported.
+* [vauth](https://github.com/rafecolton/vauth) - Handlers for vender webhook authentication (currently GitHub and TravisCI)
 
 ### 我如何整合到我现有的服务器中?
 

@@ -12,11 +12,6 @@ import (
 	"net/url"
 )
 
-var (
-	defaultClient    *http.Client
-	defaultTransport *http.Transport
-)
-
 // Holds all information used to make a HTTP request.
 type HTTPRequest struct {
 	URL               string
@@ -24,6 +19,7 @@ type HTTPRequest struct {
 	Headers           map[string]string
 	BasicAuthUser     string
 	BasicAuthPassword string
+	Client            *http.Client
 }
 
 type HTTPResponse struct {
@@ -33,7 +29,7 @@ type HTTPResponse struct {
 
 // Creates a new HTTPRequest instance.
 func NewHTTPRequest(url string) *HTTPRequest {
-	return &HTTPRequest{URL: url}
+	return &HTTPRequest{URL: url, Client: http.DefaultClient}
 }
 
 // Adds a parameter to the generated query string.
@@ -46,6 +42,7 @@ func (r *HTTPRequest) AddParameter(name, value string) {
 
 // Adds a header that will be sent with the HTTP request.
 func (r *HTTPRequest) AddHeader(name, value string) {
+	// hej
 	if r.Headers == nil {
 		r.Headers = make(map[string]string)
 	}
@@ -108,17 +105,7 @@ func (r *HTTPRequest) MakeRequest(method string, payload Payload) (*HTTPResponse
 
 	response := HTTPResponse{}
 
-	var client *http.Client
-	if defaultClient != nil {
-		client = defaultClient
-	} else {
-		if defaultTransport != nil {
-			client = &http.Client{Transport: defaultTransport}
-		} else {
-			client = &http.Client{}
-		}
-	}
-	resp, err := client.Do(req)
+	resp, err := r.Client.Do(req)
 	if resp != nil {
 		response.Code = resp.StatusCode
 	}
@@ -155,10 +142,6 @@ func (r *HTTPRequest) generateUrlWithParameters() (string, error) {
 	return url.String(), nil
 }
 
-func SetClient(c *http.Client) {
-	defaultClient = c
-}
-
-func SetTransport(ts *http.Transport) {
-	defaultTransport = ts
+func (r *HTTPRequest) SetClient(c *http.Client) {
+	r.Client = c
 }

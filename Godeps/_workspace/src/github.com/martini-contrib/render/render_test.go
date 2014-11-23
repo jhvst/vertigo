@@ -1,6 +1,7 @@
 package render
 
 import (
+	"encoding/xml"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -14,6 +15,12 @@ import (
 type Greeting struct {
 	One string `json:"one"`
 	Two string `json:"two"`
+}
+
+type GreetingXML struct {
+	XMLName xml.Name `xml:"greeting"`
+	One     string   `xml:"one,attr"`
+	Two     string   `xml:"two,attr"`
 }
 
 func Test_Render_JSON(t *testing.T) {
@@ -35,6 +42,28 @@ func Test_Render_JSON(t *testing.T) {
 	expect(t, res.Code, 300)
 	expect(t, res.Header().Get(ContentType), ContentJSON+"; charset=UTF-8")
 	expect(t, res.Body.String(), `{"one":"hello","two":"world"}`)
+}
+
+func Test_Render_JSON_Prefix(t *testing.T) {
+	m := martini.Classic()
+	prefix := ")]}',\n"
+	m.Use(Renderer(Options{
+		PrefixJSON: []byte(prefix),
+	}))
+
+	// routing
+	m.Get("/foobar", func(r Render) {
+		r.JSON(300, Greeting{"hello", "world"})
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foobar", nil)
+
+	m.ServeHTTP(res, req)
+
+	expect(t, res.Code, 300)
+	expect(t, res.Header().Get(ContentType), ContentJSON+"; charset=UTF-8")
+	expect(t, res.Body.String(), prefix+`{"one":"hello","two":"world"}`)
 }
 
 func Test_Render_Indented_JSON(t *testing.T) {
@@ -59,6 +88,70 @@ func Test_Render_Indented_JSON(t *testing.T) {
   "one": "hello",
   "two": "world"
 }`)
+}
+
+func Test_Render_XML(t *testing.T) {
+	m := martini.Classic()
+	m.Use(Renderer(Options{
+	// nothing here to configure
+	}))
+
+	// routing
+	m.Get("/foobar", func(r Render) {
+		r.XML(300, GreetingXML{One: "hello", Two: "world"})
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foobar", nil)
+
+	m.ServeHTTP(res, req)
+
+	expect(t, res.Code, 300)
+	expect(t, res.Header().Get(ContentType), ContentXML+"; charset=UTF-8")
+	expect(t, res.Body.String(), `<greeting one="hello" two="world"></greeting>`)
+}
+
+func Test_Render_XML_Prefix(t *testing.T) {
+	m := martini.Classic()
+	prefix := ")]}',\n"
+	m.Use(Renderer(Options{
+		PrefixXML: []byte(prefix),
+	}))
+
+	// routing
+	m.Get("/foobar", func(r Render) {
+		r.XML(300, GreetingXML{One: "hello", Two: "world"})
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foobar", nil)
+
+	m.ServeHTTP(res, req)
+
+	expect(t, res.Code, 300)
+	expect(t, res.Header().Get(ContentType), ContentXML+"; charset=UTF-8")
+	expect(t, res.Body.String(), prefix+`<greeting one="hello" two="world"></greeting>`)
+}
+
+func Test_Render_Indented_XML(t *testing.T) {
+	m := martini.Classic()
+	m.Use(Renderer(Options{
+		IndentXML: true,
+	}))
+
+	// routing
+	m.Get("/foobar", func(r Render) {
+		r.XML(300, GreetingXML{One: "hello", Two: "world"})
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foobar", nil)
+
+	m.ServeHTTP(res, req)
+
+	expect(t, res.Code, 300)
+	expect(t, res.Header().Get(ContentType), ContentXML+"; charset=UTF-8")
+	expect(t, res.Body.String(), `<greeting one="hello" two="world"></greeting>`)
 }
 
 func Test_Render_Bad_HTML(t *testing.T) {
@@ -192,6 +285,26 @@ func Test_Render_Layout(t *testing.T) {
 	expect(t, res.Body.String(), "head\n<h1>jeremy</h1>\n\nfoot\n")
 }
 
+func Test_Render_Layout_Current(t *testing.T) {
+	m := martini.Classic()
+	m.Use(Renderer(Options{
+		Directory: "fixtures/basic",
+		Layout:    "current_layout",
+	}))
+
+	// routing
+	m.Get("/foobar", func(r Render) {
+		r.HTML(200, "content", "jeremy")
+	})
+
+	res := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/foobar", nil)
+
+	m.ServeHTTP(res, req)
+
+	expect(t, res.Body.String(), "content head\n<h1>jeremy</h1>\n\ncontent foot\n")
+}
+
 func Test_Render_Nested_HTML(t *testing.T) {
 	m := martini.Classic()
 	m.Use(Renderer(Options{
@@ -276,6 +389,13 @@ func Test_Render_BinaryData_CustomMimeType(t *testing.T) {
 	expect(t, res.Code, 200)
 	expect(t, res.Header().Get(ContentType), "image/jpeg")
 	expect(t, res.Body.String(), "..jpeg data..")
+}
+
+func Test_Render_Status204(t *testing.T) {
+	res := httptest.NewRecorder()
+	r := renderer{res, nil, nil, Options{}, ""}
+	r.Status(204)
+	expect(t, res.Code, 204)
 }
 
 func Test_Render_Error404(t *testing.T) {
@@ -421,6 +541,12 @@ func Test_Render_NoRace(t *testing.T) {
 	go doreq()
 	<-done
 	<-done
+}
+
+func Test_GetExt(t *testing.T) {
+	expect(t, getExt("test"), "")
+	expect(t, getExt("test.tmpl"), ".tmpl")
+	expect(t, getExt("test.go.html"), ".go.html")
 }
 
 /* Test Helpers */

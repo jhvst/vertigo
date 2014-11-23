@@ -9,7 +9,7 @@ import (
 // parameter order should have no difference in the result. Therefore,
 // to avoid panicing later on, we will order the strings according to
 // their length.
-func order(s1, s2 string) (string, string) {
+func sort(s1, s2 string) (string, string) {
 	if strings.Count(s1, "")-1 <= strings.Count(s2, "")-1 {
 		return s1, s2
 	}
@@ -20,7 +20,7 @@ func order(s1, s2 string) (string, string) {
 // so that that the longest string is evaluated against the shorter one.
 func Calculate(s1, s2 string) float64 {
 
-	s1, s2 = order(strings.ToLower(s1), strings.ToLower(s2))
+	s1, s2 = sort(strings.ToLower(s1), strings.ToLower(s2))
 
 	// This avoids the function to return NaN.
 	if strings.Count(s1, "") == 1 || strings.Count(s2, "") == 1 {

@@ -94,7 +94,6 @@ type Role struct {
 	Name string
 }
 
-
 func (role *Role) Scan(value interface{}) error {
 	if b, ok := value.([]uint8); ok {
 		role.Name = string(b)
@@ -126,11 +125,13 @@ func (i *Num) Scan(src interface{}) error {
 }
 
 type Animal struct {
-	Counter   int64 `gorm:"primary_key:yes"`
-	Name      string
-	From      string //test reserved sql keyword as field name
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Counter    uint64    `gorm:"primary_key:yes"`
+	Name       string    `sql:"DEFAULT:'galeone'"`
+	From       string    //test reserved sql keyword as field name
+	Age        time.Time `sql:"DEFAULT:current_timestamp"`
+	unexported string    // unexported value
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
 }
 
 type Post struct {

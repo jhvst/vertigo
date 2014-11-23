@@ -24,9 +24,11 @@ func Create(scope *Scope) {
 	if !scope.HasError() {
 		// set create sql
 		var sqls, columns []string
-
 		for _, field := range scope.Fields() {
 			if field.IsNormal && (!field.IsPrimaryKey || !scope.PrimaryKeyZero()) {
+				if field.DefaultValue != nil && field.IsBlank {
+					continue
+				}
 				columns = append(columns, scope.Quote(field.DBName))
 				sqls = append(sqls, scope.AddToVars(field.Field.Interface()))
 			}

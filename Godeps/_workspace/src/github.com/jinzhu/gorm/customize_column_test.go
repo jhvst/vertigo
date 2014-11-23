@@ -6,9 +6,16 @@ import (
 )
 
 type CustomizeColumn struct {
-	Id   int64     `gorm:"column:mapped_id; primary_key:yes"`
+	ID   int64     `gorm:"column:mapped_id; primary_key:yes"`
 	Name string    `gorm:"column:mapped_name"`
 	Date time.Time `gorm:"column:mapped_time"`
+}
+
+// Make sure an ignored field does not interfere with another field's custom
+// column name that matches the ignored field.
+type CustomColumnAndIgnoredFieldClash struct {
+	Body    string `sql:"-"`
+	RawBody string `gorm:"column:body"`
 }
 
 func TestCustomizeColumn(t *testing.T) {
@@ -27,16 +34,30 @@ func TestCustomizeColumn(t *testing.T) {
 	}
 
 	expected := "foo"
-	cc := CustomizeColumn{Id: 666, Name: expected, Date: time.Now()}
+	cc := CustomizeColumn{ID: 666, Name: expected, Date: time.Now()}
 
-	if count := DB.Save(&cc).RowsAffected; count != 1 {
+	if count := DB.Create(&cc).RowsAffected; count != 1 {
 		t.Error("There should be one record be affected when create record")
 	}
 
-	var ccs []CustomizeColumn
-	DB.Find(&ccs)
+	var cc1 CustomizeColumn
+	DB.First(&cc1, 666)
 
-	if len(ccs) > 0 && ccs[0].Name != expected && ccs[0].Id != 666 {
+	if cc1.Name != expected {
 		t.Errorf("Failed to query CustomizeColumn")
 	}
+
+	cc.Name = "bar"
+	DB.Save(&cc)
+
+	var cc2 CustomizeColumn
+	DB.First(&cc2, 666)
+	if cc2.Name != "bar" {
+		t.Errorf("Failed to query CustomizeColumn")
+	}
+}
+
+func TestCustomColumnAndIgnoredFieldClash(t *testing.T) {
+	DB.DropTable(&CustomColumnAndIgnoredFieldClash{})
+	DB.AutoMigrate(&CustomColumnAndIgnoredFieldClash{})
 }

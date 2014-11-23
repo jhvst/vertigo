@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"regexp"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	. "github.com/onsi/gomega/ghttp"
@@ -23,6 +24,32 @@ var _ = Describe("TestServer", func() {
 
 	AfterEach(func() {
 		s.Close()
+	})
+
+	Describe("closing client connections", func() {
+		It("closes", func() {
+			s.AppendHandlers(
+				func(w http.ResponseWriter, req *http.Request) {
+					w.Write([]byte("hello"))
+				},
+				func(w http.ResponseWriter, req *http.Request) {
+					s.CloseClientConnections()
+				},
+			)
+
+			resp, err := http.Get(s.URL())
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(resp.StatusCode).Should(Equal(200))
+
+			body, err := ioutil.ReadAll(resp.Body)
+			resp.Body.Close()
+			Ω(err).ShouldNot(HaveOccurred())
+			Ω(body).Should(Equal([]byte("hello")))
+
+			resp, err = http.Get(s.URL())
+			Ω(err).Should(HaveOccurred())
+			Ω(resp).Should(BeNil())
+		})
 	})
 
 	Describe("allowing unhandled requests", func() {
@@ -263,6 +290,15 @@ var _ = Describe("TestServer", func() {
 				Ω(failures).Should(HaveLen(1))
 			})
 
+			It("should require basic auth header", func() {
+				req, err := http.NewRequest("GET", s.URL()+"/foo", nil)
+				Ω(err).ShouldNot(HaveOccurred())
+
+				failures := InterceptGomegaFailures(func() {
+					http.DefaultClient.Do(req)
+				})
+				Ω(failures).Should(HaveLen(1))
+			})
 		})
 
 		Describe("VerifyHeader", func() {

@@ -6,9 +6,6 @@
 package sqlite3
 
 /*
-#ifdef _WIN32
-# define _localtime32(x) localtime(x)
-#endif
 #include <sqlite3.h>
 #include <stdlib.h>
 #include <string.h>
@@ -64,6 +61,7 @@ import (
 	"database/sql/driver"
 	"errors"
 	"io"
+	"runtime"
 	"strings"
 	"time"
 	"unsafe"
@@ -86,6 +84,14 @@ var SQLiteTimestampFormats = []string{
 
 func init() {
 	sql.Register("sqlite3", &SQLiteDriver{})
+}
+
+// Return SQLite library Version information.
+func Version() (libVersion string, libVersionNumber int, sourceId string) {
+	libVersion = C.GoString(C.sqlite3_libversion())
+	libVersionNumber = int(C.sqlite3_libversion_number())
+	sourceId = C.GoString(C.sqlite3_sourceid())
+	return libVersion, libVersionNumber, sourceId
 }
 
 // Driver struct.
@@ -205,6 +211,7 @@ func (c *SQLiteConn) Query(query string, args []driver.Value) (driver.Rows, erro
 		if tail == "" {
 			return rows, nil
 		}
+		rows.Close()
 		s.Close()
 		query = tail
 	}
@@ -300,7 +307,7 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 			return nil, err
 		}
 	}
-
+	runtime.SetFinalizer(conn, (*SQLiteConn).Close)
 	return conn, nil
 }
 
@@ -311,6 +318,7 @@ func (c *SQLiteConn) Close() error {
 		return c.lastError()
 	}
 	c.db = nil
+	runtime.SetFinalizer(c, nil)
 	return nil
 }
 
@@ -328,7 +336,9 @@ func (c *SQLiteConn) Prepare(query string) (driver.Stmt, error) {
 	if tail != nil && C.strlen(tail) > 0 {
 		t = strings.TrimSpace(C.GoString(tail))
 	}
-	return &SQLiteStmt{c: c, s: s, t: t}, nil
+	ss := &SQLiteStmt{c: c, s: s, t: t}
+	runtime.SetFinalizer(ss, (*SQLiteStmt).Close)
+	return ss, nil
 }
 
 // Close the statement.
@@ -344,6 +354,7 @@ func (s *SQLiteStmt) Close() error {
 	if rv != C.SQLITE_OK {
 		return s.c.lastError()
 	}
+	runtime.SetFinalizer(s, nil)
 	return nil
 }
 
@@ -419,10 +430,12 @@ func (r *SQLiteResult) RowsAffected() (int64, error) {
 // Execute the statement with arguments. Return result object.
 func (s *SQLiteStmt) Exec(args []driver.Value) (driver.Result, error) {
 	if err := s.bind(args); err != nil {
+		C.sqlite3_reset(s.s)
 		return nil, err
 	}
 	rv := C.sqlite3_step(s.s)
 	if rv != C.SQLITE_ROW && rv != C.SQLITE_OK && rv != C.SQLITE_DONE {
+		C.sqlite3_reset(s.s)
 		return nil, s.c.lastError()
 	}
 
@@ -486,7 +499,7 @@ func (rc *SQLiteRows) Next(dest []driver.Value) error {
 			val := int64(C.sqlite3_column_int64(rc.s.s, C.int(i)))
 			switch rc.decltype[i] {
 			case "timestamp", "datetime", "date":
-				dest[i] = time.Unix(val, 0)
+				dest[i] = time.Unix(val, 0).Local()
 			case "boolean":
 				dest[i] = val > 0
 			default:
@@ -513,12 +526,14 @@ func (rc *SQLiteRows) Next(dest []driver.Value) error {
 			dest[i] = nil
 		case C.SQLITE_TEXT:
 			var err error
+			var timeVal time.Time
 			s := C.GoString((*C.char)(unsafe.Pointer(C.sqlite3_column_text(rc.s.s, C.int(i)))))
 
 			switch rc.decltype[i] {
 			case "timestamp", "datetime", "date":
 				for _, format := range SQLiteTimestampFormats {
-					if dest[i], err = time.Parse(format, s); err == nil {
+					if timeVal, err = time.ParseInLocation(format, s, time.UTC); err == nil {
+						dest[i] = timeVal.Local()
 						break
 					}
 				}
