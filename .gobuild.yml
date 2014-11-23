@@ -7,3 +7,8 @@ filesets:
         - public
         - README.md
         - LICENSE
+
+settings:
+        targetdir: ""
+        build: |
+            go(){ go "$@";} ; go install -v
