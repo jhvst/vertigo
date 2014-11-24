@@ -4,29 +4,17 @@
 
 		<label>Allow new registrations</label>
 		<p>Below you can choose whether you'd like disable registration for new users.</p>
-		{{if eq .AllowRegistrations true}}
-		<input type="radio" name="allowregistrations" value="true" checked> Allow registrations
+		<input type="radio" name="allowregistrations" value="true"{{if eq .AllowRegistrations true}} checked{{end}}> Allow registrations
 		<br>
-		<input type="radio" name="allowregistrations" value="false"> Disallow registrations
-		{{else}}
-		<input type="radio" name="allowregistrations" value="true"> Allow registrations
-		<br>
-		<input type="radio" name="allowregistrations" value="false" checked> Disallow registrations
-		{{end}}
+		<input type="radio" name="allowregistrations" value="false"{{if eq .AllowRegistrations false}} checked{{end}}> Disallow registrations
 
 		<br><br>
 
 		<label>Use Markdown instead of HTML</label>
 		<p>Below you can choose whether you want to use <a href="http://daringfireball.net/projects/markdown/">Markdown</a> or plain HTML when creating and editing posts.</p>
-		{{if eq .Markdown true}}
-		<input type="radio" name="markdown" value="true" checked> Markdown
+		<input type="radio" name="markdown" value="true"{{if eq .Markdown true}} checked{{end}}> Markdown
 		<br>
-		<input type="radio" name="markdown" value="false"> HTML
-		{{else}}
-		<input type="radio" name="markdown" value="true"> Markdown
-		<br>
-		<input type="radio" name="markdown" value="false" checked> HTML
-		{{end}}
+		<input type="radio" name="markdown" value="false"{{if eq .Markdown false}} checked{{end}}> HTML
 
 		<br><br>
 
@@ -60,7 +48,7 @@
 
 		<br><br>
 
-		<button type="submit">Submit</button>
+		<button type="submit">Save</button>
 
 	</fieldset>
 </form>
