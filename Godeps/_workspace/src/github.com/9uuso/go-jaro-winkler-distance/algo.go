@@ -3,6 +3,8 @@ package jwd
 import (
 	"math"
 	"strings"
+
+	"github.com/fiam/gounidecode/unidecode"
 )
 
 // According to this tool: http://www.csun.edu/english/edit_distance.php
@@ -19,6 +21,9 @@ func sort(s1, s2 string) (string, string) {
 // Calculate calculates Jaro-Winkler distance of two strings. The function lowercases and sorts the parameters
 // so that that the longest string is evaluated against the shorter one.
 func Calculate(s1, s2 string) float64 {
+
+	s1 = unidecode.Unidecode(s1)
+	s2 = unidecode.Unidecode(s2)
 
 	s1, s2 = sort(strings.ToLower(s1), strings.ToLower(s2))
 
