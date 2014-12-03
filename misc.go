@@ -4,6 +4,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +19,9 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+var driver = flag.String("driver", "sqlite3", "name of the database driver used, by default sqlite3")
+var dbsource = flag.String("dbsource", "./vertigo.db", "connection string or path to database file")
+
 // NotFound is a shorthand JSON response for HTTP 404 errors.
 func NotFound() map[string]interface{} {
 	return map[string]interface{}{"error": "Not found"}
@@ -26,16 +30,14 @@ func NotFound() map[string]interface{} {
 func init() {
 
 	if os.Getenv("DATABASE_URL") != "" {
-		os.Setenv("driver", "postgres")
-		os.Setenv("dbsource", os.Getenv("DATABASE_URL"))
+		flag.Set("driver", "postgres")
+		flag.Set("dbsource", os.Getenv("DATABASE_URL"))
 		log.Println("Using PostgreSQL")
 	} else {
-		os.Setenv("driver", "sqlite3")
-		os.Setenv("dbsource", "./vertigo.db")
 		log.Println("Using SQLite3")
 	}
 
-	db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
+	db, err := gorm.Open(*driver, *dbsource)
 
 	if err != nil {
 		panic(err)
@@ -64,7 +66,7 @@ func sessionchecker() martini.Handler {
 
 // Middleware function hooks the database to be accessible for Martini routes.
 func middleware() martini.Handler {
-	db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
+	db, err := gorm.Open(*driver, *dbsource)
 	db.LogMode(false)
 	if err != nil {
 		panic(err)
