@@ -498,4 +498,3 @@ func (user User) SendRecoverMail() error {
 	}
 	return nil
 }
-

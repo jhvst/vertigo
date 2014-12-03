@@ -114,10 +114,10 @@ func root(req *http.Request) string {
 // Gives a good clean standard urlHost
 func urlHost() (url string) {
 	url = Settings.Hostname
-	if ! strings.HasPrefix(url, "http://") && ! strings.HasPrefix(url, "https://") {
+	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "http://" + url
 	}
-	if ! strings.HasSuffix(url, "/") {
+	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}
 	return
