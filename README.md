@@ -52,7 +52,6 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 4. `docker run -d -p 80:80 vertigo`
 
 ###Environment variables
-* `DEV` - required to run `go test`
 * `PORT` - the HTTP server port
 * `MARTINI_ENV` - used by Martini to enable production optimizations such as template caching
 * `MAILGUN_API_KEY` - Mailgun API key (declared by default with Heroku Mailgun Addon)
