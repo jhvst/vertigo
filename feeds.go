@@ -48,6 +48,11 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 			return
 		}
 
+		// Don't expose unpublished items to the feeds
+		if !post.Published {
+			continue
+		}
+
 		// The email in &feeds.Author is not actually exported, as it is left out by user.Get().
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
