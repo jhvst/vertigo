@@ -3,25 +3,29 @@ vertigo
 [![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Coverage Status](https://coveralls.io/repos/9uuso/vertigo/badge.png?branch=HEAD)](https://coveralls.io/r/9uuso/vertigo?branch=HEAD) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
-Vertigo is blogging platform similar to Wordpress, Ghost, Medium, Svbtle or Tumblr. You can make multiple accounts and write multiple posts, which then appear on your front page. You can also make unlisted pages similar to Wordpress, which you can link to navigation with help of HTML, similar to Tumblr.
+Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
 
-Written Go, Vertigo is not only fast, but can be run on all major operating systems like Windows, Linux and MacOSX without the language development tools.
+The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on few pages. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices. Vertigo also ships without any CSS frameworks, so it is easy to start customizing the frontend with the framework of your choice.
 
-##Is Vertigo free?
+Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top of Vertigo. This means that you can create users, submit posts and read data without writing a single line of Go code. So basically, one could write a SPA application on top of Vertigo just by using JavaScript. Whether you want to take that path or just edit the HTML template files found in `/templates/` is up to you.
 
-It is. Not only is the source code available online for anyone to use on MIT license, you can also deploy Vertigo to Heroku free of charge. Just click the [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy) to get started. If you are worried that Heroku might own your content, you can also deploy Vertigo to a normal server or even run it privately on your own desktop. More at [Install instructions](https://github.com/9uuso/vertigo#install-instructions).
+##Features
 
-##How is Vertigo's frontend code handled?
-
-The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HMTL and JavaScript (vanilla) only appears on a few pages, such as the post edit page, where it is used to provide backup for any writings you make. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices.
-
-Vertigo's routes by default can lead to either HTML templates or JSON endpoints depending on what URL is used. This means that as features as implemented, they are both available on /api/ and the normal frontend site. This makes it easy to add your preferred JavaScript MVC's on top of Vertigo. You can also code your own plugins or generate your own widgets from the data accessible from /api/ endpoint. This means that you can create users, submit posts and read user data without writing a single line of Go code. So basically, one could write a SPA application by only using JavaScript. Whether you want to take that path or just edit the template files found in /templates/ is up to you.
+- Installation wizard
+- JSON API
+- SQLite and PostgreSQL support
+- Search
+- Multiple account support
+- Auto-saving of posts to LocalStorage
+- RSS and Atom feeds
+- Password recovery with Mailgun
+- Markdown support
 
 ##Demo
 
 See [my personal website](http://www.juusohaavisto.com/)
 
-##Install instructions
+##Installation
 
 Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
 
@@ -59,17 +63,9 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 * `MAILGUN_SMTP_LOGIN` - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
 * `DATABASE_URL` - Database connection URL for PostgreSQL - if not declared, SQLite will be used
 
-##Features
+##Contribute
 
-- Installation wizard
-- JSON API
-- SQLite and PostgreSQL support
-- Search
-- Multiple account support
-- Auto-saving of posts to LocalStorage
-- RSS and Atom feeds
-- Password recovery with Mailgun
-- Markdown support
+Contributions are welcome, but before creating a pull request, please run your code trough `go fmt` and [`golint`](https://github.com/golang/lint). If the changes introduce new features, please also add tests for them. Try to also squash your commits into one big one instead many small, to avoid unnecessary CI runs.
 
 ##Support
 
