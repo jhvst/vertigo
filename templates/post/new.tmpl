@@ -15,7 +15,7 @@
 	// LocalStorage loops(?) to save both post title and content to cache.
 	// Looks ugly, but better than AJAX based failover, right?
 	// Modified version of this: https://gist.github.com/addyosmani/d1f3ca715ac902788c2d
-	{{if .Markdown}}
+	{{if Markdown}}
 
 	with({
 		l: localStorage // Alias for localStorage, where we'll store text content
@@ -23,7 +23,7 @@
 	}) with(document.getElementById("text")) if (l.getItem("c") != null) {
 		value = [l.c], // Replace placeholder text with localstorage content.
 		oninput = function () {
-			l.c = value // Save HTML context to localStorage.
+			l.c = value // Save Markdown context to localStorage.
 		}
 	} else {
 		oninput = function () {
@@ -70,8 +70,7 @@
 		localStorage.removeItem("t");
 		localStorage.removeItem("c");
 		var html = document.getElementById("text").innerHTML;
-		{{if Markdown}}
-		{{else}}
+		{{if not Markdown}}
 		document.new.content.value = html;
 		{{end}}
 		return

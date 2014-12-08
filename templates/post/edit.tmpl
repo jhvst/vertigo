@@ -79,8 +79,7 @@
 		localStorage.removeItem({{.Slug}});
 		localStorage.removeItem({{.Title}});
 		var html = document.getElementById("text").innerHTML;
-		{{if Markdown}}
-		{{else}}
+		{{if not Markdown}}
 		document.new.content.value = html;
 		{{end}}
 		return
