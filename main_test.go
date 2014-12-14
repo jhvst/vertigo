@@ -3,1312 +3,1199 @@ package main
 import (
 	"bytes"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"os"
 	"strings"
+	"testing"
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	_ "github.com/lib/pq"
 	_ "github.com/mattn/go-sqlite3"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
+	"github.com/russross/blackfriday"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-var sessioncookie *string = flag.String("sessioncookie", "", "global flag for test sessioncookie")
-var postslug *string = flag.String("postslug", "", "global flag for test postslug")
-var globalpost *Post = &Post{}
+var server = NewServer()
+var settings Vertigo
+var user User
+var post Post
+var userid string
+var postslug string
+var recovery string
+var sessioncookie string
+var secondusersessioncookie string
+var malformedsessioncookie = "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="
 
-var _ = Describe("Vertigo", func() {
+func TestInstallationWizard(t *testing.T) {
 
-	var server *martini.ClassicMartini
-	var request *http.Request
-	var recorder *httptest.ResponseRecorder
-	var malformedsessioncookie = "MTQxNDc2NzAyOXxEdi1CQkFFQ180SUFBUkFCRUFBQUhmLUNBQUVHYzNSeWFXNW5EQVlBQkhWelpYSUZhVzUwTmpRRUFnQUN8Y2PFc-lZ8aEMWypbKXTD-LWg6o9DtJaMzd8NMc8m87A="
-	var secondusersessioncookie string
+	Convey("Opening homepage", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/", nil)
 
-	BeforeEach(func() {
-		// Set up a new server, connected to a test database,
-		// before each test.
-		server = NewServer()
-
-		// Record HTTP responses.
-		recorder = httptest.NewRecorder()
-	})
-
-	Describe("Web server and installation wizard", func() {
-
-		Context("loading the homepage", func() {
-			It("should display installation wizard", func() {
-				request, _ := http.NewRequest("GET", "/", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				sel := doc.Find("h1").First().Text()
-				Expect(sel).To(Equal("Your settings file seems to be missing some fields. Lets fix that."))
-			})
-		})
-	})
-
-	Describe("Static pages", func() {
-		AfterEach(func() {
+		Convey("it should display installation wizard", func() {
 			server.ServeHTTP(recorder, request)
-			Expect(recorder.Code).To(Equal(200))
+			So(recorder.Code, ShouldEqual, 200)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("h1").First().Text()
+			So(sel, ShouldEqual, "Your settings file seems to be missing some fields. Lets fix that.")
+		})
+	})
+}
+
+func TestStaticPages(t *testing.T) {
+
+	Convey("All static pages should return 200 OK", t, func() {
+		var recorder = httptest.NewRecorder()
+
+		Convey("Loading API index page", func() {
+			request, _ := http.NewRequest("GET", "/api", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
 		})
 
-		Context("API index page", func() {
-			It("should respond 200 OK", func() {
-				request, _ = http.NewRequest("GET", "/api", nil)
-			})
+		Convey("Loading user register page", func() {
+			request, _ := http.NewRequest("GET", "/user/register", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
 		})
 
-		Context("User register", func() {
-			It("should respond 200 OK", func() {
-				request, _ = http.NewRequest("GET", "/user/register", nil)
-			})
+		Convey("Loading user login page", func() {
+			request, _ := http.NewRequest("GET", "/user/login", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
 		})
 
-		Context("User recover", func() {
-			It("should respond 200 OK", func() {
-				request, _ = http.NewRequest("GET", "/user/recover", nil)
-			})
+		Convey("Loading user recovery page", func() {
+			request, _ := http.NewRequest("GET", "/user/recover", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
 		})
 
-		Context("User recover", func() {
-			It("should respond 200 OK", func() {
-				request, _ = http.NewRequest("GET", "/user/login", nil)
-			})
+		Convey("Loading user reset page", func() {
+			request, _ := http.NewRequest("GET", "/user/reset/1/foobar", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+		})
+	})
+}
+
+func TestEmptyAPIRoutes(t *testing.T) {
+
+	Convey("API routes should return empty JSON responses", t, func() {
+		var recorder = httptest.NewRecorder()
+
+		Convey("posts page should return []", func() {
+			request, _ := http.NewRequest("GET", "/api/posts", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, "[]")
 		})
 
-		Context("User reset", func() {
-			It("should respond 200 OK", func() {
-				request, _ = http.NewRequest("GET", "/user/reset/1/aaa", nil)
-			})
+		Convey("users page should return []", func() {
+			request, _ := http.NewRequest("GET", "/api/users", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, "[]")
+		})
+
+		Convey("get post should return 404", func() {
+			request, _ := http.NewRequest("GET", "/api/user/0", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Not found"}`)
+		})
+
+		Convey("get user should return 404", func() {
+			request, _ := http.NewRequest("GET", "/api/post/0", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Not found"}`)
+		})
+	})
+}
+
+func TestCreatingSettings(t *testing.T) {
+
+	Convey("after creating", t, func() {
+
+		Convey("settings.Firstrun should equal true", func() {
+			settings := VertigoSettings()
+			So(settings.Firstrun, ShouldBeTrue)
+		})
+	})
+}
+
+func TestSavingSettingsViaInstallationWizard(t *testing.T) {
+
+	Convey("by submitting data in JSON", t, func() {
+		var recorder = httptest.NewRecorder()
+
+		Convey("it should return 200 OK", func() {
+			settings.Hostname = "example.com"
+			settings.Name = "Foo's blog"
+			settings.Description = "Foo's test blog"
+			settings.Mailer.Domain = os.Getenv("MAILGUN_API_DOMAIN")
+			settings.Mailer.PrivateKey = os.Getenv("MAILGUN_API_KEY")
+			payload, _ := json.Marshal(settings)
+			request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+		})
+	})
+}
+
+func TestSettingValues(t *testing.T) {
+
+	Convey("Settings object should be the same as settings object", t, func() {
+		So(Settings.Hostname, ShouldEqual, settings.Hostname)
+		So(Settings.Name, ShouldEqual, settings.Name)
+		So(Settings.Description, ShouldEqual, settings.Description)
+		So(Settings.Mailer.Domain, ShouldEqual, settings.Mailer.Domain)
+		So(Settings.Mailer.PrivateKey, ShouldEqual, settings.Mailer.PrivateKey)
+		So(Settings.AllowRegistrations, ShouldBeTrue)
+		So(Settings.Markdown, ShouldBeFalse)
+	})
+}
+
+func TestManipulatingSettings(t *testing.T) {
+
+	Convey("when manipulating the global Settings variable", t, func() {
+
+		Convey("should save the changes to disk", func() {
+			settings = *Settings
+			settings.Name = "Juuso's Blog"
+			err := settings.Save()
+			if err != nil {
+				panic(err)
+			}
+		})
+
+		Convey("frontpage's <title> should now be 'Juuso's Blog'", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/", nil)
+			server.ServeHTTP(recorder, request)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("title").Text()
+			So(sel, ShouldEqual, Settings.Name)
 		})
 	})
 
-	Describe("Empty public API routes", func() {
+	TestSettingValues(t)
+}
 
-		Context("pages with arrays", func() {
+func TestCreateFirstUser(t *testing.T) {
 
-			AfterEach(func() {
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal("[]"))
-			})
+	user.Name = "Juuso"
+	user.Password = "foo"
+	user.Email = "vertigo-test@mailinator.com"
+	payload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)
 
-			It("should respond with []", func() {
-				request, _ = http.NewRequest("GET", "/api/posts", nil)
-			})
+	testCreateUser(t, payload, user.Name, user.Email)
+}
 
-			It("should respond with []", func() {
-				request, _ = http.NewRequest("GET", "/api/users", nil)
-			})
+func testCreateUser(t *testing.T, payload string, name string, email string) {
+
+	Convey("using API", t, func() {
+
+		Convey("with valid input it should return 200 OK", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			json.Unmarshal(recorder.Body.Bytes(), &user)
+			So(user.Name, ShouldEqual, name)
+			So(user.Email, ShouldEqual, email)
+			So(user.Posts, ShouldBeEmpty)
 		})
 
-		Context("pages with single item", func() {
+		Convey("with the same email should return 422", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 422)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Email already in use"}`)
+		})
+	})
+}
 
-			AfterEach(func() {
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-			})
+func TestReadUser(t *testing.T) {
 
-			It("should respond with 404", func() {
-				request, _ = http.NewRequest("GET", "/api/post/0", nil)
-			})
+	Convey("reading the latest user by ID should return 200 OK", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/user/%d", user.ID), nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, `{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`)
+	})
+}
 
-			It("should respond with 404", func() {
-				request, _ = http.NewRequest("GET", "/api/user/0", nil)
-			})
+func TestReadUserSpecialCases(t *testing.T) {
+
+	Convey("when user does not exist, it should return not found", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/user/3", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 404)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"Not found"}`)
+	})
+
+	Convey("when user ID is malformed (eg. string), it should return 400", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/user/foobar", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 400)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"The user ID could not be parsed from the request URL."}`)
+	})
+}
+
+func TestUserSignin(t *testing.T) {
+
+	Convey("on frontend", t, func() {
+		var recorder = httptest.NewRecorder()
+
+		Convey("should return 401 with wrong password", func() {
+			request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=foobar&email=vertigo-test@mailinator.com`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+		})
+
+		Convey("should return 404 with non-existent email", func() {
+			request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=Juuso&email=foobar@mailinator.com`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
 		})
 	})
 
-	Describe("Settings", func() {
+	Convey("on JSON API", t, func() {
+		var recorder = httptest.NewRecorder()
 
-		Context("after creation", func() {
-
-			It("Firstrun should equal to true", func() {
-				settings := VertigoSettings()
-				Expect(settings.Firstrun).To(Equal(true))
-			})
+		Convey("should return 401 with wrong password", func() {
+			request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "vertigo-test@mailinator.com"}`))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
 		})
 
-		Context("after submitting settings in JSON", func() {
-
-			var settings Vertigo
-
-			It("response should be a redirection", func() {
-				settings.Hostname = "example.com"
-				settings.Name = "Foo's blog"
-				settings.Description = "Foo's test blog"
-				settings.Mailer.Domain = os.Getenv("MAILGUN_API_DOMAIN")
-				settings.Mailer.PrivateKey = os.Getenv("MAILGUN_API_KEY")
-				payload, _ := json.Marshal(settings)
-				request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("the settings.json should have all fields populated", func() {
-				Expect(Settings.Hostname).To(Equal(settings.Hostname))
-				Expect(Settings.Name).To(Equal(settings.Name))
-				Expect(Settings.Description).To(Equal(settings.Description))
-				Expect(Settings.Mailer.Domain).To(Equal(settings.Mailer.Domain))
-				Expect(Settings.Mailer.PrivateKey).To(Equal(settings.Mailer.PrivateKey))
-				Expect(Settings.AllowRegistrations).To(Equal(true))
-				Expect(Settings.Markdown).To(Equal(false))
-			})
+		Convey("should return 404 with wrong non-existent email", func() {
+			request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "foobar@mailinator.com"}`))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
 		})
 
-		Context("when manipulating the global Settings variable", func() {
+		Convey("should return 200 with valid data", func() {
+			request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			// i assure, nothing else worked
+			sessioncookie = strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
+		})
+	})
+}
 
-			It("should save the changes to disk", func() {
-				var settings *Vertigo
-				settings = Settings
-				settings.Name = "Juuso's Blog"
-				err := settings.Save()
-				if err != nil {
-					panic(err)
-				}
-				Expect(Settings.Name).To(Equal(settings.Name))
-			})
+func TestUserControlPanel(t *testing.T) {
 
-			It("frontpage's <title> should now be 'Juuso's Blog'", func() {
-				request, _ := http.NewRequest("GET", "/", nil)
-				server.ServeHTTP(recorder, request)
-				doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-				sel := doc.Find("title").Text()
-				Expect(sel).To(Equal(Settings.Name))
-			})
+	Convey("without authentication, it should fail", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+	})
+
+	Convey("with authentication, it should succeed", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+}
+
+func TestSessionRedirect(t *testing.T) {
+
+	Convey("without authentication, it should not redirect", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user/login", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+
+	Convey("with authentication, it should redirect", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user/login", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 302)
+	})
+}
+
+func TestPostCreationPage(t *testing.T) {
+
+	Convey("without authentication, it should 401", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/post/new", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+	})
+
+	Convey("with authentication, it should 200 OK", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/post/new", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+}
+
+func TestCreateFirstPost(t *testing.T) {
+	testCreatePost(t, 1, "First post", "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place.", "")
+}
+
+func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
+
+	Convey("with authentication and valid data, it should 200 OK", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", "/api/post", bytes.NewReader(payload))
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		request.Header.Set("Content-Type", "application/json")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		json.Unmarshal(recorder.Body.Bytes(), &post)
+		So(post.ID, ShouldEqual, p.ID)
+		So(post.Title, ShouldEqual, p.Title)
+		So(post.Content, ShouldEqual, p.Content)
+		So(post.Markdown, ShouldEqual, p.Markdown)
+		So(post.Slug, ShouldEqual, p.Slug)
+		So(post.Author, ShouldEqual, p.Author)
+		So(post.Date, ShouldBeGreaterThan, int64(1400000000))
+		So(post.Excerpt, ShouldEqual, p.Excerpt)
+		So(post.Viewcount, ShouldEqual, p.Viewcount)
+	})
+}
+
+func TestReadPost(t *testing.T) {
+
+	Convey("using API", t, func() {
+
+		Convey("with the latest post's slug, it should return 200 OK", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s", post.Slug), nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			var returnedPost Post
+			json.Unmarshal(recorder.Body.Bytes(), &returnedPost)
+			So(post, ShouldResemble, returnedPost)
+			post.Viewcount = uint(post.Viewcount + 1)
 		})
 	})
 
-	Describe("Users", func() {
+	Convey("using frontend", t, func() {
 
-		Context("creation", func() {
-
-			It("should return HTTP 200", func() {
-				payload := `{"name": "Juuso", "password": "foo", "email": "vertigo-test@mailinator.com"}`
-				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`))
-			})
+		Convey("with the latest post's slug, it should return 200 OK", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", fmt.Sprintf("/post/%s", post.Slug), nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			post.Viewcount = uint(post.Viewcount + 1)
 		})
+	})
+}
 
-		Context("creating second user with same email", func() {
+func TestReadPostSpecialCases(t *testing.T) {
 
-			It("should return HTTP 422", func() {
-				payload := `{"name": "Juuso", "password": "foo", "email": "vertigo-test@mailinator.com"}`
-				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(422))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Email already in use"}`))
-			})
-		})
+	Convey("should return error when accessing slug called `new`", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/post/new", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 400)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"There can't be a post called 'new'."}`)
+	})
+}
 
-		Context("reading", func() {
+func TestPublishPost(t *testing.T) {
 
-			It("should shown up when requesting by ID", func() {
-				request, _ := http.NewRequest("GET", "/api/user/1", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`))
-			})
+	Convey("without session data should return HTTP 401", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+	})
 
-			It("non-existent ID should return not found", func() {
-				request, _ := http.NewRequest("GET", "/api/user/3", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-			})
+	Convey("with session data should return HTTP 200", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Body.String(), ShouldEqual, `{"success":"Post published"}`)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+}
 
-			It("malformed ID should return HTTP 400", func() {
-				request, _ := http.NewRequest("GET", "/api/user/foobar", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(400))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"The user ID could not be parsed from the request URL."}`))
-			})
+func TestPostListing(t *testing.T) {
 
-			It("should be then listed on /users", func() {
-				request, _ := http.NewRequest("GET", "/api/users", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`[{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}]`))
-			})
-		})
+	Convey("using API", t, func() {
 
-		Context("accessing control panel before signing", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-			})
-		})
-
-		Context("signing in", func() {
-
-			It("should return 401 with wrong password on frontend", func() {
-				request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=foobar&email=vertigo-test@mailinator.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-			})
-
-			It("should return 401 with wrong password", func() {
-				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "vertigo-test@mailinator.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Wrong username or password."}`))
-			})
-
-			It("should return 404 with non-existent email", func() {
-				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"password": "Juuso", "email": "foobar@mailinator.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"User with that email does not exist."}`))
-			})
-
-			It("should return 404 with non-existent email on frontend", func() {
-				request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`password=Juuso&email=foobar@mailinator.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-			})
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "vertigo-test@mailinator.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				// i assure, nothing else worked
-				cookie := strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
-				flag.Set("sessioncookie", cookie)
-				fmt.Println("User sessioncookie:", *sessioncookie)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`))
-			})
-		})
-
-		Context("accessing control panel after signing", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-		})
-
-		Context("accessing sessionredirected page like registration after signing", func() {
-
-			It("should return HTTP 302", func() {
-				request, _ := http.NewRequest("GET", "/user/login", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
+		Convey("after a post is published, it should be listed on /api/posts", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/posts", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			var posts []Post
+			json.Unmarshal(recorder.Body.Bytes(), &posts)
+			for i, returnedPost := range posts {
+				So(i, ShouldEqual, 0)
+				So(returnedPost, ShouldResemble, post)
+			}
 		})
 	})
 
-	Describe("Posts", func() {
+	Convey("using frontend", t, func() {
 
-		Context("loading the creation page", func() {
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/post/new", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
+		Convey("after a post is published, it should be listed on frontpage", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("article h1").Text()
+			So(sel, ShouldEqual, post.Title)
+		})
+	})
+}
+
+func TestPostOwner(t *testing.T) {
+
+	Convey("using API", t, func() {
+
+		Convey("post owner should have data linked to their profile", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/user/1", nil)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			var u User
+			json.Unmarshal(recorder.Body.Bytes(), &u)
+			So(u.ID, ShouldEqual, user.ID)
+			So(u.Name, ShouldEqual, user.Name)
+			So(u.Email, ShouldEqual, user.Email)
+			So(u.Posts[0], ShouldResemble, post)
+		})
+	})
+}
+
+func TestPostEditPage(t *testing.T) {
+
+	Convey("should return 200 OK with authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/post/%s/edit", post.Slug), nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+
+	Convey("should return 401 without authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/post/%s/edit", post.Slug), nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+	})
+}
+
+func TestUpdateFirstPost(t *testing.T) {
+	testUpdatePost(t, "First post edited", "This is API edited example post with HTML elements like <b>bold</b> and <i>italics</i> in place.", "")
+}
+
+func testUpdatePostAPI(t *testing.T, payload []byte) {
+
+	Convey("should return 401 without authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", fmt.Sprintf("/api/post/%s/edit", post.Slug), bytes.NewReader(payload))
+		request.Header.Set("Content-Type", "application/json")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+	})
+
+	Convey("should return 401 with bad authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", fmt.Sprintf("/api/post/%s/edit", post.Slug), bytes.NewReader(payload))
+		cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+		request.AddCookie(cookie)
+		request.Header.Set("Content-Type", "application/json")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+	})
+
+	Convey("should return 404 with non-existent post", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", "/api/post/foobar/edit", bytes.NewReader(payload))
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		request.Header.Set("Content-Type", "application/json")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 404)
+		So(recorder.Body.String(), ShouldEqual, `{"error":"Not found"}`)
+	})
+
+	Convey("should return 200 with successful authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", fmt.Sprintf("/api/post/%s/edit", post.Slug), bytes.NewReader(payload))
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		request.Header.Set("Content-Type", "application/json")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		var returnedPost Post
+		json.Unmarshal(recorder.Body.Bytes(), &returnedPost)
+		So(post, ShouldResemble, returnedPost)
+	})
+}
+
+func testUpdatePostFrontend(t *testing.T, payload string) {
+
+	Convey("should return 302 with successful authorization", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("POST", fmt.Sprintf("/post/%s/edit", post.Slug), strings.NewReader(payload))
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 302)
+	})
+}
+
+func TestPostAfterUpdating(t *testing.T) {
+
+	Convey("the post should not be displayed on frontpage", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+		sel := doc.Find("article h1").Text()
+		So(sel, ShouldBeEmpty)
+	})
+
+	Convey("the post should not be displayed trough API", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/posts", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, "[]")
+	})
+}
+
+func testCreatePost(t *testing.T, owner int64, title string, content string, markdown string) {
+	var u User
+	u.ID = owner
+
+	var p Post
+	p.ID = post.ID + 1
+	p.Title = title
+	p.Content = content
+	p.Markdown = markdown
+	p.Slug = slug.Make(p.Title)
+	p.Author = u.ID
+	p.Excerpt = Excerpt(p.Content)
+	p.Viewcount = 0
+
+	payload, _ := json.Marshal(p)
+
+	testCreatePostRequest(t, payload, p)
+}
+
+func TestCreateSecondPost(t *testing.T) {
+	testCreatePost(t, 1, "Second post", "This is second post", "")
+}
+
+func testUpdatePost(t *testing.T, title string, content string, markdown string) {
+	// create JSON payload
+	var p Post
+	p.Title = title
+	p.Content = content
+	apiPayload, _ := json.Marshal(p)
+
+	// save changes to global object for further testing comparison
+	post.Title = p.Title
+	post.Content = p.Content
+	post.Excerpt = Excerpt(p.Content)
+
+	testUpdatePostAPI(t, apiPayload)
+
+	// creates form-encoded payload
+	p2 := url.Values{}
+	p2.Set("title", title)
+	p2.Add("content", content)
+	frontendPayload := p2.Encode()
+
+	// save changes to global object for further testing comparison
+	post.Title = p2.Get("title")
+	post.Content = p2.Get("content")
+	post.Excerpt = Excerpt(post.Content)
+
+	testUpdatePostFrontend(t, frontendPayload)
+	TestReadPost(t)
+}
+
+func TestUpdateSecondPost(t *testing.T) {
+	testUpdatePost(t, "Second post edited", "This is edited second post", "")
+}
+
+func TestControlPanelListing(t *testing.T) {
+
+	Convey("should list both posts", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+		doc.Find("ul").Each(func(i int, s *goquery.Selection) {
+			So(i, ShouldBeLessThanOrEqualTo, post.ID)
+		})
+	})
+}
+
+func TestCreateThirdPost(t *testing.T) {
+	testUpdatePost(t, "Third post", "This is third post", "")
+	TestPublishPost(t)
+	TestReadPost(t)
+	TestControlPanelListing(t)
+}
+
+func TestDeletePost(t *testing.T) {
+
+	Convey("using API", t, func() {
+
+		Convey("it should return 401 without sessioncookies", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/delete", post.Slug), nil)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
 		})
 
-		Context("creation", func() {
-
-			It("should return HTTP 200", func() {
-				payload := `{"title": "First post", "content": "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`
-				request, _ := http.NewRequest("POST", "/api/post", strings.NewReader(payload))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post.ID).To(Equal(int64(1)))
-				Expect(post.Title).To(Equal("First post"))
-				Expect(post.Content).To(Equal(`This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place.`))
-				Expect(post.Markdown).To(Equal(""))
-				Expect(post.Slug).To(Equal("first-post"))
-				Expect(post.Author).To(Equal(int64(1)))
-				Expect(post.Date).Should(BeNumerically(">", int64(0)))
-				Expect(post.Excerpt).To(Equal("This is example post with HTML elements like bold and italics in place."))
-				Expect(post.Viewcount).To(Equal(uint(0)))
-				*globalpost = post
-				flag.Set("postslug", post.Slug)
-			})
+		Convey("it should return 401 with malformed sessioncookie", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/delete", post.Slug), nil)
+			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
 		})
 
-		Context("reading", func() {
-
-			It("non-existent slug should return not found", func() {
-				request, _ := http.NewRequest("GET", "/api/post/foo", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-			})
-
-			It("should return 406 when accessing slug called `new`", func() {
-				request, _ := http.NewRequest("GET", "/api/post/new", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(400))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"There can't be a post called 'new'."}`))
-			})
-
-			It("post which exists should return 200 OK", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug, nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post).To(Equal(*globalpost))
-				globalpost.Viewcount = uint(globalpost.Viewcount + 1)
-			})
-
-			It("on frontend, post which exists should return 200 OK", func() {
-				request, _ := http.NewRequest("GET", "/post/"+*postslug, nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				globalpost.Viewcount = uint(globalpost.Viewcount + 1)
-			})
+		Convey("it should return 404 when trying to delete non-existent post", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/post/foobar/delete", nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Not found"}`)
 		})
 
-		Context("publishing", func() {
-
-			It("without session data should return HTTP 401", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-			})
-
-			It("with session data should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("after publishing, the post should be displayed on frontpage", func() {
-				request, _ := http.NewRequest("GET", "/", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				sel := doc.Find("article h1").Text()
-				Expect(sel).To(Equal("First post"))
-			})
-
-			It("after publishing, the post should be displayed trough API", func() {
-				request, _ := http.NewRequest("GET", "/api/posts", nil)
-				server.ServeHTTP(recorder, request)
-				var posts []Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
-					panic(err)
-				}
-				for i, post := range posts {
-					Expect(i).To(Equal(0))
-					Expect(post).To(Equal(*globalpost))
-				}
-			})
-		})
-
-		Context("owner of the first post", func() {
-
-			It("should have the post listed in their account", func() {
-				request, _ := http.NewRequest("GET", "/api/user/1", nil)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var user User
-				if err := json.Unmarshal(recorder.Body.Bytes(), &user); err != nil {
-					panic(err)
-				}
-				Expect(user.ID).To(Equal(int64(1)))
-				Expect(user.Name).To(Equal("Juuso"))
-				Expect(user.Email).To(Equal("vertigo-test@mailinator.com"))
-				Expect(user.Posts[0]).To(Equal(*globalpost))
-			})
-		})
-
-		Context("updating", func() {
-
-			It("loading frontend edit page should respond 200 OK", func() {
-				request, _ := http.NewRequest("GET", "/post/"+*postslug+"/edit", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should return 401 without authorization", func() {
-				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-
-			It("should return 401 without malformed authorization", func() {
-				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-
-			It("should return 404 with non-existent post", func() {
-				request, _ := http.NewRequest("POST", "/api/post/foobar/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-			})
-
-			It("should return HTTP 302 when using frontend", func() {
-				request, _ := http.NewRequest("POST", "/post/"+*postslug+"/edit", strings.NewReader(`title=First post edited&content=This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
-
-			It("should return the updated post structure", func() {
-				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				globalpost.Title = "First post edited"
-				globalpost.Content = "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."
-				globalpost.Excerpt = "This is an EDITED example post with HTML elements like bold and italics in place."
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post).To(Equal(*globalpost))
-			})
-
-			It("after updating, the post should not be displayed on frontpage", func() {
-				request, _ := http.NewRequest("GET", "/", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-				sel := doc.Find("article h1").Text()
-				Expect(sel).To(Equal(""))
-			})
-
-			It("after updating, the post should not be displayed trough API", func() {
-				request, _ := http.NewRequest("GET", "/api/posts", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal("[]"))
-			})
-		})
-
-		Context("reading after updating", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug, nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post).To(Equal(*globalpost))
-			})
-		})
-
-		Context("creating second post", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Second post", "content": "This is second post"}`))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post.ID).To(Equal(int64(2)))
-				Expect(post.Title).To(Equal("Second post"))
-				Expect(post.Content).To(Equal(`This is second post`))
-				Expect(post.Markdown).To(Equal(""))
-				Expect(post.Slug).To(Equal("second-post"))
-				Expect(post.Author).To(Equal(int64(1)))
-				Expect(post.Date).Should(BeNumerically(">", int64(0)))
-				Expect(post.Excerpt).To(Equal("This is second post"))
-				Expect(post.Viewcount).To(Equal(uint(0)))
-				*globalpost = post
-				flag.Set("postslug", post.Slug)
-			})
-		})
-
-		Context("updating second post", func() {
-
-			It("should return the updated post structure", func() {
-				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "Second post edited", "content": "This is edited second post"}`))
-				globalpost.Title = "Second post edited"
-				globalpost.Content = "This is edited second post"
-				globalpost.Excerpt = "This is edited second post"
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post).To(Equal(*globalpost))
-			})
-		})
-
-		Context("reading posts on user control panel", func() {
-
-			It("should list both of them", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
-					Expect(i).Should(BeNumerically("<=", 1))
-				})
-			})
-		})
-
-		Context("creating third post", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Third post", "content": "This is second post"}`))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				flag.Set("postslug", post.Slug)
-			})
-		})
-
-		Context("publishing third post", func() {
-
-			It("with session data should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/post/third-post/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should return 302 on frontend", func() {
-				request, _ := http.NewRequest("GET", "/post/third-post/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
-		})
-
-		Context("reading third post after publishing", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug, nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-		})
-
-		Context("reading all three posts on user control panel", func() {
-
-			It("should list all three of them", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
-					Expect(i).Should(BeNumerically("<=", 2))
-				})
-			})
-		})
-
-		Context("deleting third post", func() {
-
-			It("should return 401 without sessioncookies", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-
-			It("should return when using malformed sessioncookie", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
-				cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-
-			It("should return 404 when trying to delete non-existent post", func() {
-				request, _ := http.NewRequest("GET", "/api/post/foobar/delete", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-			})
-
-			It("should return 200 with sessioncookies", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should after deletion, only list two posts on user control panel", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				doc.Find("ul").Each(func(i int, s *goquery.Selection) {
-					Expect(i).Should(BeNumerically("<=", 1))
-				})
-			})
-		})
-
-		Context("Settings on /user/settings", func() {
-
-			It("reading without sessioncookies it should return 401", func() {
-				request, _ := http.NewRequest("GET", "/api/settings", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-			})
-
-			It("reading with sessioncookies it should return 200", func() {
-				request, _ := http.NewRequest("GET", "/api/settings", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				var settings Vertigo
-				if err := json.Unmarshal(recorder.Body.Bytes(), &settings); err != nil {
-					panic(err)
-				}
-				var settingsWithoutCookieHash Vertigo
-				settingsWithoutCookieHash = *Settings
-				settingsWithoutCookieHash.CookieHash = ""
-				Expect(settings).To(Equal(settingsWithoutCookieHash))
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("frontend, reading with sessioncookies it should return 200", func() {
-				request, _ := http.NewRequest("GET", "/user/settings", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("updating without sessioncookie", func() {
-				request, _ := http.NewRequest("POST", "/api/settings", strings.NewReader(`{"name":"Juuso's Blog","hostname":"example.com","allowregistrations":false,"markdown":false,"description":"Foo's test blog","mailgun":{"mgdomain":"foo","mgprikey":"foo"}}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-			})
-
-			It("updating with sessioncookie", func() {
-				var settings Vertigo
-				settings = *Settings
-				settings.Name = "Foo's Blog"
-				settings.AllowRegistrations = false
-				payload, _ := json.Marshal(settings)
-				request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"success":"Settings were successfully saved"}`))
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("reading with sessioncookies it should return 200", func() {
-				request, _ := http.NewRequest("GET", "/api/settings", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				var settings Vertigo
-				if err := json.Unmarshal(recorder.Body.Bytes(), &settings); err != nil {
-					panic(err)
-				}
-				var settingsWithoutCookieHash Vertigo
-				settingsWithoutCookieHash = *Settings
-				settingsWithoutCookieHash.CookieHash = ""
-				Expect(settings).To(Equal(settingsWithoutCookieHash))
-				Expect(recorder.Code).To(Equal(200))
-			})
+		Convey("it should return 200 with successful sessioncookies", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/delete", post.Slug), nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, `{"success":"Post deleted"}`)
+			post.ID--
 		})
 	})
 
-	Describe("Users", func() {
+	TestControlPanelListing(t)
+}
 
-		Context("creation after allowregistrations is false", func() {
+func TestReadSettings(t *testing.T) {
 
-			It("should return HTTP 403", func() {
-				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "hello", "email": "bar@example.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(403))
-			})
+	Convey("using API", t, func() {
 
-			It("should return HTTP 403 on frontend", func() {
-				request, _ := http.NewRequest("POST", "/user/register", strings.NewReader(`name=Juuso&password=hello&email=bar@example.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(403))
-			})
+		Convey("it should return 401 without sessioncookies", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/settings", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+		})
+
+		Convey("reading with malformed sessioncookies it should return 401", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/settings", nil)
+			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			request.AddCookie(cookie)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+		})
+
+		Convey("reading with sessioncookies it should return 200", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/settings", nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+
+			var returnedSettings Vertigo
+			json.Unmarshal(recorder.Body.Bytes(), &returnedSettings)
+
+			var settingsWithoutCookieHash = settings
+			settingsWithoutCookieHash.CookieHash = ""
+
+			So(returnedSettings, ShouldResemble, settingsWithoutCookieHash)
 		})
 	})
 
-	Describe("Markdown", func() {
+	Convey("using frontend", t, func() {
 
-		Context("switching to Markdown", func() {
-
-			It("changing settings should return HTTP 200", func() {
-				var settings Vertigo
-				settings = *Settings
-				settings.Markdown = true
-				payload, _ := json.Marshal(settings)
-				request, _ = http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
-				request.Header.Set("Content-Type", "application/json")
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should change global Settings variable", func() {
-				request, _ = http.NewRequest("GET", "/api/settings", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(Settings.Markdown).To(Equal(true))
-				Expect(Settings.AllowRegistrations).To(Equal(false))
-				Expect(recorder.Code).To(Equal(200))
-			})
+		Convey("without sessioncookies it should return 401", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/user/settings", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
 		})
 
-		Context("accessing control panel after changing settings", func() {
-
-			It("should show that we can't edit pages", func() {
-				request, _ := http.NewRequest("GET", "/user", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
+		Convey("with malformed sessioncookies it should return 401", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/user/settings", nil)
+			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			request.AddCookie(cookie)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
 		})
 
-		Context("loading post creation page after changing settings", func() {
-
-			It("should check whether we have Markdown enabled", func() {
-				request, _ := http.NewRequest("GET", "/post/new", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-		})
-
-		Context("posts", func() {
-
-			It("creating one should return 200", func() {
-				request, _ := http.NewRequest("POST", "/api/post", strings.NewReader(`{"title": "Markdown post", "markdown": "### foo\n*foo* foo **foo**"}`))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				var post Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &post); err != nil {
-					panic(err)
-				}
-				Expect(post.ID).To(Equal(int64(3)))
-				Expect(post.Title).To(Equal("Markdown post"))
-				Expect(post.Content).To(Equal("\u003ch3\u003efoo\u003cem\u003efoo\u003c/em\u003e foo \u003cstrong\u003efoo\u003c/strong\u003e\u003c/h3\u003e\n"))
-				Expect(post.Markdown).To(Equal("### foo\n*foo* foo **foo**"))
-				Expect(post.Slug).To(Equal("markdown-post"))
-				Expect(post.Author).To(Equal(int64(1)))
-				Expect(post.Date).Should(BeNumerically(">", int64(0)))
-				Expect(post.Viewcount).To(Equal(uint(0)))
-				*globalpost = post
-				flag.Set("postslug", post.Slug)
-				Expect(recorder.Code).To(Equal(200))
-			})
-		})
-
-		Context("publishing", func() {
-
-			It("should return error on non-existent ID", func() {
-				request, _ := http.NewRequest("GET", "/api/post/foo-post/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Not found"}`))
-				Expect(recorder.Code).To(Equal(404))
-			})
-
-			It("should return error without authentication", func() {
-				request, _ := http.NewRequest("GET", "/api/post/markdown-post/publish", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-				Expect(recorder.Code).To(Equal(401))
-			})
-
-			It("with session data should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/post/markdown-post/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"success":"Post published"}`))
-				Expect(recorder.Code).To(Equal(200))
-			})
+		Convey("with successful sessioncookies it should return 200", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/user/settings", nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
 		})
 	})
 
-	Describe("Feeds", func() {
+}
 
-		Context("reading feeds without defining feed type", func() {
+func TestUpdateSettings(t *testing.T) {
 
-			It("should redirect to RSS", func() {
-				request, _ := http.NewRequest("GET", "/feeds", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-				Expect(recorder.HeaderMap["Location"][0]).To(Equal("/feeds/rss"))
-			})
+	var s Vertigo
+	s = settings
+	s.Name = "Foo's Blog"
+	s.AllowRegistrations = false
+	payload, _ := json.Marshal(s)
+
+	testUpdateSettings(t, payload, s)
+
+	settings.Name = s.Name
+	settings.AllowRegistrations = false
+
+	TestReadSettings(t)
+}
+
+func testUpdateSettings(t *testing.T, payload []byte, s Vertigo) {
+
+	Convey("using API", t, func() {
+
+		Convey("without sessioncookies", func() {
+			var recorder = httptest.NewRecorder()
+			payload, _ := json.Marshal(settings)
+			request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
 		})
 
-		Context("when defining feed", func() {
+		Convey("with successful sessioncookies", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, `{"success":"Settings were successfully saved"}`)
+			So(Settings, ShouldResemble, &s)
+		})
+	})
+}
 
-			AfterEach(func() {
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.HeaderMap["Content-Type"][0]).To(Equal("application/xml"))
-			})
+func TestAllowRegistration(t *testing.T) {
 
-			It("should be RSS in /rss", func() {
-				request, _ = http.NewRequest("GET", "/feeds/rss", nil)
-			})
+	Convey("creation after allowregistrations is false", t, func() {
 
-			It("should be Atom in /atom", func() {
-				request, _ = http.NewRequest("GET", "/feeds/atom", nil)
-			})
+		Convey("should return HTTP 403", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(`{"name": "Juuso", "password": "hello", "email": "bar@example.com"}`))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 403)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"New registrations are not allowed at this time."}`)
+		})
+
+		Convey("should return HTTP 403 on frontend", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/register", strings.NewReader(`name=Juuso&password=hello&email=bar@example.com`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 403)
+		})
+	})
+}
+
+func TestMarkdown(t *testing.T) {
+
+	var s Vertigo
+	s = settings
+	s.Markdown = true
+	payload, _ := json.Marshal(s)
+
+	// switch settings to Markdown
+	testUpdateSettings(t, payload, s)
+
+	settings.Markdown = true
+
+	TestReadSettings(t)
+	TestControlPanelListing(t)
+	TestPostCreationPage(t)
+
+	post.Markdown = "### foo\n*foo* foo **foo**"
+	post.Content = string(blackfriday.MarkdownCommon([]byte(cleanup(post.Markdown))))
+
+	testCreatePost(t, 1, "Markdown post", post.Content, post.Markdown)
+	TestPublishPost(t)
+}
+
+func TestFeeds(t *testing.T) {
+
+	Convey("reading feeds without defining feed type", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/feeds", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 302)
+		So(recorder.HeaderMap["Location"][0], ShouldEqual, "/feeds/rss")
+	})
+
+	Convey("when defining feed", t, func() {
+
+		Convey("it should be RSS on /rss", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/feeds/rss", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.HeaderMap["Content-Type"][0], ShouldEqual, "application/xml")
+		})
+
+		Convey("it should be Atom on /atom", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/feeds/atom", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.HeaderMap["Content-Type"][0], ShouldEqual, "application/xml")
+		})
+	})
+}
+
+func TestSearch(t *testing.T) {
+
+	Convey("using API", t, func() {
+
+		Convey("searching for the latest post should return it", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(fmt.Sprintf(`{"query": "%s"}`, post.Title)))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			var posts []Post
+			json.Unmarshal(recorder.Body.Bytes(), &posts)
+			for i, p := range posts {
+				So(i, ShouldEqual, 0)
+				So(p, ShouldResemble, post)
+			}
+		})
+
+		Convey("searching for non-existent post should return empty JSON array", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "foobar"}`))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, "[]")
 		})
 	})
 
-	Describe("Search", func() {
+	Convey("on frontend", t, func() {
 
-		Context("searching for the published Markdown post", func() {
-
-			AfterEach(func() {
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should return it", func() {
-				request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "markdown"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				var posts []Post
-				if err := json.Unmarshal(recorder.Body.Bytes(), &posts); err != nil {
-					panic(err)
-				}
-				for i, post := range posts {
-					Expect(i).To(Equal(0))
-					Expect(post).To(Equal(*globalpost))
-				}
-			})
+		Convey("searching for the latest post using title", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(fmt.Sprintf(`query=%s`, post.Title)))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("h1").Text()
+			So(sel, ShouldEqual, post.Title)
 		})
 
-		Context("searching with a query which is not contained in any post", func() {
-
-			It("should return empty array in JSON", func() {
-				request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "foofoobarbar"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal("[]"))
-			})
+		Convey("searching for the latest post using content", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foo`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("h1").Text()
+			So(sel, ShouldEqual, post.Title)
 		})
 
-		Context("searching for the published Markdown post on frontend", func() {
+		Convey("searching with a query which is not container in any post", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foofoobarbar`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+			sel := doc.Find("h2").Text()
+			So(sel, ShouldEqual, "Nothing found.")
+		})
+	})
+}
 
-			It("should return it", func() {
-				request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=markdown`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				sel := doc.Find("h1").Text()
-				Expect(sel).To(Equal("Markdown post"))
-			})
+func TestUserLogout(t *testing.T) {
+
+	Convey("using API", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/user/logout", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, `{"success":"You've been logged out."}`)
+	})
+
+	Convey("using frontend", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/user/logout", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 302)
+	})
+}
+
+func TestPasswordRecovery(t *testing.T) {
+
+	Convey("using frontend", t, func() {
+
+		Convey("should return 401 with email which does not exist", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(`email=foobar@example.com`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"User with that email does not exist."}`)
 		})
 
-		Context("searching for the published Markdown using the content", func() {
-
-			It("should return it", func() {
-				request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foo`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				sel := doc.Find("h1").Text()
-				Expect(sel).To(Equal("Markdown post"))
-			})
-		})
-
-		Context("searching with a query which is not contained in any post on frontend", func() {
-
-			It("should display nothing found page", func() {
-				request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foofoobarbar`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				doc, err := goquery.NewDocumentFromReader(recorder.Body)
-				if err != nil {
-					panic(err)
-				}
-				sel := doc.Find("h2").Text()
-				Expect(sel).To(Equal("Nothing found."))
-			})
+		Convey("should return 302 with latest user email", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(fmt.Sprintf(`email=%s`, user.Email)))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 302)
 		})
 	})
 
-	Describe("Users", func() {
+	Convey("using API", t, func() {
 
-		Context("logging out", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("GET", "/api/user/logout", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should return HTTP 302 on frontend", func() {
-				request, _ := http.NewRequest("GET", "/user/logout", nil)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
+		Convey("should return 200 with latest user email", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/user/recover", strings.NewReader(fmt.Sprintf(`email=%s`, user.Email)))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			So(recorder.Body.String(), ShouldEqual, `{"success":"We've sent you a link to your email which you may use you reset your password."}`)
 		})
 	})
 
-	Describe("Password recovery", func() {
+	testShouldRecoveryFieldBeBlank(t, false)
+}
 
-		var recovery string
+func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 
-		Context("with email which does not exist", func() {
+	Convey("the latest user should have recovery key defined", t, func() {
+		db, _ := gorm.Open(*driver, *dbsource)
+		user, _ = user.GetByEmail(&db)
+		if value == false {
+			So(user.Recovery, ShouldNotBeBlank)
+		} else {
+			So(user.Recovery, ShouldEqual, " ")
+		}
+		recovery = user.Recovery
+	})
+}
 
-			It("should respond 401", func() {
-				request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(`email=foobar@example.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"User with that email does not exist."}`))
-			})
+func TestPasswordReset(t *testing.T) {
+
+	Convey("using frontend", t, func() {
+
+		Convey("should return 400 when ID is malformed", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/reset/foobar/"+recovery, strings.NewReader(`password=newpassword`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 400)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"User ID could not be parsed from request URL."}`)
 		})
 
-		Context("with email which does exist", func() {
-
-			It("should redirect to login page with notification", func() {
-				request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(`email=vertigo-test@mailinator.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
-
-			It("should respond with success message", func() {
-				request, _ := http.NewRequest("POST", "/api/user/recover", strings.NewReader(`{"email":"vertigo-test@mailinator.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"success":"We've sent you a link to your email which you may use you reset your password."}`))
-			})
+		Convey("should return 400 when recovery UUID does not pass UUID checks", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/reset/1/foobar", strings.NewReader(`password=newpassword`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 400)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Could not parse UUID from the request."}`)
 		})
 
-		Context("the user structure", func() {
-
-			It("should have the recovery key in place", func() {
-				db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
-				if err != nil {
-					panic(err)
-				}
-
-				var user User
-				user.Email = "vertigo-test@mailinator.com"
-				user, err = user.GetByEmail(&db)
-				if err != nil {
-					panic(err)
-				}
-				recovery = user.Recovery
-				Expect(user.Recovery).ShouldNot(Equal(""))
-			})
-		})
-
-		Context("resetting the password", func() {
-
-			It("should return HTTP 400 when ID is malformed", func() {
-				request, _ := http.NewRequest("POST", "/user/reset/foobar/"+recovery, strings.NewReader(`password=newpassword`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(400))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"User ID could not be parsed from request URL."}`))
-			})
-
-			It("should return HTTP 400 when recovery UUID is malformed", func() {
-				request, _ := http.NewRequest("POST", "/user/reset/1/foobar", strings.NewReader(`password=newpassword`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(400))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Could not parse UUID from the request."}`))
-			})
-
-			It("should return HTTP 404 when ID is non-existent", func() {
-				request, _ := http.NewRequest("POST", "/user/reset/5/"+recovery, strings.NewReader(`password=newpassword`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(404))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"User with that ID does not exist."}`))
-			})
-
-			It("the route should redirect", func() {
-				request, _ := http.NewRequest("POST", "/api/user/reset/1/"+recovery, strings.NewReader(`{"password":"newpassword"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should not have the recovery key in place", func() {
-				db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
-				if err != nil {
-					panic(err)
-				}
-
-				var user User
-				user.Email = "vertigo-test@mailinator.com"
-				user, err = user.GetByEmail(&db)
-				if err != nil {
-					panic(err)
-				}
-				recovery = user.Recovery
-				Expect(user.Recovery).To(Equal(" "))
-			})
-
-			It("the login should now work", func() {
-				request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(`email=vertigo-test@mailinator.com&password=newpassword`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.HeaderMap["Location"][0]).To(Equal("/user"))
-				Expect(recorder.Code).To(Equal(302))
-			})
-		})
-
-		Context("recovery key expiration", func() {
-
-			It("should redirect to login page with notification", func() {
-				request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(`email=vertigo-test@mailinator.com`))
-				request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(302))
-			})
-		})
-
-		Context("the user structure", func() {
-
-			It("should have the recovery key in place", func() {
-				db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
-				if err != nil {
-					panic(err)
-				}
-
-				var user User
-				user.Email = "vertigo-test@mailinator.com"
-				user, err = user.GetByEmail(&db)
-				if err != nil {
-					panic(err)
-				}
-				recovery = user.Recovery
-				Expect(user.Recovery).ShouldNot(Equal(" "))
-			})
-
-			It("the recovery key should expire in 1 second", func() {
-
-				db, err := gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
-				if err != nil {
-					panic(err)
-				}
-
-				var user User
-				user.ID = int64(1)
-				go user.ExpireRecovery(&db, 1*time.Second)
-				time.Sleep(2 * time.Second)
-
-				db, err = gorm.Open(os.Getenv("driver"), os.Getenv("dbsource"))
-				if err != nil {
-					panic(err)
-				}
-
-				user, err = user.Get(&db)
-				if err != nil {
-					panic(err)
-				}
-				recovery = user.Recovery
-				Expect(user.Recovery).Should(Equal(" "))
-			})
+		Convey("should return 400 when user with given ID does not exist", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", fmt.Sprintf(`/user/reset/%d/%s`, user.ID+1, user.Recovery), strings.NewReader(`password=newpassword`))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 400)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"User with that ID does not exist."}`)
 		})
 	})
 
-	Describe("Second user", func() {
+	Convey("using API", t, func() {
 
-		Context("creation", func() {
-
-			It("updating with sessioncookie", func() {
-				var settings Vertigo
-				settings = *Settings
-				settings.AllowRegistrations = true
-				payload, _ := json.Marshal(settings)
-				request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
-				cookie := &http.Cookie{Name: "user", Value: *sessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Body.String()).To(Equal(`{"success":"Settings were successfully saved"}`))
-				Expect(recorder.Code).To(Equal(200))
-			})
-
-			It("should return HTTP 200", func() {
-				payload := `{"name": "Juuso", "password": "foo", "email": "vertigo-test2@mailinator.com"}`
-				request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(payload))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"id":2,"name":"Juuso","email":"vertigo-test2@mailinator.com","posts":[]}`))
-			})
-		})
-
-		Context("signing in", func() {
-
-			It("should return HTTP 200", func() {
-				request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(`{"name": "Juuso", "password": "foo", "email": "vertigo-test2@mailinator.com"}`))
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				// i assure, nothing else worked
-				cookie := strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
-				secondusersessioncookie = cookie
-				Expect(recorder.Code).To(Equal(200))
-				Expect(recorder.Body.String()).To(Equal(`{"id":2,"name":"Juuso","email":"vertigo-test2@mailinator.com","posts":[]}`))
-			})
-		})
-
-		Context("updating a post of another user", func() {
-
-			It("should return the updated post structure", func() {
-				request, _ := http.NewRequest("POST", "/api/post/"+*postslug+"/edit", strings.NewReader(`{"title": "First post edited twice", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
-				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-		})
-
-		Context("publishing a post of another user", func() {
-
-			It("should return 401", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/publish", nil)
-				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
-				request.AddCookie(cookie)
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
-		})
-
-		Context("deleting a post of another user", func() {
-
-			It("should return 401", func() {
-				request, _ := http.NewRequest("GET", "/api/post/"+*postslug+"/delete", nil)
-				cookie := &http.Cookie{Name: "user", Value: secondusersessioncookie}
-				request.AddCookie(cookie)
-				request.Header.Set("Content-Type", "application/json")
-				server.ServeHTTP(recorder, request)
-				Expect(recorder.Code).To(Equal(401))
-				Expect(recorder.Body.String()).To(Equal(`{"error":"Unauthorized"}`))
-			})
+		Convey("should return 200 with valid information", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", fmt.Sprintf(`/api/user/reset/%d/%s`, user.ID, user.Recovery), strings.NewReader(`{"password":"newpassword"}`))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 200)
+			user.Password = "newpassword"
 		})
 	})
-})
+
+	testShouldRecoveryFieldBeBlank(t, true)
+	TestUserSignin(t)
+}
+
+func TestRecoveryKeyExpiration(t *testing.T) {
+
+	Convey("using frontend", t, func() {
+
+		Convey("should redirect to login page with notification", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(fmt.Sprintf(`email=vertigo-test@mailinator.com`, user.Email)))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 302)
+		})
+	})
+
+	testShouldRecoveryFieldBeBlank(t, false)
+
+	Convey("recovery key should be blank after expiring", t, func() {
+
+		db, _ := gorm.Open(*driver, *dbsource)
+
+		var u User
+		u.ID = int64(1)
+		go u.ExpireRecovery(&db, 1*time.Second)
+		time.Sleep(2 * time.Second)
+
+		db, _ = gorm.Open(*driver, *dbsource)
+
+		u, _ = user.Get(&db)
+		So(u.Recovery, ShouldEqual, " ")
+	})
+}
+
+func TestPostSecuity(t *testing.T) {
+
+	var s Vertigo
+	s = settings
+	s.AllowRegistrations = true
+	payload, _ := json.Marshal(s)
+
+	testUpdateSettings(t, payload, s)
+
+	settings.AllowRegistrations = true
+
+	TestReadSettings(t)
+
+	user.Name = "Juuso"
+	user.Password = "foo"
+	user.Email = "vertigo-test2@mailinator.com"
+	payload2 := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)
+
+	testCreateUser(t, payload2, user.Name, user.Email)
+	TestUserSignin(t)
+
+	Convey("using API", t, func() {
+
+		Convey("updating post of another user", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/post/"+post.Slug+"/edit", strings.NewReader(`{"title": "First post edited twice", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+		})
+
+		Convey("publishing post of another user", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/post/"+post.Slug+"/publish", nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+		})
+
+		Convey("deleting post of another user", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("GET", "/api/post/"+post.Slug+"/delete", nil)
+			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			request.AddCookie(cookie)
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 401)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Unauthorized"}`)
+		})
+	})
+}
+
+func TestDropDatabase(t *testing.T) {
+	os.Remove("settings.json")
+	os.Remove("vertigo.db")
+}

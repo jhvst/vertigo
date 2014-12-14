@@ -1,6 +1,6 @@
 {
 	"ImportPath": "github.com/9uuso/vertigo",
-	"GoVersion": "go1.3.3",
+	"GoVersion": "go1.4",
 	"Deps": [
 		{
 			"ImportPath": "code.google.com/p/cascadia",
@@ -15,6 +15,10 @@
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
 			"Rev": "7c2d2c5600396af3487ba032cd9299e70177a609"
+		},
+		{
+			"ImportPath": "github.com/9uuso/unidecode",
+			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
@@ -78,6 +82,10 @@
 			"Rev": "84954e67798bd69748207dbab310c9800c29685a"
 		},
 		{
+			"ImportPath": "github.com/jtolds/gls",
+			"Rev": "f1ac7f4f24f50328e6bc838ca4437d1612a0243c"
+		},
+		{
 			"ImportPath": "github.com/kennygrant/sanitize",
 			"Rev": "f2c9d81a418ab09c76ed48965aae009c60e5ff67"
 		},
@@ -115,16 +123,6 @@
 			"Rev": "6894781bc95b6a11c8b4e4a83eedb06c8a0b4536"
 		},
 		{
-			"ImportPath": "github.com/onsi/ginkgo",
-			"Comment": "v1.1.0-25-g9c7cbc4",
-			"Rev": "9c7cbc493e1b6f86b6c67d4538c1f42b2ac85d4f"
-		},
-		{
-			"ImportPath": "github.com/onsi/gomega",
-			"Comment": "v1.0-25-g85936b2",
-			"Rev": "85936b29809b7df066a8d839dd105e158e510264"
-		},
-		{
 			"ImportPath": "github.com/oxtoacart/bpool",
 			"Rev": "0f78ff9152c03745d1a47c9023af1b424e202c07"
 		},
@@ -136,6 +134,15 @@
 			"ImportPath": "github.com/russross/blackfriday",
 			"Comment": "v1.2-21-g7c8f3c1",
 			"Rev": "7c8f3c1dcc7e0f87c62af34ee193fc3251f6d8a4"
+		},
+		{
+			"ImportPath": "github.com/shurcooL/go/github_flavored_markdown/sanitized_anchor_name",
+			"Rev": "c53996fe3f061319df88893596bfc50547f1768d"
+		},
+		{
+			"ImportPath": "github.com/smartystreets/goconvey/convey",
+			"Comment": "1.5.0-345-g432ed38",
+			"Rev": "432ed384e87b0d670f738ef45d613e513c0456d0"
 		},
 		{
 			"ImportPath": "golang.org/x/crypto/bcrypt",
@@ -151,6 +158,10 @@
 			"ImportPath": "golang.org/x/net/html",
 			"Comment": "null-223",
 			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
+		},
+		{
+			"ImportPath": "gopkgs.com/pool.v1",
+			"Rev": "c850f092aad1780cbffff25f471c5cc32097932a"
 		}
 	]
 }
