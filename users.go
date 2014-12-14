@@ -243,7 +243,7 @@ func ResetUserPassword(req *http.Request, params martini.Params, res render.Rend
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
-			res.JSON(404, map[string]interface{}{"error": "User with that ID does not exist."})
+			res.JSON(400, map[string]interface{}{"error": "User with that ID does not exist."})
 			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
