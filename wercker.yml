@@ -32,8 +32,7 @@ build:
         name: go test
         code: |
           godep get github.com/PuerkitoBio/goquery
-          godep get github.com/onsi/ginkgo
-          godep get github.com/onsi/gomega
+          godep get github.com/smartystreets/goconvey/convey
           godep go test ./...
 
     - tcnksm/goveralls:
