@@ -1183,7 +1183,7 @@ func TestPostSecuity(t *testing.T) {
 		})
 
 		Convey("deleting post of another user", func() {
-			var recorder = httptest.NewRecorder()			
+			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/post/"+post.Slug+"/delete", nil)
 			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
 			request.AddCookie(cookie)
