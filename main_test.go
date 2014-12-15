@@ -196,14 +196,26 @@ func TestCreateFirstUser(t *testing.T) {
 	user.Name = "Juuso"
 	user.Password = "foo"
 	user.Email = "vertigo-test@mailinator.com"
-	payload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)
-
-	testCreateUser(t, payload, user.Name, user.Email)
+	testCreateUser(t, user.Name, user.Password, user.Email)
 }
 
-func testCreateUser(t *testing.T, payload string, name string, email string) {
+func testCreateUser(t *testing.T, name string, password string, email string) {
+
+	// Convey("using frontend", t, func() {
+
+	// 	Convey("with valid input it should return 200 OK", func() {
+	// 		var recorder = httptest.NewRecorder()
+	// 		payload := fmt.Sprintf(`name=%s&password=%s&email=%s`, name, password, email)
+	// 		request, _ := http.NewRequest("POST", "/user/register", strings.NewReader(payload))
+	// 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// 		server.ServeHTTP(recorder, request)
+	// 		So(recorder.Code, ShouldEqual, 302)
+	// 	})
+	// })
 
 	Convey("using API", t, func() {
+
+		payload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, name, password, email)
 
 		Convey("with valid input it should return 200 OK", func() {
 			var recorder = httptest.NewRecorder()
@@ -236,6 +248,17 @@ func TestReadUser(t *testing.T) {
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
 		So(recorder.Body.String(), ShouldEqual, `{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`)
+	})
+}
+
+func TestReadUsers(t *testing.T) {
+
+	Convey("reading all users return 200 OK", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/users/", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, `[{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}]`)
 	})
 }
 
@@ -276,7 +299,16 @@ func TestUserSignin(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 404)
 		})
+
+		Convey("should return 302 with valid data", func() {
+			request, _ := http.NewRequest("POST", "/user/login", strings.NewReader(fmt.Sprintf(`password=%s&email=%s`, user.Password, user.Email)))
+			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 302)
+		})
 	})
+
+	TestUserLogout(t)
 
 	Convey("on JSON API", t, func() {
 		var recorder = httptest.NewRecorder()
@@ -296,7 +328,7 @@ func TestUserSignin(t *testing.T) {
 		})
 
 		Convey("should return 200 with valid data", func() {
-			request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)))
+			request, _ := http.NewRequest("POST", "/api/user/login", strings.NewReader(fmt.Sprintf(`{"password":"%s", "email":"%s"}`, user.Password, user.Email)))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1008,7 +1040,7 @@ func TestUserLogout(t *testing.T) {
 	})
 }
 
-func TestPasswordRecovery(t *testing.T) {
+func testPasswordRecovery(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1059,7 +1091,7 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	})
 }
 
-func TestPasswordReset(t *testing.T) {
+func testPasswordReset(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1107,7 +1139,7 @@ func TestPasswordReset(t *testing.T) {
 	TestUserSignin(t)
 }
 
-func TestRecoveryKeyExpiration(t *testing.T) {
+func testRecoveryKeyExpiration(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1154,9 +1186,8 @@ func TestPostSecuity(t *testing.T) {
 	user.Name = "Juuso"
 	user.Password = "foo"
 	user.Email = "vertigo-test2@mailinator.com"
-	payload2 := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, user.Name, user.Password, user.Email)
 
-	testCreateUser(t, payload2, user.Name, user.Email)
+	testCreateUser(t, user.Name, user.Password, user.Email)
 	TestUserSignin(t)
 
 	Convey("using API", t, func() {
