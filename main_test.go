@@ -1093,7 +1093,7 @@ func TestUserLogout(t *testing.T) {
 	})
 }
 
-func testPasswordRecovery(t *testing.T) {
+func TestPasswordRecovery(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1144,7 +1144,7 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	})
 }
 
-func testPasswordReset(t *testing.T) {
+func TestPasswordReset(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1192,7 +1192,7 @@ func testPasswordReset(t *testing.T) {
 	TestUserSignin(t)
 }
 
-func testRecoveryKeyExpiration(t *testing.T) {
+func TestRecoveryKeyExpiration(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1279,7 +1279,7 @@ func TestPostSecuity(t *testing.T) {
 	})
 }
 
-// func TestDropDatabase(t *testing.T) {
-// 	os.Remove("settings.json")
-// 	os.Remove("vertigo.db")
-// }
+func TestDropDatabase(t *testing.T) {
+	os.Remove("settings.json")
+	os.Remove("vertigo.db")
+}
