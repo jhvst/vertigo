@@ -120,6 +120,7 @@ func NewServer() *martini.ClassicMartini {
 		r.Post("/:slug/edit", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, UpdatePost)
 		r.Get("/:slug/delete", ProtectedPage, DeletePost)
 		r.Get("/:slug/publish", ProtectedPage, PublishPost)
+		r.Get("/:slug/unpublish", ProtectedPage, UnpublishPost)
 		r.Post("/new", ProtectedPage, strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Post{}), binding.ErrorHandler, CreatePost)
 		r.Post("/search", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Search{}), binding.ErrorHandler, SearchPost)
 
@@ -178,6 +179,7 @@ func NewServer() *martini.ClassicMartini {
 		r.Get("/post/:slug", ReadPost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
 		r.Get("/post/:slug/publish", ProtectedPage, PublishPost)
+		r.Get("/post/:slug/unpublish", ProtectedPage, UnpublishPost)
 		r.Post("/post/:slug/edit", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, UpdatePost)
 		r.Get("/post/:slug/delete", ProtectedPage, DeletePost)
 		r.Post("/post", strict.ContentType("application/json"), binding.Json(Post{}), binding.ErrorHandler, ProtectedPage, CreatePost)
