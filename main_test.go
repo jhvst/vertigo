@@ -463,6 +463,15 @@ func TestReadPostSpecialCases(t *testing.T) {
 
 func TestPublishPost(t *testing.T) {
 
+	Convey("publishing post which does not exist", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/post/foobar/publish", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 404)
+	})
+
 	Convey("without session data should return HTTP 401", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
@@ -479,6 +488,45 @@ func TestPublishPost(t *testing.T) {
 		So(recorder.Body.String(), ShouldEqual, `{"success":"Post published"}`)
 		So(recorder.Code, ShouldEqual, 200)
 	})
+}
+
+func TestUnpublishPost(t *testing.T) {
+
+	Convey("unpublishing post which does not exist", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/post/foobar/unpublish", nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 404)
+	})
+
+	Convey("without session data should return HTTP 401", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/unpublish", post.Slug), nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 401)
+	})
+
+	Convey("with session data should return HTTP 200", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/unpublish", post.Slug), nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, `{"success":"Post unpublished"}`)
+	})
+
+	Convey("after unpublishing, the post should be hidden", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/posts", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.Body.String(), ShouldEqual, `[]`)
+	})
+
+	TestPublishPost(t)
 }
 
 func TestPostListing(t *testing.T) {
@@ -603,6 +651,32 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 	})
 }
 
+func TestPostAfterUpdating(t *testing.T) {
+
+	Convey("the post should be displayed on frontpage", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+		sel := doc.Find("article h1").Text()
+		So(sel, ShouldEqual, post.Title)
+	})
+
+	Convey("the post should not be displayed trough API", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/api/posts", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		var posts []Post
+		json.Unmarshal(recorder.Body.Bytes(), &posts)
+		for i, returnedPost := range posts {
+			So(i, ShouldEqual, 0)
+			So(returnedPost, ShouldResemble, post)
+		}
+	})
+}
+
 func testUpdatePostFrontend(t *testing.T, payload string) {
 
 	Convey("should return 302 with successful authorization", t, func() {
@@ -613,27 +687,6 @@ func testUpdatePostFrontend(t *testing.T, payload string) {
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 302)
-	})
-}
-
-func TestPostAfterUpdating(t *testing.T) {
-
-	Convey("the post should not be displayed on frontpage", t, func() {
-		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/", nil)
-		server.ServeHTTP(recorder, request)
-		So(recorder.Code, ShouldEqual, 200)
-		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-		sel := doc.Find("article h1").Text()
-		So(sel, ShouldBeEmpty)
-	})
-
-	Convey("the post should not be displayed trough API", t, func() {
-		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/api/posts", nil)
-		server.ServeHTTP(recorder, request)
-		So(recorder.Code, ShouldEqual, 200)
-		So(recorder.Body.String(), ShouldEqual, "[]")
 	})
 }
 
@@ -1226,7 +1279,7 @@ func TestPostSecuity(t *testing.T) {
 	})
 }
 
-func TestDropDatabase(t *testing.T) {
-	os.Remove("settings.json")
-	os.Remove("vertigo.db")
-}
+// func TestDropDatabase(t *testing.T) {
+// 	os.Remove("settings.json")
+// 	os.Remove("vertigo.db")
+// }

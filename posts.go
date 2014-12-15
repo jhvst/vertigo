@@ -252,22 +252,27 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	err = post.Unpublish(db, s)
+
+	var user User
+	user, err = user.Session(db, s)
 	if err != nil {
 		log.Println(err)
-		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	if post.Author == user.ID {
+		post, err = post.Update(db, entry)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+	} else {
+		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 		return
 	}
-	post, err = post.Update(db, entry)
-	if err != nil {
-		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
+
 	switch root(req) {
 	case "api":
 		res.JSON(200, post)
@@ -323,6 +328,54 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 		return
 	case "post":
 		res.Redirect("/post/"+post.Slug, 302)
+		return
+	}
+}
+
+// UnpublishPost is a route which unpublishes a post and therefore making it disappear from frontpage and search.
+// JSON request returns `HTTP 200 {"success": "Post unpublished"}` on success. Frontend call will redirect to
+// user control panel.
+// Requires active session cookie.
+// The route is anecdotal to route PublishPost().
+func UnpublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, db *gorm.DB) {
+	var post Post
+	post.Slug = params["slug"]
+	post, err := post.Get(db)
+	if err != nil {
+		if err.Error() == "not found" {
+			res.JSON(404, NotFound())
+			return
+		}
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	var user User
+	user, err = user.Session(db, s)
+	if err != nil {
+		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	if post.Author == user.ID {
+		err = post.Unpublish(db, s)
+		if err != nil {
+			log.Println(err)
+			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			return
+		}
+	} else {
+		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
+	switch root(req) {
+	case "api":
+		res.JSON(200, map[string]interface{}{"success": "Post unpublished"})
+		return
+	case "post":
+		res.Redirect("/user", 302)
 		return
 	}
 }
@@ -437,8 +490,11 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 		// entry.Markdown = Markdown of entry.Content
 	}
 	entry.Excerpt = Excerpt(entry.Content)
-	query := db.Where(&Post{Slug: post.Slug}).Find(&post).Updates(entry)
+	query := db.Where(&Post{Slug: post.Slug}).First(&post).Updates(entry)
 	if query.Error != nil {
+		if query.Error == gorm.RecordNotFound {
+			return post, errors.New("not found")
+		}
 		return post, query.Error
 	}
 	return post, nil
