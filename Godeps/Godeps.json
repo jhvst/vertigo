@@ -17,10 +17,6 @@
 			"Rev": "7c2d2c5600396af3487ba032cd9299e70177a609"
 		},
 		{
-			"ImportPath": "github.com/9uuso/unidecode",
-			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
-		},
-		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
 			"Comment": "v0.3.2-58-gffa8a68",
 			"Rev": "ffa8a68c9f2882d21c77b65737c84e2f8690fa1f"
@@ -34,10 +30,6 @@
 			"ImportPath": "github.com/codegangsta/inject",
 			"Comment": "v1.0-rc1-4-g4b81725",
 			"Rev": "4b8172520a03fa190f427bbd284db01b459bfce7"
-		},
-		{
-			"ImportPath": "github.com/fiam/gounidecode/unidecode",
-			"Rev": "311ebb7422d3ff70cc1d064c5a297520ff5f304a"
 		},
 		{
 			"ImportPath": "github.com/garyburd/redigo/internal",
@@ -162,6 +154,10 @@
 		{
 			"ImportPath": "gopkgs.com/pool.v1",
 			"Rev": "c850f092aad1780cbffff25f471c5cc32097932a"
+		},
+		{
+			"ImportPath": "gopkgs.com/unidecode.v1",
+			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
 		}
 	]
 }
