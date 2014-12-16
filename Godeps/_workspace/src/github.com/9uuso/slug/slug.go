@@ -6,7 +6,7 @@
 package slug
 
 import (
-	"gopkgs.com/unidecode.v1"
+	"github.com/9uuso/unidecode"
 	"regexp"
 	"strings"
 )

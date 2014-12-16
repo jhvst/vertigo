@@ -14,7 +14,15 @@
 		},
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
-			"Rev": "7ba0a88086a06506363ecc81485ea44d2308a647"
+			"Rev": "9821eb4138770a8abafa645aafad38a87468542d"
+		},
+		{
+			"ImportPath": "github.com/9uuso/slug",
+			"Rev": "b167a5b280dd5b74eb30c6568c8fc441bb1e57a0"
+		},
+		{
+			"ImportPath": "github.com/9uuso/unidecode",
+			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
@@ -64,10 +72,6 @@
 		{
 			"ImportPath": "github.com/gorilla/sessions",
 			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
-		},
-		{
-			"ImportPath": "github.com/gosimple/slug",
-			"Rev": "f7b92c2623d955e0137a140e7df493ba23708697"
 		},
 		{
 			"ImportPath": "github.com/jinzhu/gorm",
@@ -154,10 +158,6 @@
 		{
 			"ImportPath": "gopkgs.com/pool.v1",
 			"Rev": "c850f092aad1780cbffff25f471c5cc32097932a"
-		},
-		{
-			"ImportPath": "gopkgs.com/unidecode.v1",
-			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
 		}
 	]
 }
