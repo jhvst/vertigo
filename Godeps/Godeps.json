@@ -67,7 +67,7 @@
 		},
 		{
 			"ImportPath": "github.com/gosimple/slug",
-			"Rev": "778301ed3cec09460f140644f1d0fdcce4a1b2ba"
+			"Rev": "f7b92c2623d955e0137a140e7df493ba23708697"
 		},
 		{
 			"ImportPath": "github.com/jinzhu/gorm",
