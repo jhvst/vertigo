@@ -14,7 +14,7 @@
 		},
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
-			"Rev": "7c2d2c5600396af3487ba032cd9299e70177a609"
+			"Rev": "7ba0a88086a06506363ecc81485ea44d2308a647"
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
