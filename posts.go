@@ -15,7 +15,7 @@ import (
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/9uuso/slug"
+	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/kennygrant/sanitize"
 	_ "github.com/lib/pq"
