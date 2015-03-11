@@ -1224,7 +1224,7 @@ func TestRecoveryKeyExpiration(t *testing.T) {
 	})
 }
 
-func TestPostSecuity(t *testing.T) {
+func TestPostSecurity(t *testing.T) {
 
 	var s Vertigo
 	s = settings
