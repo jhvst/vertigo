@@ -490,6 +490,7 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 		// entry.Markdown = Markdown of entry.Content
 	}
 	entry.Excerpt = Excerpt(entry.Content)
+	entry.Slug = slug.Make(entry.Title)
 	query := db.Where(&Post{Slug: post.Slug}).First(&post).Updates(entry)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {

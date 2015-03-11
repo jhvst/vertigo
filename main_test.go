@@ -647,6 +647,7 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 		So(recorder.Code, ShouldEqual, 200)
 		var returnedPost Post
 		json.Unmarshal(recorder.Body.Bytes(), &returnedPost)
+		post.Slug = returnedPost.Slug
 		So(post, ShouldResemble, returnedPost)
 	})
 }
