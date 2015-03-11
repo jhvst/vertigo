@@ -1,6 +1,6 @@
 vertigo
 =======
-[![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Coverage Status](https://coveralls.io/repos/9uuso/vertigo/badge.png?branch=HEAD)](https://coveralls.io/r/9uuso/vertigo?branch=HEAD) [![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
 Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
@@ -28,10 +28,6 @@ See [my personal website](http://www.juusohaavisto.com/)
 ##Installation
 
 Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
-
-###Binaries
-
-[![Gobuild Download](https://img.shields.io/badge/gobuild-download-green.svg?style=flat)](http://gobuild.io/github.com/9uuso/vertigo)
 
 ###Heroku
 

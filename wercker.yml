@@ -34,6 +34,3 @@ build:
           godep get github.com/PuerkitoBio/goquery
           godep get github.com/smartystreets/goconvey/convey
           godep go test ./...
-
-    - tcnksm/goveralls:
-        token: $COVERALLS_TOKEN
