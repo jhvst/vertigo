@@ -157,7 +157,7 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 		return
 	}
 	for _, user := range users {
-		published = make([]Post, 0)
+		published := make([]Post, 0)
 		for _, post := range user.Posts {
 			if post.Published {
 				published = append(published, post)
