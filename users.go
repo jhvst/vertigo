@@ -156,6 +156,13 @@ func ReadUsers(res render.Render, db *gorm.DB) {
 		res.JSON(500, err)
 		return
 	}
+	for _, user := range users {
+		for i, post := range user.Posts {
+			if !post.Published {
+				user.Posts = append(user.Posts[:i], user.Posts[i+1:]...)
+			}
+		}
+	}
 	res.JSON(200, users)
 }
 
