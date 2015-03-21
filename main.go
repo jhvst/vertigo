@@ -54,7 +54,7 @@ func NewServer() *martini.ClassicMartini {
 		},
 		// Checks if post has been updated.
 		"updated": func(p Post) bool {
-			if post.Updated > post.Created {
+			if p.Updated > p.Created {
 				return true
 			}
 			return false
