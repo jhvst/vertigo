@@ -1,0 +1,23 @@
+body {
+	font-family: 'Vollkorn', serif;
+	color: #212121;
+	line-height: 1.5;
+	font-size: 18px;
+}
+
+h1 {
+	color: #455A64;
+}
+
+sub {
+	color: #727272;
+}
+
+.container {
+	width: 50%;
+}
+
+a {
+	color: #009688;
+	text-decoration: underline;
+}

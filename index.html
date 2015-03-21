@@ -1,5 +1,49 @@
+<!DOCTYPE html>
 <html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">	
+	<link rel="stylesheet" href="./css/main.css">
+	<link href='https://fonts.googleapis.com/css?family=Vollkorn:400,700' rel='stylesheet' type='text/css'>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<script src="./js/prism.js"></script>
+	<link rel="stylesheet" href="./css/prism.css">
+	<title>Vertigo - Dynamic blog engine in Go</title>
+</head>
 <body>
-<h3>Hello world!</h3>
+<div class="container">
+	<h1>Vertigo</h1>
+	<sub>Dynamic blog engine in Go</sub>
+	<hr>
+	<a href="">Install</a> - <a href="https://dashboard.heroku.com/new?template=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo&button-url=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo">Deploy to Heroku</a>
+	<hr>
+	<p>Vertigo is a dynamic blog engine written in <a href="https://golang.org/">Go</a>. Its key feature is the JSON API, which makes extending Vertigo easy.</p>
+	<p>You can create plugins, SPA's and retrieve your blog's data in programmatic form using plain HTTP requests, without knowledge in Go. Fetching all users and their posts would be issued like so:</p>
+	<pre><code>HTTP GET yourblog.com/api/users</code></pre>
+	<p>To see the response data, you can use my blog as an example: <a href="http://www.juusohaavisto.com/api/users">juusohaavisto.com/api/users</a></p>
+	<p>Registering a new account would be as easy as:</p>
+	<pre><code><i>HTTP POST yourblog.com/api/user</i>
+
+{
+	"name": "Foo",
+	"password": "bar",
+	"email": "foobar@example.com"
+}</code></pre>
+	<p>The frontend code is powered by Go's <a href="http://golang.org/pkg/text/template/">template</a> package, which syntax is similar to <a href="http://handlebarsjs.com/">Handlebars</a>.</p>
+	<pre><code><i>My blog's /templates/home.tmpl</i>
+
+{{range .}}
+{{if .Published}}
+&lt;article&gt;
+	&lt;h1&gt;&lt;a href=&quot;/post/{{.Slug}}&quot;&gt;{{.Title}}&lt;/a&gt;&lt;/h1&gt;
+	&lt;p&gt;{{unescape .Excerpt}} [...] &lt;a href=&quot;/post/{{.Slug}}&quot;&gt;Read more &raquo;&lt;/a&gt;&lt;/p&gt;
+&lt;/article&gt;
+{{end}}
+{{end}}</code></pre>
+	<p>The template files are in plain HTML and JavaScript (vanilla) only appears on few pages. JavaScript in general is aimed to be stripped down as much as possible to provide better user experience on different devices. Vertigo also ships without any CSS frameworks, so it is easy to start customizing the frontend with the framework of your choice.</p>
+	<p>For writing blog posts you can either use HTML with bit tricky <a href="http://html5demos.com/contenteditable">contenteditable</a> or just bash away using Markdown. Both options will work regardless what device you are using. Backups are stored in your browser's local storage, so changes are saved even if you lose connection or your computer crashes.</p>
+	<p>Since Vertigo is built in <a href="https://golang.org/">Go</a>, it is also very portable. You can download binaries or build it from the source on Windows, Mac OSX, Linux and FreeBSD. Vertigo can also be built and run on ARM, thanks to the SQLite driver.</p>
+	<p>Thanks to Go Vertigo is also fast. My blog, running on Heroku's development plans (<a href="https://dashboard.heroku.com/new?template=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo&button-url=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo">for free</a>), ranks in the <a href="http://tools.pingdom.com/fpt/#!/d9esME/www.juusohaavisto.com">top 1% of websites</a> in speed.</p>
+</div>
 </body>
 </html>
