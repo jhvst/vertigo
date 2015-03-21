@@ -1,6 +1,6 @@
 vertigo
 =======
-[![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
 Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
@@ -56,7 +56,7 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 * `MARTINI_ENV` - used by Martini to enable production optimizations such as template caching
 * `MAILGUN_API_KEY` - Mailgun API key (declared by default with Heroku Mailgun Addon)
 * `MAILGUN_SMTP_LOGIN` - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
-* `DATABASE_URL` - Database connection URL for PostgreSQL - if not declared, SQLite will be used
+* `DATABASE_URL` - Database connection URL for PostgreSQL - if empty, SQLite will be used
 
 ##Contribute
 
@@ -64,7 +64,7 @@ Contributions are welcome, but before creating a pull request, please run your c
 
 ##Support
 
-If you have any questions in mind, you can page me on [![Gitter](https://badges.gitter.im/Join Chat.svg)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) or file a Github issue.
+If you have any questions in mind, please file an issue.
 
 ##License
 
