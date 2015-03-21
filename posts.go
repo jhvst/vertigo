@@ -35,12 +35,13 @@ type Post struct {
 	Title     string `json:"title" form:"title" binding:"required"`
 	Content   string `json:"content" form:"content" sql:"type:text"`
 	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
-	Date      int64  `json:"date"`
 	Slug      string `json:"slug"`
 	Author    int64  `json:"author"`
 	Excerpt   string `json:"excerpt"`
 	Viewcount uint   `json:"viewcount"`
 	Published bool   `json:"-"`
+	Created   int64  `json:"created"`
+	Updated   int64  `json:"updated"`
 }
 
 // Search struct is basically just a type check to make sure people don't add anything nasty to
@@ -419,7 +420,7 @@ func DeletePost(req *http.Request, params martini.Params, s sessions.Session, re
 
 // Insert or post.Insert inserts Post object into database.
 // Requires active session cookie
-// Fills post.Author, post.Date, post.Excerpt, post.Slug and post.Published automatically.
+// Fills post.Author, post.Created, post.Edited, post.Excerpt, post.Slug and post.Published automatically.
 // Returns Post and error object.
 func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 	var user User
@@ -434,7 +435,8 @@ func (post Post) Insert(db *gorm.DB, s sessions.Session) (Post, error) {
 		post.Content = cleanup(post.Content)
 	}
 	post.Author = user.ID
-	post.Date = time.Now().Unix()
+	post.Created = time.Now().Unix()
+	post.Updated = post.Created
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
 	post.Published = false
@@ -491,6 +493,7 @@ func (post Post) Update(db *gorm.DB, entry Post) (Post, error) {
 	}
 	entry.Excerpt = Excerpt(entry.Content)
 	entry.Slug = slug.Make(entry.Title)
+	entry.Updated = time.Now().Unix()
 	query := db.Where(&Post{Slug: post.Slug}).First(&post).Updates(entry)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
@@ -550,7 +553,7 @@ func (post Post) Delete(db *gorm.DB, s sessions.Session) error {
 // Returns []Post and error object.
 func (post Post) GetAll(db *gorm.DB) ([]Post, error) {
 	var posts []Post
-	query := db.Order("date desc").Find(&posts)
+	query := db.Order("created desc").Find(&posts)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			posts = make([]Post, 0)

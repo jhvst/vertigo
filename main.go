@@ -52,6 +52,13 @@ func NewServer() *martini.ClassicMartini {
 		"hostname": func(t interface{}) string {
 			return urlHost()
 		},
+		// Checks if post has been updated.
+		"updated": func(p Post) bool {
+			if post.Updated > post.Created {
+				return true
+			}
+			return false
+		},
 		// Date helper returns unix date as more readable one in string format. Format of YYYY-MM-DD
 		// https://html.spec.whatwg.org/multipage/semantics.html#datetime-value
 		"date": func(d int64) string {

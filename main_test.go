@@ -416,7 +416,10 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 		So(post.Markdown, ShouldEqual, p.Markdown)
 		So(post.Slug, ShouldEqual, p.Slug)
 		So(post.Author, ShouldEqual, p.Author)
-		So(post.Date, ShouldBeGreaterThan, int64(1400000000))
+		So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+		if post.Updated != post.Created {
+			So(post.Updated, ShouldBeGreaterThan, post.Created)
+		}
 		So(post.Excerpt, ShouldEqual, p.Excerpt)
 		So(post.Viewcount, ShouldEqual, p.Viewcount)
 	})

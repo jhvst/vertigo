@@ -60,7 +60,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 			Link:        &feeds.Link{Href: urlhost + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{user.Name, user.Email},
-			Created:     time.Unix(post.Date, 0),
+			Created:     time.Unix(post.Created, 0),
 		}
 		feed.Items = append(feed.Items, item)
 

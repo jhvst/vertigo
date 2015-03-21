@@ -389,7 +389,7 @@ func (user User) Get(db *gorm.DB) (User, error) {
 		}
 		return user, query.Error
 	}
-	query = db.Order("date desc").Where(&Post{Author: user.ID}).Find(&posts)
+	query = db.Order("created desc").Where(&Post{Author: user.ID}).Find(&posts)
 	if query.Error != nil {
 		if query.Error == gorm.RecordNotFound {
 			user.Posts = make([]Post, 0)

@@ -1,5 +1,5 @@
 <article>
-	<small>Posted on <time>{{date .Date}}</time></small>
+	<small>Posted on <time>{{date .Created}}</time>{{if updated .}} updated on {{date .Updated}}{{end}}</small>
 	<h1>{{.Title}}</h1>
 	{{unescape .Content}}
 </article>
