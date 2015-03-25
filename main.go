@@ -3,7 +3,6 @@
 package main
 
 import (
-	"html"
 	"html/template"
 	"os"
 	"strings"
@@ -24,7 +23,7 @@ func NewServer() *martini.ClassicMartini {
 		// Unescape unescapes and parses HTML from database objects.
 		// Used in templates such as "/post/display.tmpl"
 		"unescape": func(s string) template.HTML {
-			return template.HTML(html.UnescapeString(s))
+			return template.HTML(s)
 		},
 		// Title renders post name as a page title.
 		"title": func(t interface{}) string {
