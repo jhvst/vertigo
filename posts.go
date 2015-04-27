@@ -14,14 +14,11 @@ import (
 
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/kennygrant/sanitize"
-	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/russross/blackfriday"
 )
 

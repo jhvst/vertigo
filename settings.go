@@ -11,12 +11,9 @@ import (
 	"runtime"
 
 	"code.google.com/p/go-uuid/uuid"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // Vertigo struct is used as a site wide settings structure. Different from posts and person

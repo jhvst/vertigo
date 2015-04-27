@@ -12,13 +12,10 @@ import (
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/go-martini/martini"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
 	"github.com/mailgun/mailgun-go"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // User struct holds all relevant data for representing user accounts on Vertigo.

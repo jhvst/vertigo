@@ -7,12 +7,9 @@ import (
 	"strings"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/feeds"
 	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // ReadFeed renders RSS or Atom feed of latest published posts.
