@@ -11,9 +11,12 @@ import (
 	"strings"
 
 	"github.com/go-martini/martini"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/jinzhu/gorm"
+	_ "github.com/lib/pq"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 var driver = flag.String("driver", "sqlite3", "name of the database driver used, by default sqlite3")
