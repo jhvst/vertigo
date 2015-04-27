@@ -1,6 +1,6 @@
 vertigo
 =======
-[![wercker status](https://app.wercker.com/status/e1f07b85320f902313d32fec503c5017/s/master "wercker status")](https://app.wercker.com/project/bykey/e1f07b85320f902313d32fec503c5017) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[ ![Codeship Status for 9uuso/vertigo](https://codeship.com/projects/b2de9690-b16b-0132-08f1-3edef27c5b65/status?branch=master)](https://codeship.com/projects/69843) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
 Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
