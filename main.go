@@ -94,8 +94,9 @@ func NewServer() *martini.ClassicMartini {
 	m.Use(strict.Strict)
 	m.Use(martini.Static("public", martini.StaticOptions{
 		SkipLogging: true,
+		// Adds 7 day Expire header for static files.
 		Expires: func() string {
-			return "Cache-Control: max-age=31536000"
+			return time.Now().Add(time.Hour * 168).UTC().Format("Mon, Jan 2 2006 15:04:05 GMT")
 		},
 	}))
 	m.Use(render.Renderer(render.Options{
