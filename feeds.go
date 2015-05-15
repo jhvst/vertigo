@@ -54,7 +54,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, db *gorm.DB, r *http.Req
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: urlhost + post.Slug},
+			Link:        &feeds.Link{Href: urlhost + "post/" + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Created, 0),
