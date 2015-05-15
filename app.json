@@ -11,7 +11,7 @@
     "heroku-postgresql"
   ],
   "env": {
-  	"BUILDPACK_URL": "https://github.com/kr/heroku-buildpack-go"
+  	"BUILDPACK_URL": "https://github.com/heroku/heroku-buildpack-go"
   },
   "repository": "https://github.com/9uuso/vertigo"
 }
