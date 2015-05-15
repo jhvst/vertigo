@@ -1,7 +1,9 @@
 vertigo
 =======
-[ ![Codeship Status for 9uuso/vertigo](https://codeship.com/projects/b2de9690-b16b-0132-08f1-3edef27c5b65/status?branch=master)](https://codeship.com/projects/69843) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![Codeship Status for 9uuso/vertigo](https://codeship.com/projects/b2de9690-b16b-0132-08f1-3edef27c5b65/status?branch=master)](https://codeship.com/projects/69843) [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
+[![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
+
 
 Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
 
@@ -28,6 +30,12 @@ See [my personal website](http://www.juusohaavisto.com/)
 ##Installation
 
 Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
+
+###Gitdeploy
+
+Deploy and try out vertigo using gitdeploy:
+
+[![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git)
 
 ###Heroku
 
