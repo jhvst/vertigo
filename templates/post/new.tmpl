@@ -3,7 +3,7 @@
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" placeholder="Title"></h1>
 		{{if Markdown}}
-		<textarea class="markdown" name="markdown" id="text"></textarea>
+		<textarea class="markdown" name="markdown" id="text" placeholder="Write ..."></textarea>
 		{{else}}
 		<textarea class="hidden" name="content"></textarea>
 		<section id="text" contenteditable="true"></section>
