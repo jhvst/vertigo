@@ -194,7 +194,10 @@ func NewServer() *martini.ClassicMartini {
 
 	})
 
-	m.Router.NotFound(strict.MethodNotAllowed, strict.NotFound)
+	m.Router.NotFound(strict.MethodNotAllowed, func(res render.Render) {
+		res.HTML(404, "404", nil)
+	})
+
 	return m
 }
 
