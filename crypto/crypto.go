@@ -1,6 +1,6 @@
 // This file contains two cryptographic functions for both storing and comparing passwords.
 // You should not modify this file unless you know what you are doing.
-package main
+package crypto
 
 import (
 	"golang.org/x/crypto/bcrypt"

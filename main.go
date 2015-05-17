@@ -5,8 +5,13 @@ package main
 import (
 	"html/template"
 	"os"
+	"runtime"
 	"strings"
 	"time"
+
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
@@ -15,6 +20,10 @@ import (
 	"github.com/martini-contrib/strict"
 	"github.com/pkg/browser"
 )
+
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU()) // defining gomaxprocs is proven to add performance by few percentages
+}
 
 // NewServer spaws a new Vertigo server
 func NewServer() *martini.ClassicMartini {
@@ -49,7 +58,7 @@ func NewServer() *martini.ClassicMartini {
 		},
 		// Hostname renders page hostname.
 		"hostname": func(t interface{}) string {
-			return urlHost()
+			return UrlHost()
 		},
 		// Checks if post has been updated.
 		"updated": func(p Post) bool {
@@ -89,8 +98,7 @@ func NewServer() *martini.ClassicMartini {
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(Settings.CookieHash))
 	m.Use(sessions.Sessions("user", store))
-	m.Use(middleware())
-	m.Use(sessionchecker())
+	m.Use(Sessionchecker())
 	m.Use(strict.Strict)
 	m.Use(martini.Static("public", martini.StaticOptions{
 		SkipLogging: true,

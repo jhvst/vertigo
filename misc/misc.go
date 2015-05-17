@@ -1,58 +1,59 @@
 // This file contains bunch of miscful helper functions.
 // The functions here are either too rare to be assiociated to some known file
 // or are met more or less everywhere across the code.
-package main
+package misc
 
 import (
-	"flag"
-	"log"
+	"bufio"
+	"bytes"
 	"net/http"
-	"os"
 	"strings"
 
+	. "github.com/9uuso/vertigo/settings"
+
 	"github.com/go-martini/martini"
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
+	"github.com/kennygrant/sanitize"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
-	_ "github.com/mattn/go-sqlite3"
 )
-
-var driver = flag.String("driver", "sqlite3", "name of the database driver used, by default sqlite3")
-var dbsource = flag.String("dbsource", "./vertigo.db", "connection string or path to database file")
 
 // NotFound is a shorthand JSON response for HTTP 404 errors.
 func NotFound() map[string]interface{} {
 	return map[string]interface{}{"error": "Not found"}
 }
 
-func init() {
+// This function brings sanity to contenteditable. It mainly removes unnecessary <br> lines from the input source.
+// Part of the sanitize package, but this one fixes issues with <code> blocks having &nbsp;'s all over.
+// https://github.com/kennygrant/sanitize/blob/master/sanitize.go#L106
+func Cleanup(s string) string {
+	// First remove line breaks etc as these have no meaning outside html tags (except pre)
+	// this means pre sections will lose formatting... but will result in less uninentional paras.
+	s = strings.Replace(s, "\n", "", -1)
 
-	if os.Getenv("DATABASE_URL") != "" {
-		flag.Set("driver", "postgres")
-		flag.Set("dbsource", os.Getenv("DATABASE_URL"))
-		log.Println("Using PostgreSQL")
-	} else {
-		log.Println("Using SQLite3")
-	}
+	// Then replace line breaks with newlines, to preserve that formatting
+	s = strings.Replace(s, "</p>", "\n", -1)
+	s = strings.Replace(s, "<br>", "\n", -1)
+	s = strings.Replace(s, "</br>", "\n", -1)
+	s = strings.Replace(s, "<br/>", "\n", -1)
 
-	db, err := gorm.Open(*driver, *dbsource)
-
-	if err != nil {
-		panic(err)
-	}
-
-	db.LogMode(false)
-
-	// Here database and tables are created in case they do not exist yet.
-	// If database or tables do exist, nothing will happen to the original ones.
-	db.CreateTable(&User{})
-	db.CreateTable(&Post{})
-	db.AutoMigrate(&User{}, &Post{})
+	return s
 }
 
-func sessionchecker() martini.Handler {
+// Excerpt generates 15 word excerpt from given input.
+// Used to make shorter summaries from blog posts.
+func Excerpt(input string) string {
+	scanner := bufio.NewScanner(strings.NewReader(input))
+	scanner.Split(bufio.ScanWords)
+	count := 0
+	var excerpt bytes.Buffer
+	for scanner.Scan() && count < 15 {
+		count++
+		excerpt.WriteString(scanner.Text() + " ")
+	}
+	return sanitize.HTML(strings.TrimSpace(excerpt.String()))
+}
+
+func Sessionchecker() martini.Handler {
 	return func(session sessions.Session) {
 		data := session.Get("user")
 		_, exists := data.(int64)
@@ -61,18 +62,6 @@ func sessionchecker() martini.Handler {
 		}
 		session.Set("user", -1)
 		return
-	}
-}
-
-// Middleware function hooks the database to be accessible for Martini routes.
-func middleware() martini.Handler {
-	db, err := gorm.Open(*driver, *dbsource)
-	db.LogMode(false)
-	if err != nil {
-		panic(err)
-	}
-	return func(c martini.Context) {
-		c.Map(&db)
 	}
 }
 
@@ -107,18 +96,18 @@ func ProtectedPage(req *http.Request, session sessions.Session, render render.Re
 // root returns HTTP request "root".
 // For example, calling it with http.Request which has URL of /api/user/5348482a2142dfb84ca41085
 // would return "api". This function is used to route both JSON API and frontend requests in the same function.
-func root(req *http.Request) string {
+func Root(req *http.Request) string {
 	return strings.Split(strings.TrimPrefix(req.URL.String(), "/"), "/")[0]
 }
 
 // Gives a good clean standard urlHost
-func urlHost() (url string) {
-	url = Settings.Hostname
+func UrlHost() string {
+	url := Settings.Hostname
 	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
 		url = "http://" + url
 	}
 	if !strings.HasSuffix(url, "/") {
 		url += "/"
 	}
-	return
+	return url
 }

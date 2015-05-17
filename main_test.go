@@ -13,13 +13,12 @@ import (
 	"time"
 
 	"github.com/PuerkitoBio/goquery"
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/gosimple/slug"
-	"github.com/jinzhu/gorm"
-	_ "github.com/lib/pq"
-	_ "github.com/mattn/go-sqlite3"
 	"github.com/russross/blackfriday"
 	. "github.com/smartystreets/goconvey/convey"
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/settings"
 )
 
 var server = NewServer()
@@ -978,7 +977,7 @@ func TestMarkdown(t *testing.T) {
 	TestPostCreationPage(t)
 
 	post.Markdown = "### foo\n*foo* foo **foo**"
-	post.Content = string(blackfriday.MarkdownCommon([]byte(cleanup(post.Markdown))))
+	post.Content = string(blackfriday.MarkdownCommon([]byte(Cleanup(post.Markdown))))
 
 	testCreatePost(t, 1, "Markdown post", post.Content, post.Markdown)
 	TestPublishPost(t)
@@ -1137,8 +1136,7 @@ func TestPasswordRecovery(t *testing.T) {
 func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 
 	Convey("the latest user should have recovery key defined", t, func() {
-		db, _ := gorm.Open(*driver, *dbsource)
-		user, _ = user.GetByEmail(&db)
+		user, _ = user.GetByEmail()
 		if value == false {
 			So(user.Recovery, ShouldNotBeBlank)
 		} else {
@@ -1213,16 +1211,12 @@ func TestRecoveryKeyExpiration(t *testing.T) {
 
 	Convey("recovery key should be blank after expiring", t, func() {
 
-		db, _ := gorm.Open(*driver, *dbsource)
-
 		var u User
 		u.ID = int64(1)
-		go u.ExpireRecovery(&db, 1*time.Second)
+		go u.ExpireRecovery(1 * time.Second)
 		time.Sleep(2 * time.Second)
 
-		db, _ = gorm.Open(*driver, *dbsource)
-
-		u, _ = user.Get(&db)
+		u, _ = user.Get()
 		So(u.Recovery, ShouldEqual, " ")
 	})
 }
