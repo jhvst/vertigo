@@ -78,27 +78,34 @@ func (post Post) Get() (Post, error) {
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (post Post) Update(entry Post) (Post, error) {
-	if Settings.Markdown {
-		entry.Markdown = Cleanup(entry.Markdown)
-		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-	} else {
-		entry.Content = Cleanup(entry.Content)
+func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
+	var user User
+	user, err := user.Session(s)
+	if err != nil {
+		return post, err
+	}
+	if post.Author == user.ID {
+		if Settings.Markdown {
+			entry.Markdown = Cleanup(entry.Markdown)
+			entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
+		}
 		// this closure would need a call to convert HTML to Markdown
 		// see https://github.com/9uuso/vertigo/issues/7
 		// entry.Markdown = Markdown of entry.Content
-	}
-	entry.Excerpt = Excerpt(entry.Content)
-	entry.Slug = slug.Make(entry.Title)
-	entry.Updated = time.Now().Unix()
-	query := connection.Gorm.Where(&Post{Slug: post.Slug}).First(&post).Updates(entry)
-	if query.Error != nil {
-		if query.Error == gorm.RecordNotFound {
-			return post, errors.New("not found")
+		entry.Content = Cleanup(entry.Content)
+		entry.Excerpt = Excerpt(entry.Content)
+		entry.Slug = slug.Make(entry.Title)
+		entry.Updated = time.Now().Unix()
+		query := connection.Gorm.Where(&Post{Slug: post.Slug, Author: user.ID}).First(&post).Updates(entry)
+		if query.Error != nil {
+			if query.Error == gorm.RecordNotFound {
+				return post, errors.New("not found")
+			}
+			return post, query.Error
 		}
-		return post, query.Error
+		return post, nil
 	}
-	return post, nil
+	return post, errors.New("unauthorized")
 }
 
 // Unpublish or post.Unpublish unpublishes a post by updating the Published value to false.
@@ -117,10 +124,9 @@ func (post Post) Unpublish(s sessions.Session) error {
 			}
 			return query.Error
 		}
-	} else {
-		return errors.New("unauthorized")
+		return nil
 	}
-	return nil
+	return errors.New("unauthorized")
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.
@@ -165,9 +171,9 @@ func (post Post) GetAll() ([]Post, error) {
 // It is supposed to be run as a gouroutine, so therefore it does not return anything.
 func (post Post) Increment() {
 	var entry Post
-	entry.Viewcount = post.Viewcount + 1
-	_, err := post.Update(entry)
-	if err != nil {
-		log.Println("analytics error:", err)
+	post.Viewcount += 1
+	query := connection.Gorm.Where(&Post{Slug: post.Slug}).First(&entry).Update("viewcount", post.Viewcount)
+	if query.Error != nil {
+		log.Println("analytics error:", query.Error)
 	}
 }
