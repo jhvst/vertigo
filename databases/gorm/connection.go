@@ -1,6 +1,5 @@
-// This file contains bunch of miscful helper functions.
-// The functions here are either too rare to be assiociated to some known file
-// or are met more or less everywhere across the code.
+// connection.go stores the Gorm specific database connection settings,
+// including the init() function
 package gorm
 
 import (
@@ -15,6 +14,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
+// Connection structure stores the raw SQL pointer of the database connection
+// for simpler and easier use on User and Post methods.
 type Connection struct {
 	SQL  *sql.DB
 	Gorm gorm.DB
@@ -50,16 +51,4 @@ func init() {
 
 	connection.SQL = db.DB()
 	connection.Gorm = db
-}
-
-// Open is generic function to open database for gorm. By default, Open is only
-// used in tests.
-func Open() gorm.DB {
-	db, err := gorm.Open(*driver, *dbsource)
-	if err != nil {
-		panic(err)
-	}
-	connection.SQL = db.DB()
-	connection.Gorm = db
-	return db
 }
