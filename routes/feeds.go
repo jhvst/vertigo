@@ -8,7 +8,6 @@ import (
 	"time"
 
 	. "vertigo/databases/gorm"
-	. "vertigo/misc"
 	. "vertigo/settings"
 
 	"github.com/gorilla/feeds"
@@ -21,11 +20,9 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/xml")
 
-	urlhost := UrlHost()
-
 	feed := &feeds.Feed{
 		Title:       Settings.Name,
-		Link:        &feeds.Link{Href: urlhost},
+		Link:        &feeds.Link{Href: Settings.URL.String()},
 		Description: Settings.Description,
 	}
 
@@ -57,7 +54,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: urlhost + "post/" + post.Slug},
+			Link:        &feeds.Link{Href: Settings.URL.String() + "/post/" + post.Slug},
 			Description: post.Excerpt,
 			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Created, 0),
@@ -74,7 +71,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 		return
 	}
 
-	format := strings.Split(r.URL.Path[1:], "/")[1]
+	format := strings.Split(r.URL.Path[1:], "/")[strings.Count(r.URL.Path[1:], "/")]
 	if format == "atom" {
 		result, err = feed.ToAtom()
 		if err != nil {

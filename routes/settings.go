@@ -3,6 +3,8 @@ package routes
 import (
 	"log"
 	"net/http"
+	"net/url"
+	"strings"
 
 	. "vertigo/databases/gorm"
 	. "vertigo/misc"
@@ -54,9 +56,17 @@ func UpdateSettings(req *http.Request, res render.Render, settings Vertigo, s se
 			return
 		}
 	}
+	settings.Hostname = strings.TrimRight(settings.Hostname, "/")
+	u, err := url.Parse(settings.Hostname)
+	if err != nil {
+		log.Println(err)
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+	settings.URL = *u
 	settings.Firstrun = false
 	settings.AllowRegistrations = true
-	err := settings.Save()
+	err = settings.Save()
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})

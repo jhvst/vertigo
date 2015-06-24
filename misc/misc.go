@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/settings"
 
 	"github.com/go-martini/martini"
 	"github.com/kennygrant/sanitize"
@@ -96,18 +96,7 @@ func ProtectedPage(req *http.Request, session sessions.Session, render render.Re
 // root returns HTTP request "root".
 // For example, calling it with http.Request which has URL of /api/user/5348482a2142dfb84ca41085
 // would return "api". This function is used to route both JSON API and frontend requests in the same function.
-func Root(req *http.Request) string {
-	return strings.Split(strings.TrimPrefix(req.URL.String(), "/"), "/")[0]
-}
-
-// Gives a good clean standard urlHost
-func UrlHost() string {
-	url := Settings.Hostname
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		url = "http://" + url
-	}
-	if !strings.HasSuffix(url, "/") {
-		url += "/"
-	}
-	return url
+func Root(r *http.Request) string {
+	u := strings.TrimPrefix(r.URL.String(), Settings.URL.Path)
+	return strings.Split(u[1:], "/")[0]
 }

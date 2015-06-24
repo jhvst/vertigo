@@ -2,13 +2,15 @@ package email
 
 import (
 	"bytes"
+	"fmt"
 	"net/smtp"
 	"text/template"
 
-	. "vertigo/misc"
+	. "vertigo/settings"
 )
 
 type Email struct {
+	Sender    string
 	Host      string
 	Recipient RecipientStruct
 }
@@ -20,13 +22,13 @@ type RecipientStruct struct {
 }
 
 const templ = `
-From: <postmaster@{{ .Host }}>
+From: <{{ .Sender }}>
 To: <{{ .Recipient.Address }}>
-Subject: Password Reset <postmaster@{{ .Host }}>
+Subject: Password Reset <{{ .Sender }}>
 MIME-version: 1.0
 Content-Type: text/html; charset="UTF-8"
 
-Somebody requested password recovery on this email. You may reset your password through this link: {{ .Host }}user/reset/{{ .Recipient.ID }}/{{ .Recipient.RecoveryKey }}
+Somebody requested password recovery on this email. You may reset your password through this link: {{ .Host }}/user/reset/{{ .Recipient.ID }}/{{ .Recipient.RecoveryKey }}
 `
 
 func SendRecoveryEmail(id, address, recovery string) error {
@@ -37,7 +39,8 @@ func SendRecoveryEmail(id, address, recovery string) error {
 	}
 
 	var email Email
-	email.Host = UrlHost()
+	email.Sender = Settings.Mailer.Login
+	email.Host = Settings.URL.String()
 	email.Recipient.ID = id
 	email.Recipient.Address = address
 	email.Recipient.RecoveryKey = recovery
@@ -50,15 +53,15 @@ func SendRecoveryEmail(id, address, recovery string) error {
 
 	auth := smtp.PlainAuth(
 		"",
-		"postmaster@example.com",
-		"password",
-		"smtp.example.com",
+		Settings.Mailer.Login,
+		Settings.Mailer.Password,
+		Settings.Mailer.Hostname,
 	)
 
 	err = smtp.SendMail(
-		"smtp.example.com:587",
+		fmt.Sprintf("%s:%d", Settings.Mailer.Hostname, Settings.Mailer.Port),
 		auth,
-		"postmaster@example.com",
+		Settings.Mailer.Login,
 		[]string{address},
 		buf.Bytes(),
 	)
