@@ -411,7 +411,7 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 		json.Unmarshal(recorder.Body.Bytes(), &post)
 		So(post.ID, ShouldEqual, p.ID)
 		So(post.Title, ShouldEqual, p.Title)
-		So(post.Content, ShouldEqual, p.Content)
+		So(post.Content, ShouldEqual, Cleanup(p.Content))
 		So(post.Markdown, ShouldEqual, p.Markdown)
 		So(post.Slug, ShouldEqual, p.Slug)
 		So(post.Author, ShouldEqual, p.Author)
