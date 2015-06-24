@@ -10,14 +10,6 @@
 
 		<br><br>
 
-		<label>Use Markdown instead of HTML</label>
-		<p>Below you can choose whether you want to use <a href="http://daringfireball.net/projects/markdown/">Markdown</a> or plain HTML when creating and editing posts.</p>
-		<input type="radio" name="markdown" value="true"{{if eq .Markdown true}} checked{{end}}> Markdown
-		<br>
-		<input type="radio" name="markdown" value="false"{{if eq .Markdown false}} checked{{end}}> HTML
-
-		<br><br>
-
 		<label>Hostname</label>
 		<p>The URL used to generate RSS and Atom links and any emails that link back to your site. This should be the absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
 		<input name="hostname" placeholder="http://example.com" required="required" value="{{.Hostname}}">

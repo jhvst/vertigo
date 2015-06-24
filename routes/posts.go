@@ -58,13 +58,9 @@ func (search Search) Get() (Search, error) {
 		if post.Published {
 			// posts are searched for a match in both content and title, so here
 			// we declare two scanners for them
-			content := bufio.NewScanner(strings.NewReader(post.Content))
+			content := bufio.NewScanner(strings.NewReader(post.Markdown))
 			title := bufio.NewScanner(strings.NewReader(post.Title))
 			// Blackfriday makes smartypants corrections some characters, which break the search
-			if Settings.Markdown {
-				content = bufio.NewScanner(strings.NewReader(post.Markdown))
-				title = bufio.NewScanner(strings.NewReader(post.Title))
-			}
 			content.Split(bufio.ScanWords)
 			title.Split(bufio.ScanWords)
 			// content is scanned trough Jaro-Winkler distance with

@@ -6,7 +6,6 @@ import (
 	"time"
 
 	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
@@ -44,11 +43,8 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 		return post, err
 	}
 	// if post.Content is empty, the user has used Markdown editor
-	if Settings.Markdown {
-		post.Content = string(blackfriday.MarkdownCommon([]byte(Cleanup(post.Markdown))))
-	} else {
-		post.Content = Cleanup(post.Content)
-	}
+	post.Markdown = Cleanup(post.Markdown)
+	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))	
 	post.Author = user.ID
 	post.Created = time.Now().Unix()
 	post.Updated = post.Created
@@ -85,10 +81,8 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 		return post, err
 	}
 	if post.Author == user.ID {
-		if Settings.Markdown {
-			entry.Markdown = Cleanup(entry.Markdown)
-			entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-		}
+		entry.Markdown = Cleanup(entry.Markdown)
+		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
 		// this closure would need a call to convert HTML to Markdown
 		// see https://github.com/9uuso/vertigo/issues/7
 		// entry.Markdown = Markdown of entry.Content

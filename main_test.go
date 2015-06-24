@@ -160,7 +160,6 @@ func TestSettingValues(t *testing.T) {
 		So(Settings.Mailer.Domain, ShouldEqual, settings.Mailer.Domain)
 		So(Settings.Mailer.PrivateKey, ShouldEqual, settings.Mailer.PrivateKey)
 		So(Settings.AllowRegistrations, ShouldBeTrue)
-		So(Settings.Markdown, ShouldBeFalse)
 	})
 }
 
@@ -964,13 +963,10 @@ func TestMarkdown(t *testing.T) {
 
 	var s Vertigo
 	s = settings
-	s.Markdown = true
 	payload, _ := json.Marshal(s)
 
 	// switch settings to Markdown
 	testUpdateSettings(t, payload, s)
-
-	settings.Markdown = true
 
 	TestReadSettings(t)
 	TestControlPanelListing(t)

@@ -80,20 +80,6 @@ func NewServer() *martini.ClassicMartini {
 			}
 			return os.Getenv(s)
 		},
-		// Markdown returns whether user has Markdown enabled from settings.
-		"Markdown": func() bool {
-			if Settings.Markdown {
-				return true
-			}
-			return false
-		},
-		// ReadOnly checks whether a post is safe to edit with current settings.
-		"ReadOnly": func(p Post) bool {
-			if Settings.Markdown && p.Markdown == "" {
-				return true
-			}
-			return false
-		},
 	}
 
 	m := martini.Classic()

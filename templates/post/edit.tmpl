@@ -2,17 +2,7 @@
 <form method="post" name="new" onsubmit="copy()">
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" value="{{.Title}}"></h1>
-		{{if Markdown}}
-		<script src="/js/he.js"></script>
-		<script src="/js/to-markdown.js"></script>
-		<textarea class="markdown" name="markdown" id="text"></textarea>
-		<script type="text/javascript">
-			document.getElementById("text").value = toMarkdown({{unescape .Content}})
-		</script>
-		{{else}}
-		<textarea class="hidden" name="content"></textarea>
-		<section id="text" contenteditable="true">{{unescape .Content}}</section>
-		{{end}}
+		<textarea class="markdown" name="markdown" id="text">{{ .Markdown }}</textarea>
 		<button type="submit">Submit</button>
 	</fieldset>
 </form>
@@ -25,7 +15,6 @@
 	// LocalStorage loops(?) to save both post title and content to cache.
 	// Looks ugly, but better than AJAX based failover, right?
 	// Modified version of this: https://gist.github.com/addyosmani/d1f3ca715ac902788c2d
-	{{if Markdown}}
 
 	with({
 		l: localStorage, // Alias for localStorage, where we'll store text content
@@ -40,24 +29,6 @@
 			l[{{.Slug}}] = value
 		}
 	}
-
-	{{else}}
-
-	with({
-		l: localStorage, // Alias for localStorage, where we'll store text content
-	// This is some sort of variable initialization. It also checks whether there is anything in cache already.
-	}) with(document.getElementById("text")) if (l[{{.Slug}}] != null) {
-		innerHTML = l.getItem({{.Slug}}), // Replace placeholder text with localstorage content.
-		oninput = function () {
-			l[{{.Slug}}] = innerHTML // Save HTML context to localStorage.
-		}
-	} else {
-		oninput = function () {
-			l[{{.Slug}}] = innerHTML
-		}
-	}
-
-	{{end}}
 
 	// For a yet another unknown reason we need two instances of localstorage.
 	// Fundamentally analogous to the loop above.
@@ -80,9 +51,6 @@
 		localStorage.removeItem({{.Slug}});
 		localStorage.removeItem({{.Title}});
 		var html = document.getElementById("text").innerHTML;
-		{{if not Markdown}}
-		document.new.content.value = html;
-		{{end}}
 		return
 	}
 </script>

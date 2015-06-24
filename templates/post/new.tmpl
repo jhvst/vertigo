@@ -2,12 +2,7 @@
 <form method="post" name="new" onsubmit="copy()">
 	<fieldset>
 		<h1><input id="title" spellcheck="false" autocomplete="off" name="title" placeholder="Title"></h1>
-		{{if Markdown}}
 		<textarea class="markdown" name="markdown" id="text" placeholder="Write ..."></textarea>
-		{{else}}
-		<textarea class="hidden" name="content"></textarea>
-		<section id="text" contenteditable="true">Write...</section>
-		{{end}}
 		<button type="submit">Submit</button>
 	</fieldset>
 </form>
@@ -16,7 +11,6 @@
 	// LocalStorage loops(?) to save both post title and content to cache.
 	// Looks ugly, but better than AJAX based failover, right?
 	// Modified version of this: https://gist.github.com/addyosmani/d1f3ca715ac902788c2d
-	{{if Markdown}}
 
 	with({
 		l: localStorage // Alias for localStorage, where we'll store text content
@@ -31,24 +25,6 @@
 			l.c = value
 		}
 	}
-
-	{{else}}
-
-	with({
-		l: localStorage // Alias for localStorage, where we'll store text content
-	// This is some sort of variable initialization. It also checks whether there is anything in cache already.
-	}) with(document.getElementById("text")) if (l.getItem("c") != null) {
-		innerHTML = [l.c], // Replace placeholder text with localstorage content.
-		oninput = function () {
-			l.c = innerHTML // Save HTML context to localStorage.
-		}
-	} else {
-		oninput = function () {
-			l.c = innerHTML
-		}
-	}
-
-	{{end}}
 
 	// For a yet another unknown reason we need two instances of localstorage.
 	// Fundamentally analogous to the loop above.
@@ -71,9 +47,6 @@
 		localStorage.removeItem("t");
 		localStorage.removeItem("c");
 		var html = document.getElementById("text").innerHTML;
-		{{if not Markdown}}
-		document.new.content.value = html;
-		{{end}}
 		return
 	}
 </script>
