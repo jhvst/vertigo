@@ -23,3 +23,7 @@ textarea.markdown {
 *:focus {
 	outline: 0;
 }
+
+button {
+	margin-top: 1rem;
+}
