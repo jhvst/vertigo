@@ -202,7 +202,7 @@ func LoginUser(req *http.Request, s sessions.Session, res render.Render, user Us
 // RecoverUser is a route of the first step of account recovery, which sends out the recovery
 // email etc. associated function calls.
 func RecoverUser(req *http.Request, res render.Render, user User) {
-	user, err := user.Recover()
+	err := user.Recover()
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
