@@ -16,9 +16,9 @@ import (
 	"github.com/gosimple/slug"
 	"github.com/russross/blackfriday"
 	. "github.com/smartystreets/goconvey/convey"
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
 )
 
 var server = NewServer()

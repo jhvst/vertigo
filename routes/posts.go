@@ -1,7 +1,7 @@
 // This file contains about everything related to posts. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
 // to the ones in users.go.
-package main
+package routes
 
 import (
 	"bufio"
@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"
@@ -136,7 +136,7 @@ func CreatePost(req *http.Request, s sessions.Session, res render.Render, post P
 }
 
 // ReadPosts is a route which returns all posts without merged owner data (although the object does include author field)
-// Not available on frontend, so therefore it only returns a JSON response.
+// Not available on frontend, so therefore it only returns a JSON response, hence the post iteration in Go.
 func ReadPosts(res render.Render) {
 	var post Post
 	published := make([]Post, 0)
@@ -215,23 +215,14 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 		return
 	}
 
-	var user User
-	user, err = user.Session(s)
+	post, err = post.Update(s, entry)
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
-
-	if post.Author == user.ID {
-		post, err = post.Update(entry)
-		if err != nil {
-			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-	} else {
-		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
@@ -254,6 +245,7 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
+		log.Println(err)
 		if err.Error() == "not found" {
 			res.JSON(404, NotFound())
 			return
@@ -262,25 +254,16 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 		return
 	}
 
-	var user User
-	user, err = user.Session(s)
+	var entry Post
+	entry.Published = true
+	post, err = post.Update(s, entry)
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
-
-	if post.Author == user.ID {
-		var entry Post
-		entry.Published = true
-		post, err = post.Update(entry)
-		if err != nil {
-			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-	} else {
-		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
@@ -312,23 +295,14 @@ func UnpublishPost(req *http.Request, params martini.Params, s sessions.Session,
 		return
 	}
 
-	var user User
-	user, err = user.Session(s)
+	err = post.Unpublish(s)
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-		return
-	}
-
-	if post.Author == user.ID {
-		err = post.Unpublish(s)
-		if err != nil {
-			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		if err.Error() == "unauthorized" {
+			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-	} else {
-		res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 

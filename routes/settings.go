@@ -1,12 +1,12 @@
-package main
+package routes
 
 import (
 	"log"
 	"net/http"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
 
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"

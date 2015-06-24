@@ -1,16 +1,16 @@
 // This file contains about everything related to users aka users. At the top you will find routes
 // and at the bottom you can find CRUD options. Some functions in this file are analogous
 // to the ones in posts.go.
-package main
+package routes
 
 import (
 	"log"
 	"net/http"
 	"strconv"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/go-martini/martini"

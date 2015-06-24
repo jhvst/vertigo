@@ -1,5 +1,5 @@
 // Feeds.go contain HTTP routes for rendering RSS and Atom feeds.
-package main
+package routes
 
 import (
 	"log"
@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
 
 	"github.com/gorilla/feeds"
 	"github.com/martini-contrib/render"
