@@ -5,6 +5,7 @@ package settings
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net/url"
 	"os"
 
 	"code.google.com/p/go-uuid/uuid"
@@ -15,20 +16,24 @@ import (
 // Firstrun and CookieHash are generated and controlled by the application and should not be
 // rendered or made editable anywhere on the site.
 type Vertigo struct {
-	Name               string          `json:"name" form:"name" binding:"required"`
-	Hostname           string          `json:"hostname" form:"hostname" binding:"required"`
-	Firstrun           bool            `json:"firstrun,omitempty"`
-	CookieHash         string          `json:"cookiehash,omitempty"`
-	AllowRegistrations bool            `json:"allowregistrations" form:"allowregistrations"`
-	Description        string          `json:"description" form:"description" binding:"required"`
-	Mailer             MailgunSettings `json:"mailgun"`
+	Name               string  `json:"name" form:"name" binding:"required"`
+	Hostname           string  `json:"hostname" form:"hostname" binding:"required"`
+	URL                url.URL `json:"url"`
+	Firstrun           bool    `json:"firstrun,omitempty"`
+	CookieHash         string  `json:"cookiehash,omitempty"`
+	AllowRegistrations bool    `json:"allowregistrations" form:"allowregistrations"`
+	Markdown           bool    `json:"markdown" form:"markdown"`
+	Description        string  `json:"description" form:"description" binding:"required"`
+	Mailer             SMTP    `json:"smtp"`
 }
 
 // MailgunSettings holds the API keys necessary to send account recovery email.
 // You can find the necessary values for these structures in https://mailgun.com/cp
-type MailgunSettings struct {
-	Domain     string `json:"mgdomain" form:"mgdomain" binding:"required"`
-	PrivateKey string `json:"mgprikey" form:"mgprikey" binding:"required"`
+type SMTP struct {
+	Login    string `json:"login" form:"login"`
+	Port     int    `json:"port" form:"port"`
+	Password string `json:"password" form:"password"`
+	Hostname string `json:"hostname" form:"smtp-hostname"`
 }
 
 // Settings is a global variable which holds settings stored in the settings.json file.

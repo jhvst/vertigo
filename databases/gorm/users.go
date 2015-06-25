@@ -6,16 +6,14 @@ package gorm
 import (
 	"errors"
 	"log"
-	"strconv"
 	"time"
+	"strconv"
 
 	. "github.com/9uuso/vertigo/crypto"
-	. "github.com/9uuso/vertigo/misc"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/email"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/jinzhu/gorm"
-	"github.com/mailgun/mailgun-go"
 	"github.com/martini-contrib/sessions"
 )
 
@@ -65,28 +63,29 @@ func (user User) Update(entry User) (User, error) {
 // Recover or user.Recover is used to recover User's password according to user.Email
 // The function will insert user.Recovery field with generated UUID string and dispatch an email
 // to the corresponding user.Email address. It will also add TTL to Recovery field.
-func (user User) Recover() (User, error) {
+func (user User) Recover() error {
 
 	user, err := user.GetByEmail()
 	if err != nil {
-		return user, err
+		return err
 	}
 
 	var entry User
 	entry.Recovery = uuid.New()
 	user, err = user.Update(entry)
 	if err != nil {
-		return user, err
+		return err
 	}
 
-	err = user.SendRecoverMail()
+	id := strconv.Itoa(int(user.ID))
+	err = SendRecoveryEmail(id, user.Email, user.Recovery)
 	if err != nil {
-		return user, err
+		return err
 	}
 
 	go user.ExpireRecovery(180 * time.Minute)
 
-	return user, nil
+	return nil
 }
 
 func (user User) PasswordReset(entry User) (User, error) {
@@ -234,17 +233,4 @@ func (user User) GetAll() ([]User, error) {
 		users[index] = user
 	}
 	return users, nil
-}
-
-// SendRecoverMail or user.SendRecoverMail sends mail with Mailgun with pre-filled email layout.
-// See Mailgun example on https://gist.github.com/mbanzon/8179682
-func (user User) SendRecoverMail() error {
-	gun := mailgun.NewMailgun(Settings.Mailer.Domain, Settings.Mailer.PrivateKey, "")
-	id := strconv.Itoa(int(user.ID))
-	urlhost := UrlHost()
-	m := mailgun.NewMessage("Password Reset <postmaster@"+Settings.Mailer.Domain+">", "Password Reset", "Somebody requested password recovery on this email. You may reset your password through this link: "+urlhost+"user/reset/"+id+"/"+user.Recovery, "Recipient <"+user.Email+">")
-	if _, _, err := gun.Send(m); err != nil {
-		return err
-	}
-	return nil
 }

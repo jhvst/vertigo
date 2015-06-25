@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 	"time"
+	"strconv"
 
 	. "vertigo/databases/gorm"
 	. "vertigo/misc"
@@ -141,8 +142,11 @@ func TestSavingSettingsViaInstallationWizard(t *testing.T) {
 			settings.Hostname = "example.com"
 			settings.Name = "Foo's blog"
 			settings.Description = "Foo's test blog"
-			settings.Mailer.Domain = os.Getenv("MAILGUN_API_DOMAIN")
-			settings.Mailer.PrivateKey = os.Getenv("MAILGUN_API_KEY")
+			settings.Mailer.Login = os.Getenv("MAILGUN_SMTP_LOGIN")
+			settings.Mailer.Password = os.Getenv("MAILGUN_SMTP_PASSWORD")
+			port, _ := strconv.Atoi(os.Getenv("MAILGUN_SMTP_PORT"))
+			settings.Mailer.Port = port
+			settings.Mailer.Hostname = os.Getenv("MAILGUN_SMTP_SERVER")					
 			payload, _ := json.Marshal(settings)
 			request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
 			request.Header.Set("Content-Type", "application/json")
@@ -158,8 +162,10 @@ func TestSettingValues(t *testing.T) {
 		So(Settings.Hostname, ShouldEqual, settings.Hostname)
 		So(Settings.Name, ShouldEqual, settings.Name)
 		So(Settings.Description, ShouldEqual, settings.Description)
-		So(Settings.Mailer.Domain, ShouldEqual, settings.Mailer.Domain)
-		So(Settings.Mailer.PrivateKey, ShouldEqual, settings.Mailer.PrivateKey)
+		So(Settings.Mailer.Login, ShouldEqual, settings.Mailer.Login)
+		So(Settings.Mailer.Password, ShouldEqual, settings.Mailer.Password)
+		So(Settings.Mailer.Port, ShouldEqual, settings.Mailer.Port)		
+		So(Settings.Mailer.Hostname, ShouldEqual, settings.Mailer.Hostname)
 		So(Settings.AllowRegistrations, ShouldBeTrue)
 	})
 }
@@ -984,7 +990,7 @@ func TestMarkdown(t *testing.T) {
 	TestPostCreationPage(t)
 
 	post.Markdown = "### foo\n*foo* foo **foo**"
-	post.Content = string(blackfriday.MarkdownCommon([]byte(Cleanup(post.Markdown))))
+	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
 
 	testCreatePost(t, 1, "Markdown post", post.Markdown)
 	TestPublishPost(t)

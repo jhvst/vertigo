@@ -6,7 +6,6 @@ import (
 	"html/template"
 	"os"
 	"runtime"
-	"strings"
 	"time"
 
 	. "vertigo/databases/gorm"
@@ -57,10 +56,6 @@ func NewServer() *martini.ClassicMartini {
 			}
 			return Settings.Description
 		},
-		// Hostname renders page hostname.
-		"hostname": func(t interface{}) string {
-			return UrlHost()
-		},
 		// Checks if post has been updated.
 		"updated": func(p Post) bool {
 			if p.Updated > p.Created {
@@ -75,9 +70,6 @@ func NewServer() *martini.ClassicMartini {
 		},
 		// Env helper returns environment variable of s.
 		"env": func(s string) string {
-			if s == "MAILGUN_SMTP_LOGIN" {
-				return strings.TrimLeft(os.Getenv(s), "postmaster@")
-			}
 			return os.Getenv(s)
 		},
 	}
