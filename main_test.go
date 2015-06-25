@@ -8,10 +8,10 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
-	"strconv"
 
 	. "vertigo/databases/gorm"
 	. "vertigo/misc"
@@ -146,7 +146,7 @@ func TestSavingSettingsViaInstallationWizard(t *testing.T) {
 			settings.Mailer.Password = os.Getenv("MAILGUN_SMTP_PASSWORD")
 			port, _ := strconv.Atoi(os.Getenv("MAILGUN_SMTP_PORT"))
 			settings.Mailer.Port = port
-			settings.Mailer.Hostname = os.Getenv("MAILGUN_SMTP_SERVER")					
+			settings.Mailer.Hostname = os.Getenv("MAILGUN_SMTP_SERVER")
 			payload, _ := json.Marshal(settings)
 			request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
 			request.Header.Set("Content-Type", "application/json")
@@ -164,7 +164,7 @@ func TestSettingValues(t *testing.T) {
 		So(Settings.Description, ShouldEqual, settings.Description)
 		So(Settings.Mailer.Login, ShouldEqual, settings.Mailer.Login)
 		So(Settings.Mailer.Password, ShouldEqual, settings.Mailer.Password)
-		So(Settings.Mailer.Port, ShouldEqual, settings.Mailer.Port)		
+		So(Settings.Mailer.Port, ShouldEqual, settings.Mailer.Port)
 		So(Settings.Mailer.Hostname, ShouldEqual, settings.Mailer.Hostname)
 		So(Settings.AllowRegistrations, ShouldBeTrue)
 	})

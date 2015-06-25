@@ -18,7 +18,7 @@ import (
 type Vertigo struct {
 	Name               string  `json:"name" form:"name" binding:"required"`
 	Hostname           string  `json:"hostname" form:"hostname" binding:"required"`
-	URL                url.URL `json:"url"`
+	URL                url.URL `json:"-"`
 	Firstrun           bool    `json:"firstrun,omitempty"`
 	CookieHash         string  `json:"cookiehash,omitempty"`
 	AllowRegistrations bool    `json:"allowregistrations" form:"allowregistrations"`
