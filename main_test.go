@@ -12,13 +12,14 @@ import (
 	"testing"
 	"time"
 
+	. "vertigo/databases/gorm"
+	. "vertigo/misc"
+	. "vertigo/settings"
+
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gosimple/slug"
 	"github.com/russross/blackfriday"
 	. "github.com/smartystreets/goconvey/convey"
-	. "vertigo/databases/gorm"
-	. "vertigo/misc"
-	. "vertigo/settings"
 )
 
 var server = NewServer()
@@ -394,7 +395,7 @@ func TestPostCreationPage(t *testing.T) {
 }
 
 func TestCreateFirstPost(t *testing.T) {
-	testCreatePost(t, 1, "First post", "This is example post with HTML elements like <b>bold</b> and <i>italics</i> in place.", "")
+	testCreatePost(t, 1, "First post", "This is example post with HTML elements like **bold** and *italics* in place.")
 }
 
 func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
@@ -408,9 +409,11 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
 		json.Unmarshal(recorder.Body.Bytes(), &post)
+		fmt.Println(post)
+		fmt.Println(p)
 		So(post.ID, ShouldEqual, p.ID)
 		So(post.Title, ShouldEqual, p.Title)
-		So(post.Content, ShouldEqual, Cleanup(p.Content))
+		So(post.Content, ShouldEqual, p.Content)
 		So(post.Markdown, ShouldEqual, p.Markdown)
 		So(post.Slug, ShouldEqual, p.Slug)
 		So(post.Author, ShouldEqual, p.Author)
@@ -602,7 +605,7 @@ func TestPostEditPage(t *testing.T) {
 }
 
 func TestUpdateFirstPost(t *testing.T) {
-	testUpdatePost(t, "First post edited", "This is API edited example post with HTML elements like <b>bold</b> and <i>italics</i> in place.", "")
+	testUpdatePost(t, "First post edited", "This is API edited example post with HTML elements like **bold** and *italics* in place.")
 }
 
 func testUpdatePostAPI(t *testing.T, payload []byte) {
@@ -692,39 +695,47 @@ func testUpdatePostFrontend(t *testing.T, payload string) {
 	})
 }
 
-func testCreatePost(t *testing.T, owner int64, title string, content string, markdown string) {
+func testCreatePost(t *testing.T, owner int64, title string, markdown string) {
 	var u User
 	u.ID = owner
 
 	var p Post
 	p.ID = post.ID + 1
 	p.Title = title
-	p.Content = content
 	p.Markdown = markdown
+	fmt.Println("markdown", markdown)
+	p.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
+	fmt.Println("content", p.Content)
 	p.Slug = slug.Make(p.Title)
 	p.Author = u.ID
 	p.Excerpt = Excerpt(p.Content)
 	p.Viewcount = 0
 
-	payload, _ := json.Marshal(p)
+	payload, err := json.Marshal(p)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(string(payload))
 
 	testCreatePostRequest(t, payload, p)
 }
 
 func TestCreateSecondPost(t *testing.T) {
-	testCreatePost(t, 1, "Second post", "This is second post", "")
+	testCreatePost(t, 1, "Second post", "This is second post")
 }
 
-func testUpdatePost(t *testing.T, title string, content string, markdown string) {
+func testUpdatePost(t *testing.T, title string, markdown string) {
 	// create JSON payload
 	var p Post
 	p.Title = title
-	p.Content = content
+	p.Markdown = markdown
+	p.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
 	apiPayload, _ := json.Marshal(p)
 
 	// save changes to global object for further testing comparison
 	post.Title = p.Title
-	post.Content = p.Content
+	post.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
+	post.Markdown = markdown
 	post.Excerpt = Excerpt(p.Content)
 
 	testUpdatePostAPI(t, apiPayload)
@@ -732,12 +743,12 @@ func testUpdatePost(t *testing.T, title string, content string, markdown string)
 	// creates form-encoded payload
 	p2 := url.Values{}
 	p2.Set("title", title)
-	p2.Add("content", content)
+	p2.Add("markdown", markdown)
 	frontendPayload := p2.Encode()
 
 	// save changes to global object for further testing comparison
 	post.Title = p2.Get("title")
-	post.Content = p2.Get("content")
+	post.Markdown = p2.Get("markdown")
 	post.Excerpt = Excerpt(post.Content)
 
 	testUpdatePostFrontend(t, frontendPayload)
@@ -745,7 +756,7 @@ func testUpdatePost(t *testing.T, title string, content string, markdown string)
 }
 
 func TestUpdateSecondPost(t *testing.T) {
-	testUpdatePost(t, "Second post edited", "This is edited second post", "")
+	testUpdatePost(t, "Second post edited", "This is edited second post")
 }
 
 func TestControlPanelListing(t *testing.T) {
@@ -765,7 +776,7 @@ func TestControlPanelListing(t *testing.T) {
 }
 
 func TestCreateThirdPost(t *testing.T) {
-	testUpdatePost(t, "Third post", "This is third post", "")
+	testUpdatePost(t, "Third post", "This is third post")
 	TestPublishPost(t)
 	TestReadPost(t)
 	TestControlPanelListing(t)
@@ -975,7 +986,7 @@ func TestMarkdown(t *testing.T) {
 	post.Markdown = "### foo\n*foo* foo **foo**"
 	post.Content = string(blackfriday.MarkdownCommon([]byte(Cleanup(post.Markdown))))
 
-	testCreatePost(t, 1, "Markdown post", post.Content, post.Markdown)
+	testCreatePost(t, 1, "Markdown post", post.Markdown)
 	TestPublishPost(t)
 }
 
@@ -1092,7 +1103,7 @@ func TestUserLogout(t *testing.T) {
 	})
 }
 
-func TestPasswordRecovery(t *testing.T) {
+func testPasswordRecovery(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1142,7 +1153,7 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	})
 }
 
-func TestPasswordReset(t *testing.T) {
+func testPasswordReset(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1190,7 +1201,7 @@ func TestPasswordReset(t *testing.T) {
 	TestUserSignin(t)
 }
 
-func TestRecoveryKeyExpiration(t *testing.T) {
+func testRecoveryKeyExpiration(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1241,7 +1252,7 @@ func TestPostSecurity(t *testing.T) {
 
 		Convey("updating post of another user", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/post/"+post.Slug+"/edit", strings.NewReader(`{"title": "First post edited twice", "content": "This is an EDITED example post with HTML elements like <b>bold</b> and <i>italics</i> in place."}`))
+			request, _ := http.NewRequest("POST", "/api/post/"+post.Slug+"/edit", strings.NewReader(`{"title": "First post edited twice", "markdown": "This is an EDITED example post with HTML elements like **bold** and *italics* in place."}`))
 			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")

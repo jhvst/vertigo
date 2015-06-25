@@ -22,23 +22,6 @@ func NotFound() map[string]interface{} {
 	return map[string]interface{}{"error": "Not found"}
 }
 
-// This function brings sanity to contenteditable. It mainly removes unnecessary <br> lines from the input source.
-// Part of the sanitize package, but this one fixes issues with <code> blocks having &nbsp;'s all over.
-// https://github.com/kennygrant/sanitize/blob/master/sanitize.go#L106
-func Cleanup(s string) string {
-	// First remove line breaks etc as these have no meaning outside html tags (except pre)
-	// this means pre sections will lose formatting... but will result in less uninentional paras.
-	s = strings.Replace(s, "\n", "", -1)
-
-	// Then replace line breaks with newlines, to preserve that formatting
-	s = strings.Replace(s, "</p>", "\n", -1)
-	s = strings.Replace(s, "<br>", "\n", -1)
-	s = strings.Replace(s, "</br>", "\n", -1)
-	s = strings.Replace(s, "<br/>", "\n", -1)
-
-	return s
-}
-
 // Excerpt generates 15 word excerpt from given input.
 // Used to make shorter summaries from blog posts.
 func Excerpt(input string) string {

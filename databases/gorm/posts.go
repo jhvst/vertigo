@@ -21,7 +21,7 @@ import (
 type Post struct {
 	ID        int64  `json:"id" gorm:"primary_key:yes"`
 	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" form:"content" sql:"type:text"`
+	Content   string `json:"content" sql:"type:text"`
 	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
 	Slug      string `json:"slug"`
 	Author    int64  `json:"author"`
@@ -43,8 +43,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 		return post, err
 	}
 	// if post.Content is empty, the user has used Markdown editor
-	post.Markdown = Cleanup(post.Markdown)
-	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))	
+	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
 	post.Author = user.ID
 	post.Created = time.Now().Unix()
 	post.Updated = post.Created
@@ -81,12 +80,7 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 		return post, err
 	}
 	if post.Author == user.ID {
-		entry.Markdown = Cleanup(entry.Markdown)
 		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-		// this closure would need a call to convert HTML to Markdown
-		// see https://github.com/9uuso/vertigo/issues/7
-		// entry.Markdown = Markdown of entry.Content
-		entry.Content = Cleanup(entry.Content)
 		entry.Excerpt = Excerpt(entry.Content)
 		entry.Slug = slug.Make(entry.Title)
 		entry.Updated = time.Now().Unix()
