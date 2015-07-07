@@ -4,7 +4,6 @@ package routes
 import (
 	"log"
 	"net/http"
-	"strings"
 	"time"
 
 	. "vertigo/databases/gorm"
@@ -59,26 +58,15 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 			Author:      &feeds.Author{user.Name, user.Email},
 			Created:     time.Unix(post.Created, 0),
 		}
-		feed.Items = append(feed.Items, item)
 
+		feed.Items = append(feed.Items, item)
 	}
 
-	// Default to RSS feed.
 	result, err := feed.ToRss()
 	if err != nil {
 		log.Println(err)
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
-	}
-
-	format := strings.Split(r.URL.Path[1:], "/")[strings.Count(r.URL.Path[1:], "/")]
-	if format == "atom" {
-		result, err = feed.ToAtom()
-		if err != nil {
-			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
-			return
-		}
 	}
 
 	w.Write([]byte(result))

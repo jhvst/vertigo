@@ -998,31 +998,12 @@ func TestMarkdown(t *testing.T) {
 
 func TestFeeds(t *testing.T) {
 
-	Convey("reading feeds without defining feed type", t, func() {
+	Convey("reading feeds", t, func() {
 		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/feeds", nil)
+		request, _ := http.NewRequest("GET", "/rss", nil)
 		server.ServeHTTP(recorder, request)
-		So(recorder.Code, ShouldEqual, 302)
-		So(recorder.HeaderMap["Location"][0], ShouldEqual, "/feeds/rss")
-	})
-
-	Convey("when defining feed", t, func() {
-
-		Convey("it should be RSS on /rss", func() {
-			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("GET", "/feeds/rss", nil)
-			server.ServeHTTP(recorder, request)
-			So(recorder.Code, ShouldEqual, 200)
-			So(recorder.HeaderMap["Content-Type"][0], ShouldEqual, "application/xml")
-		})
-
-		Convey("it should be Atom on /atom", func() {
-			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("GET", "/feeds/atom", nil)
-			server.ServeHTTP(recorder, request)
-			So(recorder.Code, ShouldEqual, 200)
-			So(recorder.HeaderMap["Content-Type"][0], ShouldEqual, "application/xml")
-		})
+		So(recorder.Code, ShouldEqual, 200)
+		So(recorder.HeaderMap["Content-Type"][0], ShouldEqual, "application/xml")
 	})
 }
 

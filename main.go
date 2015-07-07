@@ -93,13 +93,7 @@ func NewServer() *martini.ClassicMartini {
 
 	m.Get("/", Homepage)
 
-	m.Group("/feeds", func(r martini.Router) {
-		r.Get("", func(res render.Render) {
-			res.Redirect("/feeds/rss", 302)
-		})
-		r.Get("/atom", ReadFeed)
-		r.Get("/rss", ReadFeed)
-	})
+	m.Get("/rss", ReadFeed)
 
 	m.Group("/post", func(r martini.Router) {
 
