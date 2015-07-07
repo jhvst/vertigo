@@ -6,8 +6,8 @@ package gorm
 import (
 	"errors"
 	"log"
-	"time"
 	"strconv"
+	"time"
 
 	. "github.com/9uuso/vertigo/crypto"
 	. "github.com/9uuso/vertigo/email"
