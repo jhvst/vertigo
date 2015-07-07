@@ -4,7 +4,6 @@ vertigo
 [![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git)
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
-
 Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
 
 The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HTML and JavaScript (vanilla) only appears on few pages. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices. Vertigo also ships without any CSS frameworks, so it is easy to start customizing the frontend with the framework of your choice.
@@ -19,8 +18,8 @@ Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top o
 - Search
 - Multiple account support
 - Auto-saving of posts to LocalStorage
-- RSS and Atom feeds
-- Password recovery with Mailgun
+- RSS feeds
+- Password recovery
 - Markdown support
 
 ##Demo
