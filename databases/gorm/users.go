@@ -10,7 +10,7 @@ import (
 	"strconv"
 
 	. "github.com/9uuso/vertigo/crypto"
-	. "vertigo/email"
+	. "github.com/9uuso/vertigo/email"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/jinzhu/gorm"
