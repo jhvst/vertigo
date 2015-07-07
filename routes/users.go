@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strconv"
 
-	. "vertigo/databases/gorm"
-	. "vertigo/misc"
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/settings"
 
 	"code.google.com/p/go-uuid/uuid"
 	"github.com/go-martini/martini"

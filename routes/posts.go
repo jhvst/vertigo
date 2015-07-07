@@ -9,9 +9,9 @@ import (
 	"net/http"
 	"strings"
 
-	. "vertigo/databases/gorm"
-	. "vertigo/misc"
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"

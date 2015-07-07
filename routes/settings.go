@@ -6,9 +6,9 @@ import (
 	"net/url"
 	"strings"
 
-	. "vertigo/databases/gorm"
-	. "vertigo/misc"
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"

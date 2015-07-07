@@ -8,10 +8,10 @@ import (
 	"runtime"
 	"time"
 
-	. "vertigo/databases/gorm"
-	. "vertigo/misc"
-	. "vertigo/routes"
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/routes"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"

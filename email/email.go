@@ -6,7 +6,7 @@ import (
 	"net/smtp"
 	"text/template"
 
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/settings"
 )
 
 type Email struct {

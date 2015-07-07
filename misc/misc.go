@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/go-martini/martini"
 	"github.com/kennygrant/sanitize"
