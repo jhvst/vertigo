@@ -1,7 +1,7 @@
 vertigo
 =======
 [![Codeship Status for 9uuso/vertigo](https://img.shields.io/codeship/b2de9690-b16b-0132-08f1-3edef27c5b65.svg)](https://codeship.com/projects/69843) [![Deploy](https://img.shields.io/badge/heroku-deploy-green.svg)](https://heroku.com/deploy)
-[![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git)[![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.svg)](https://godoc.org/github.com/9uuso/vertigo)
+[![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git) [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.svg)](https://godoc.org/github.com/9uuso/vertigo)
 
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
