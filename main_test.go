@@ -139,7 +139,7 @@ func TestSavingSettingsViaInstallationWizard(t *testing.T) {
 		var recorder = httptest.NewRecorder()
 
 		Convey("it should return 200 OK", func() {
-			settings.Hostname = "example.com"
+			settings.Hostname = "http://example.com"
 			settings.Name = "Foo's blog"
 			settings.Description = "Foo's test blog"
 			settings.Mailer.Login = os.Getenv("MAILGUN_SMTP_LOGIN")
@@ -1090,7 +1090,7 @@ func TestUserLogout(t *testing.T) {
 	})
 }
 
-func testPasswordRecovery(t *testing.T) {
+func TestPasswordRecovery(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1140,7 +1140,7 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	})
 }
 
-func testPasswordReset(t *testing.T) {
+func TestPasswordReset(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
@@ -1188,7 +1188,7 @@ func testPasswordReset(t *testing.T) {
 	TestUserSignin(t)
 }
 
-func testRecoveryKeyExpiration(t *testing.T) {
+func TestRecoveryKeyExpiration(t *testing.T) {
 
 	Convey("using frontend", t, func() {
 
