@@ -18,11 +18,10 @@ import (
 type Vertigo struct {
 	Name               string  `json:"name" form:"name" binding:"required"`
 	Hostname           string  `json:"hostname" form:"hostname" binding:"required"`
-	URL                url.URL `json:"-"`
+	URL                url.URL `json:"-,omitempty"`
 	Firstrun           bool    `json:"firstrun,omitempty"`
 	CookieHash         string  `json:"cookiehash,omitempty"`
 	AllowRegistrations bool    `json:"allowregistrations" form:"allowregistrations"`
-	Markdown           bool    `json:"markdown" form:"markdown"`
 	Description        string  `json:"description" form:"description" binding:"required"`
 	Mailer             SMTP    `json:"smtp"`
 }
