@@ -41,8 +41,8 @@ func CreateUser(req *http.Request, res render.Render, s sessions.Session, user U
 			return
 		}
 		if err.Error() == "user location invalid" {
-			res.JSON(422, map[string]interface{}{"error":"Location invalid. Please use IANA timezone database compatible locations."})
-			return			
+			res.JSON(422, map[string]interface{}{"error": "Location invalid. Please use IANA timezone database compatible locations."})
+			return
 		}
 		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
 		return
