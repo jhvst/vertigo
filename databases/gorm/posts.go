@@ -19,17 +19,18 @@ import (
 // Form field refers to frontend POST form `name` fields which martini uses to read data from.
 // Binding defines whether the field is required when inserting or updating the object.
 type Post struct {
-	ID        int64  `json:"id" gorm:"primary_key:yes"`
-	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" sql:"type:text"`
-	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
-	Slug      string `json:"slug"`
-	Author    int64  `json:"author"`
-	Excerpt   string `json:"excerpt"`
-	Viewcount uint   `json:"viewcount"`
-	Published bool   `json:"-"`
-	Created   int64  `json:"created"`
-	Updated   int64  `json:"updated"`
+	ID         int64  `json:"id" gorm:"primary_key:yes"`
+	Title      string `json:"title" form:"title" binding:"required"`
+	Content    string `json:"content" sql:"type:text"`
+	Markdown   string `json:"markdown" form:"markdown" sql:"type:text"`
+	Slug       string `json:"slug"`
+	Author     int64  `json:"author"`
+	Excerpt    string `json:"excerpt"`
+	Viewcount  uint   `json:"viewcount"`
+	Published  bool   `json:"-"`
+	Created    int64  `json:"created"`
+	Updated    int64  `json:"updated"`
+	TimeOffset int    `json:"timeoffset"`
 }
 
 // Insert or post.Insert inserts Post object into database.
@@ -42,10 +43,14 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	if err != nil {
 		return post, err
 	}
-	// if post.Content is empty, the user has used Markdown editor
+	timeOffset, err := TimeOffset(user.Location)
+	if err != nil {
+		return post, err
+	}
+	post.TimeOffset = timeOffset
 	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
 	post.Author = user.ID
-	post.Created = time.Now().Unix()
+	post.Created = time.Now().UTC().Unix()
 	post.Updated = post.Created
 	post.Excerpt = Excerpt(post.Content)
 	post.Slug = slug.Make(post.Title)
@@ -83,7 +88,7 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
 		entry.Excerpt = Excerpt(entry.Content)
 		entry.Slug = slug.Make(entry.Title)
-		entry.Updated = time.Now().Unix()
+		entry.Updated = time.Now().UTC().Unix()
 		query := connection.Gorm.Where(&Post{Slug: post.Slug, Author: user.ID}).First(&post).Updates(entry)
 		if query.Error != nil {
 			if query.Error == gorm.RecordNotFound {

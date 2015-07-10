@@ -5,6 +5,11 @@
 		<input name="name" placeholder="Name" required="required" autofocus>
 		<input type="email" name="email" placeholder="Email" required="required">
 		<input type="password" name="password" placeholder="Password" required="required">
+		<select name="location">
+			{{ range $index, $timezone := timezones }}
+				<option value="{{ $timezone.Location }}">{{ $timezone.Location }}</option>
+			{{ end }}
+		</select>
 
 		<button type="submit">Register</button>
 	</fieldset>

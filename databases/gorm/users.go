@@ -28,6 +28,7 @@ type User struct {
 	Digest   []byte `json:"-"`
 	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
 	Posts    []Post `json:"posts"`
+	Location string `json:"location" form:"location"`
 }
 
 // Login or user.Login is a function which retrieves user according to given .Email field.
@@ -201,6 +202,10 @@ func (user User) Insert() (User, error) {
 	digest, err := GenerateHash(user.Password)
 	if err != nil {
 		return user, err
+	}
+	_, err = time.LoadLocation(user.Location)
+	if err != nil {
+		return user, errors.New("user location invalid")
 	}
 	user.Digest = digest
 	user.Posts = make([]Post, 0)
