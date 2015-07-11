@@ -142,11 +142,11 @@ func TestSavingSettingsViaInstallationWizard(t *testing.T) {
 			settings.Hostname = "http://example.com"
 			settings.Name = "Foo's blog"
 			settings.Description = "Foo's test blog"
-			settings.Mailer.Login = os.Getenv("MAILGUN_SMTP_LOGIN")
-			settings.Mailer.Password = os.Getenv("MAILGUN_SMTP_PASSWORD")
-			port, _ := strconv.Atoi(os.Getenv("MAILGUN_SMTP_PORT"))
+			settings.Mailer.Login = os.Getenv("SMTP_LOGIN")
+			settings.Mailer.Password = os.Getenv("SMTP_PASSWORD")
+			port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
 			settings.Mailer.Port = port
-			settings.Mailer.Hostname = os.Getenv("MAILGUN_SMTP_SERVER")
+			settings.Mailer.Hostname = os.Getenv("SMTP_SERVER")
 			payload, _ := json.Marshal(settings)
 			request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
 			request.Header.Set("Content-Type", "application/json")

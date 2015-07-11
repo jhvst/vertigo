@@ -26,8 +26,7 @@ type Vertigo struct {
 	Mailer             SMTP    `json:"smtp"`
 }
 
-// MailgunSettings holds the API keys necessary to send account recovery email.
-// You can find the necessary values for these structures in https://mailgun.com/cp
+// SMTP holds information necessary to send account recovery email.
 type SMTP struct {
 	Login    string `json:"login" form:"login"`
 	Port     int    `json:"port" form:"port"`

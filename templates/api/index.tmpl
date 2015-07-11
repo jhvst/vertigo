@@ -113,14 +113,14 @@
 <h2>Settings</h2>
 
 <pre><code class="go">type Vertigo struct {
-	Name               string          `json:"name" form:"name" binding:"required"`
-	Hostname           string          `json:"hostname" form:"hostname" binding:"required"`
-	Firstrun           bool            `json:"firstrun,omitempty"`
-	CookieHash         string          `json:"cookiehash,omitempty"`
-	AllowRegistrations bool            `json:"allowregistrations" form:"allowregistrations"`
-	Markdown           bool            `json:"markdown" form:"markdown"`
-	Description        string          `json:"description" form:"description" binding:"required"`
-	Mailer             MailgunSettings `json:"mailgun"`
+	Name               string  `json:"name" form:"name" binding:"required"`
+	Hostname           string  `json:"hostname" form:"hostname" binding:"required"`
+	URL                url.URL `json:"-,omitempty"`
+	Firstrun           bool    `json:"firstrun,omitempty"`
+	CookieHash         string  `json:"cookiehash,omitempty"`
+	AllowRegistrations bool    `json:"allowregistrations" form:"allowregistrations"`
+	Description        string  `json:"description" form:"description" binding:"required"`
+	Mailer             SMTP    `json:"smtp"`
 }
 </code></pre>
 

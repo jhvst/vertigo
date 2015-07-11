@@ -4,27 +4,27 @@
 
 		<label>Allow new registrations</label>
 		<p>Below you can choose whether you'd like disable registration for new users.</p>
-		<input type="radio" name="allowregistrations" value="true"{{if eq .AllowRegistrations true}} checked{{end}}> Allow registrations
+		<input type="radio" name="allowregistrations" value="true"{{ if eq .AllowRegistrations true }} checked{{ end }}> Allow registrations
 		<br>
-		<input type="radio" name="allowregistrations" value="false"{{if eq .AllowRegistrations false}} checked{{end}}> Disallow registrations
+		<input type="radio" name="allowregistrations" value="false"{{ if eq .AllowRegistrations false }} checked{{ end }}> Disallow registrations
 
 		<br><br>
 
 		<label>Hostname</label>
 		<p>The URL used to generate RSS and Atom links and any emails that link back to your site. This should be the absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
-		<input name="hostname" placeholder="http://example.com" required="required" value="{{.Hostname}}">
+		<input name="hostname" placeholder="http://example.com" required="required" value="{{ .Hostname }}">
 
 		<br><br>
 
 		<label>Blog name</label>
 		<p>This is the text people see on their browser tabs when visiting your homepage.</p>
-		<input name="name" placeholder="Foo's Blog" required="required" value="{{.Name}}">
+		<input name="name" placeholder="Foo's Blog" required="required" value="{{ .Name }}">
 
 		<br><br>
 
 		<label>Blog description</label>
 		<p>Your beloved site's description. Used in RSS and Atom feeds.</p>
-		<input name="description" placeholder="Thoughts about which witch is which" required="required" value="{{.Description}}">
+		<input name="description" placeholder="Thoughts about which witch is which" required="required" value="{{ .Description }}">
 
 		<br><br>
 
@@ -33,25 +33,25 @@
 
 		<label>SMTP Login</label>
 		<p>Address from which you want to send mail from.</p>
-		<input name="login" placeholder="postmaster@example.com" value="{{env "MAILGUN_SMTP_LOGIN"}}">		
+		<input name="login" placeholder="postmaster@example.com" value="{{ .Mailer.Login }}">		
 
 		<br><br>
 
 		<label>SMTP Password</label>
 		<p>Password for the address you gave above.</p>
-		<input name="password" value="{{env "MAILGUN_SMTP_PASSWORD"}}">
+		<input name="password" value="{{ .Mailer.Password }}">
 
 		<br><br>
 
 		<label>SMTP Port</label>
 		<p>On some occasions this might be 25 instead.</p>
-		<input name="port" value="587" value="{{env "MAILGUN_SMTP_PORT"}}">
+		<input name="port" value="587" value="{{ .Mailer.Port }}">
 
 		<br><br>
 
 		<label>SMTP Hostname</label>
 		<p>SMTP server address.</p>
-		<input name="smtp-hostname" placeholder="smtp.example.org" value="{{env "MAILGUN_SMTP_SERVER"}}">
+		<input name="smtp-hostname" placeholder="smtp.example.org" value="{{ .Mailer.Hostname }}">
 
 		<br><br>
 

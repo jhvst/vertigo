@@ -43,8 +43,6 @@ Deploy and try out vertigo using gitdeploy:
 
 For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/vertigo/wiki/Advanced-Heroku-deployment)
 
-Note: To deploy to Heroku you need to have a credit card linked to them. If you wish not to link one, you may follow instructions on [here](https://github.com/9uuso/vertigo/issues/8) to remove Mailgun from Heroku add-ons list. If you remove Mailgun you cannot use password reminder, but everything else should work.
-
 ###Source
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
@@ -62,9 +60,11 @@ Note: To deploy to Heroku you need to have a credit card linked to them. If you 
 ###Environment variables
 * `PORT` - the HTTP server port
 * `MARTINI_ENV` - used by Martini to enable production optimizations such as template caching
-* `MAILGUN_API_KEY` - Mailgun API key (declared by default with Heroku Mailgun Addon)
-* `MAILGUN_SMTP_LOGIN` - Another Mailgun API key (declared by default with Heroku Mailgun Addon)
-* `DATABASE_URL` - Database connection URL for PostgreSQL - if empty, SQLite will be used
+* `SMTP_LOGIN` - address from which you want to send mail from. Example: postmaster@example.com
+* `SMTP_PASSWORD` - Password for the mailbox defined with SMTP_LOGIN
+* `SMTP_PORT` - SMTP port which to use to send email. Defaults to 587.
+* `SMTP_SERVER` - SMTP server hostname or IP address. Example: smtp.example.org
+* `DATABASE_URL` - database connection URL for PostgreSQL - if empty, SQLite will be used
 
 ##Contribute
 
