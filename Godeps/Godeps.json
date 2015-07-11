@@ -4,7 +4,7 @@
 	"Deps": [
 		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
-			"Rev": "7ba0a88086a06506363ecc81485ea44d2308a647"
+			"Rev": "dc4e3d7eae4a18dc75c8c9a7a0f5f1419dc306e4"
 		},
 		{
 			"ImportPath": "github.com/9uuso/timezone",
