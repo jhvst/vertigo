@@ -18,8 +18,8 @@ import (
 	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/PuerkitoBio/goquery"
-	"github.com/gosimple/slug"
 	"github.com/russross/blackfriday"
+	slug "github.com/shurcooL/sanitized_anchor_name"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -730,7 +730,7 @@ func testCreatePost(t *testing.T, owner int64, title string, markdown string) {
 	fmt.Println("markdown", markdown)
 	p.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
 	fmt.Println("content", p.Content)
-	p.Slug = slug.Make(p.Title)
+	p.Slug = slug.Create(p.Title)
 	p.Author = u.ID
 	p.Excerpt = Excerpt(p.Content)
 	p.Viewcount = 0
