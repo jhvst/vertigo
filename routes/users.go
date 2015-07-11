@@ -12,10 +12,10 @@ import (
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/settings"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
+	"github.com/pborman/uuid"
 )
 
 // CreateUser is a route which creates a new user struct according to posted parameters.

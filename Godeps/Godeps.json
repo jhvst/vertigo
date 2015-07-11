@@ -8,13 +8,12 @@
 			"Rev": "5d796540e3cb93ea0556c897e6a3c7690f614d35"
 		},
 		{
-			"ImportPath": "code.google.com/p/go-uuid/uuid",
-			"Comment": "null-12",
-			"Rev": "7dda39b2e7d5e265014674c5af696ba4186679e9"
-		},
-		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
 			"Rev": "7ba0a88086a06506363ecc81485ea44d2308a647"
+		},
+		{
+			"ImportPath": "github.com/9uuso/timezone",
+			"Rev": "d0a07e55ef0c8670b7a7932ef983b82e572f3f3e"
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
@@ -86,10 +85,6 @@
 			"Rev": "7175accbed18058468c07811f76440d6e8d7cf19"
 		},
 		{
-			"ImportPath": "github.com/mailgun/mailgun-go",
-			"Rev": "722a32c61d08e5f3fffbb4b6ce05c61c2f72bc30"
-		},
-		{
 			"ImportPath": "github.com/martini-contrib/binding",
 			"Rev": "1928ed2850e7d65507ea4198d935597e43612c7d"
 		},
@@ -111,16 +106,12 @@
 			"Rev": "d10e2c8f62100097910367dee90a9bd89d426a44"
 		},
 		{
-			"ImportPath": "github.com/mbanzon/simplehttp",
-			"Rev": "6894781bc95b6a11c8b4e4a83eedb06c8a0b4536"
-		},
-		{
 			"ImportPath": "github.com/oxtoacart/bpool",
 			"Rev": "0f78ff9152c03745d1a47c9023af1b424e202c07"
 		},
 		{
-			"ImportPath": "github.com/pkg/browser",
-			"Rev": "2e6fb17d7a7cb6a81837ee68158214d9098de905"
+			"ImportPath": "github.com/pborman/uuid",
+			"Rev": "ca53cad383cad2479bbba7f7a1a05797ec1386e4"
 		},
 		{
 			"ImportPath": "github.com/russross/blackfriday",
@@ -128,8 +119,8 @@
 			"Rev": "7c8f3c1dcc7e0f87c62af34ee193fc3251f6d8a4"
 		},
 		{
-			"ImportPath": "github.com/shurcooL/go/github_flavored_markdown/sanitized_anchor_name",
-			"Rev": "c53996fe3f061319df88893596bfc50547f1768d"
+			"ImportPath": "github.com/shurcooL/sanitized_anchor_name",
+			"Rev": "8e87604bec3c645a4eeaee97dfec9f25811ff20d"
 		},
 		{
 			"ImportPath": "github.com/smartystreets/goconvey/convey",

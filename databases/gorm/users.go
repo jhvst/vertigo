@@ -12,9 +12,9 @@ import (
 	. "github.com/9uuso/vertigo/crypto"
 	. "github.com/9uuso/vertigo/email"
 
-	"code.google.com/p/go-uuid/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/sessions"
+	"github.com/pborman/uuid"
 )
 
 // User struct holds all relevant data for representing user accounts on Vertigo.

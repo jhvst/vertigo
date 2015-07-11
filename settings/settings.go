@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"os"
 
-	"code.google.com/p/go-uuid/uuid"
+	"github.com/pborman/uuid"
 )
 
 // Vertigo struct is used as a site wide settings structure. Different from posts and person
