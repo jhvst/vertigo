@@ -201,10 +201,11 @@ func TestCreateFirstUser(t *testing.T) {
 	user.Name = "Juuso"
 	user.Password = "foo"
 	user.Email = "vertigo-test@mailinator.com"
-	testCreateUser(t, user.Name, user.Password, user.Email)
+	user.Location = "Europe/Helsinki"
+	testCreateUser(t, user.Name, user.Password, user.Email, user.Location)
 }
 
-func testCreateUser(t *testing.T, name string, password string, email string) {
+func testCreateUser(t *testing.T, name string, password string, email string, location string) {
 
 	// Convey("using frontend", t, func() {
 
@@ -220,7 +221,17 @@ func testCreateUser(t *testing.T, name string, password string, email string) {
 
 	Convey("using API", t, func() {
 
-		payload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s"}`, name, password, email)
+		payload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s", "location":"%s"}`, name, password, email, location)
+		badpayload := fmt.Sprintf(`{"name":"%s", "password":"%s", "email":"%s", "location":"EU/FI"}`, name, password, email)
+
+		Convey("with bad location it should should return 422", func() {
+			var recorder = httptest.NewRecorder()
+			request, _ := http.NewRequest("POST", "/api/user", strings.NewReader(badpayload))
+			request.Header.Set("Content-Type", "application/json")
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 422)
+			So(recorder.Body.String(), ShouldEqual, `{"error":"Location invalid. Please use IANA timezone database compatible locations."}`)
+		})
 
 		Convey("with valid input it should return 200 OK", func() {
 			var recorder = httptest.NewRecorder()
@@ -232,6 +243,7 @@ func testCreateUser(t *testing.T, name string, password string, email string) {
 			So(user.Name, ShouldEqual, name)
 			So(user.Email, ShouldEqual, email)
 			So(user.Posts, ShouldBeEmpty)
+			So(user.Location, ShouldEqual, location)
 		})
 
 		Convey("with the same email should return 422", func() {
@@ -252,7 +264,7 @@ func TestReadUser(t *testing.T) {
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/user/%d", user.ID), nil)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
-		So(recorder.Body.String(), ShouldEqual, `{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}`)
+		So(recorder.Body.String(), ShouldEqual, `{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[],"location":"Europe/Helsinki"}`)
 	})
 }
 
@@ -263,7 +275,7 @@ func TestReadUsers(t *testing.T) {
 		request, _ := http.NewRequest("GET", "/api/users/", nil)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
-		So(recorder.Body.String(), ShouldEqual, `[{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[]}]`)
+		So(recorder.Body.String(), ShouldEqual, `[{"id":1,"name":"Juuso","email":"vertigo-test@mailinator.com","posts":[],"location":"Europe/Helsinki"}]`)
 	})
 }
 
@@ -1231,8 +1243,9 @@ func TestPostSecurity(t *testing.T) {
 	user.Name = "Juuso"
 	user.Password = "foo"
 	user.Email = "vertigo-test2@mailinator.com"
+	user.Location = "Europe/Helsinki"
 
-	testCreateUser(t, user.Name, user.Password, user.Email)
+	testCreateUser(t, user.Name, user.Password, user.Email, user.Location)
 	TestUserSignin(t)
 
 	Convey("using API", t, func() {

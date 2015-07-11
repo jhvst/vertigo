@@ -1,5 +1,5 @@
 <article>
-	<small><time>{{date .Created}}</time></small>
+	<small><time>{{date .Created .TimeOffset}}</time></small>
 	<h1>{{.Title}}</h1>
 	{{unescape .Content}}
 </article>

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"net/http"
 	"strings"
+	"time"
 
 	. "github.com/9uuso/vertigo/settings"
 
@@ -22,7 +23,20 @@ func NotFound() map[string]interface{} {
 	return map[string]interface{}{"error": "Not found"}
 }
 
-// Excerpt generates 15 word excerpt from given input.
+// TimeOffset returns timezone offset of loc in seconds from UTC.
+// Loc should be valid IANA timezone location.
+func TimeOffset(loc string) (int, error) {
+	var timeOffset int
+	l, err := time.LoadLocation(loc)
+	if err != nil {
+		return timeOffset, err
+	}
+	now := time.Now().In(l)
+	_, timeOffset = now.Zone()
+	return timeOffset, nil
+}
+
+// Excerpt generates 15 word excerpt from input.
 // Used to make shorter summaries from blog posts.
 func Excerpt(input string) string {
 	scanner := bufio.NewScanner(strings.NewReader(input))

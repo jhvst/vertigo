@@ -13,6 +13,7 @@ import (
 	. "github.com/9uuso/vertigo/routes"
 	. "github.com/9uuso/vertigo/settings"
 
+	"github.com/9uuso/timezone"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
@@ -64,12 +65,15 @@ func NewServer() *martini.ClassicMartini {
 		},
 		// Date helper returns unix date as more readable one in string format. Format of YYYY-MM-DD
 		// https://html.spec.whatwg.org/multipage/semantics.html#datetime-value
-		"date": func(d int64) string {
-			return time.Unix(d, 0).Format("Monday, January 2, 2006 3:04PM")
+		"date": func(d int64, offset int) string {
+			return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Monday, January 2, 2006 3:04PM (-0700 GMT)")
 		},
 		// Env helper returns environment variable of s.
 		"env": func(s string) string {
 			return os.Getenv(s)
+		},
+		"timezones": func() [416]timezone.Timezone {
+			return timezone.Locations
 		},
 	}
 
