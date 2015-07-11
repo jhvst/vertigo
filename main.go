@@ -42,15 +42,8 @@ func NewServer() *martini.ClassicMartini {
 			}
 			return Settings.Name
 		},
-		// Page Title renders page title.
-		"pagetitle": func(t interface{}) string {
-			if Settings.Name == "" {
-				return "Vertigo"
-			}
-			return Settings.Name
-		},
 		// Description renders page description.
-		"description": func(t interface{}) string {
+		"description": func() string {
 			if Settings.Description == "" {
 				return "Blog in Go"
 			}

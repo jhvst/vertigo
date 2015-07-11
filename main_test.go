@@ -84,6 +84,12 @@ func TestStaticPages(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 		})
+
+		Convey("Loading non-existent page", func() {
+			request, _ := http.NewRequest("GET", "/foobar", nil)
+			server.ServeHTTP(recorder, request)
+			So(recorder.Code, ShouldEqual, 404)
+		})
 	})
 }
 
