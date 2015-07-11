@@ -10,21 +10,26 @@ import (
 	"regexp"
 	"strings"
 
-	parser "code.google.com/p/go.net/html"
+	parser "golang.org/x/net/html"
 )
 
-// Sanitize utf8 html, allowing some tags
-// Usage: sanitize.HTMLAllowing("<b id=id>my html</b>",[]string{"b"},[]string{"id")
-func HTMLAllowing(s string, args ...[]string) (string, error) {
-	var IGNORE_TAGS = []string{"title", "script", "style", "iframe", "frame", "frameset", "noframes", "noembed", "embed", "applet", "object", "base"}
-	var DEFAULT_TAGS = []string{"h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "hr", "p", "br", "b", "i", "ol", "ul", "li", "a", "img"}
-	var DEFAULT_ATTR = []string{"id", "class", "src", "href", "title", "alt", "name", "rel"}
+var (
+	ignoreTags = []string{"title", "script", "style", "iframe", "frame", "frameset", "noframes", "noembed", "embed", "applet", "object", "base"}
 
-	allowedTags := DEFAULT_TAGS
+	defaultTags = []string{"h1", "h2", "h3", "h4", "h5", "h6", "div", "span", "hr", "p", "br", "b", "i", "strong", "em", "ol", "ul", "li", "a", "img"}
+
+	defaultAttributes = []string{"id", "class", "src", "href", "title", "alt", "name", "rel"}
+)
+
+// HTMLAllowing sanitizes html, allowing some tags.
+// Arrays of allowed tags and allowed attributes may optionally be passed as the second and third arguments.
+func HTMLAllowing(s string, args ...[]string) (string, error) {
+
+	allowedTags := defaultTags
 	if len(args) > 0 {
 		allowedTags = args[0]
 	}
-	allowedAttributes := DEFAULT_ATTR
+	allowedAttributes := defaultAttributes
 	if len(args) > 1 {
 		allowedAttributes = args[1]
 	}
@@ -45,15 +50,15 @@ func HTMLAllowing(s string, args ...[]string) (string, error) {
 			err := tokenizer.Err()
 			if err == io.EOF {
 				return buffer.String(), nil
-			} else {
-				return "", err
 			}
+			return "", err
+
 		case parser.StartTagToken:
 
 			if len(ignore) == 0 && includes(allowedTags, token.Data) {
 				token.Attr = cleanAttributes(token.Attr, allowedAttributes)
 				buffer.WriteString(token.String())
-			} else if includes(IGNORE_TAGS, token.Data) {
+			} else if includes(ignoreTags, token.Data) {
 				ignore = token.Data
 			}
 
@@ -92,11 +97,11 @@ func HTMLAllowing(s string, args ...[]string) (string, error) {
 
 }
 
-// Strip html tags, replace common entities, and escape <>&;'" in the result.
+// HTML strips html tags, replace common entities, and escapes <>&;'" in the result.
 // Note the returned text may contain entities as it is escaped by HTMLEscapeString, and most entities are not translated.
-func HTML(s string) (output string) {
+func HTML(s string) string {
 
-	output = ""
+	output := ""
 
 	// Shortcut strings with no tags in them
 	if !strings.ContainsAny(s, "<>") {
@@ -155,76 +160,54 @@ func HTML(s string) (output string) {
 	return output
 }
 
-// Makes a string safe to use as an url path, cleaned of .. and unsuitable characters
-func Path(text string) string {
+// We are very restrictive as this is intended for ascii url slugs
+var illegalPath = regexp.MustCompile(`[^[:alnum:]\~\-\./]`)
+
+// Path makes a string safe to use as an url path.
+func Path(s string) string {
 	// Start with lowercase string
-	fileName := strings.ToLower(text)
-	fileName = strings.Replace(fileName, "..", "", -1)
-	fileName = path.Clean(fileName)
-	fileName = strings.Trim(fileName, " ")
+	filePath := strings.ToLower(s)
+	filePath = strings.Replace(filePath, "..", "", -1)
+	filePath = path.Clean(filePath)
 
-	// Replace certain joining characters with a dash
-	seps, err := regexp.Compile(`[ &_=+:]`)
-	if err == nil {
-		fileName = seps.ReplaceAllString(fileName, "-")
-	}
-
-	// Flatten accents first
-	fileName = Accents(fileName)
-
-	// Remove all other unrecognised characters
-	// we are very restrictive as this is intended for ascii url slugs
-	legal, err := regexp.Compile(`[^\w\_\~\-\./]`)
-	if err == nil {
-		fileName = legal.ReplaceAllString(fileName, "")
-	}
-
-	// Remove any double dashes caused by existing - in name
-	fileName = strings.Replace(fileName, "--", "-", -1)
+	// Remove illegal characters for paths, flattening accents and replacing some common separators with -
+	filePath = cleanString(filePath, illegalPath)
 
 	// NB this may be of length 0, caller must check
-	return fileName
+	return filePath
 }
 
-// Makes a string safe to use in a file name (e.g. for saving file atttachments)
-func Name(text string) string {
+// Remove all other unrecognised characters apart from
+var illegalName = regexp.MustCompile(`[^[:alnum:]-.]`)
+
+// Name makes a string safe to use in a file name by first finding the path basename, then replacing non-ascii characters.
+func Name(s string) string {
 	// Start with lowercase string
-	fileName := strings.ToLower(text)
+	fileName := strings.ToLower(s)
 	fileName = path.Clean(path.Base(fileName))
-	fileName = strings.Trim(fileName, " ")
 
-	// Replace certain joining characters with a dash
-	seps, err := regexp.Compile(`[ &_=+:]`)
-	if err == nil {
-		fileName = seps.ReplaceAllString(fileName, "-")
-	}
-
-	// Remove all other unrecognised characters - NB we do allow any printable characters
-	legal, err := regexp.Compile(`[^[:alnum:]-.]`)
-	if err == nil {
-		fileName = legal.ReplaceAllString(fileName, "")
-	}
-
-	// Remove any double dashes caused by existing - in name
-	fileName = strings.Replace(fileName, "--", "-", -1)
+	// Remove illegal characters for names, replacing some common separators with -
+	fileName = cleanString(fileName, illegalName)
 
 	// NB this may be of length 0, caller must check
 	return fileName
 }
 
-// Replace a set of accented characters with ascii equivalents.
-func Accents(text string) string {
-	// Replace some common accent characters
-	b := bytes.NewBufferString("")
-	for _, c := range text {
-		// Check transliterations first
-		if val, ok := transliterations[c]; ok {
-			b.WriteString(val)
-		} else {
-			b.WriteRune(c)
-		}
-	}
-	return b.String()
+// Replace these separators with -
+var baseNameSeparators = regexp.MustCompile(`[./]`)
+
+// BaseName makes a string safe to use in a file name, producing a sanitized basename replacing . or / with -.
+// No attempt is made to normalise a path or normalise case.
+func BaseName(s string) string {
+
+	// Replace certain joining characters with a dash
+	baseName := baseNameSeparators.ReplaceAllString(s, "-")
+
+	// Remove illegal characters for names, replacing some common separators with -
+	baseName = cleanString(baseName, illegalName)
+
+	// NB this may be of length 0, caller must check
+	return baseName
 }
 
 // A very limited list of transliterations to catch common european names translated to urls.
@@ -303,6 +286,94 @@ var transliterations = map[rune]string{
 	'œ': "oe",
 }
 
+// Accents replaces a set of accented characters with ascii equivalents.
+func Accents(s string) string {
+	// Replace some common accent characters
+	b := bytes.NewBufferString("")
+	for _, c := range s {
+		// Check transliterations first
+		if val, ok := transliterations[c]; ok {
+			b.WriteString(val)
+		} else {
+			b.WriteRune(c)
+		}
+	}
+	return b.String()
+}
+
+var (
+	// If the attribute contains data: or javascript: anywhere, ignore it
+	// we don't allow this in attributes as it is so frequently used for xss
+	// NB we allow spaces in the value, and lowercase.
+	illegalAttr = regexp.MustCompile(`(d\s*a\s*t\s*a|j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*)\s*:`)
+
+	// We are far more restrictive with href attributes.
+	legalHrefAttr = regexp.MustCompile(`\A[/#][^/\\]?|mailto://|http://|https://`)
+)
+
+// cleanAttributes returns an array of attributes after removing malicious ones.
+func cleanAttributes(a []parser.Attribute, allowed []string) []parser.Attribute {
+	if len(a) == 0 {
+		return a
+	}
+
+	var cleaned []parser.Attribute
+	for _, attr := range a {
+		if includes(allowed, attr.Key) {
+
+			val := strings.ToLower(attr.Val)
+
+			// Check for illegal attribute values
+			if illegalAttr.FindString(val) != "" {
+				attr.Val = ""
+			}
+
+			// Check for legal href values - / mailto:// http:// or https://
+			if attr.Key == "href" {
+				if legalHrefAttr.FindString(val) == "" {
+					attr.Val = ""
+				}
+			}
+
+			// If we still have an attribute, append it to the array
+			if attr.Val != "" {
+				cleaned = append(cleaned, attr)
+			}
+		}
+	}
+	return cleaned
+}
+
+// A list of characters we consider separators in normal strings and replace with our canonical separator - rather than removing.
+var (
+	separators = regexp.MustCompile(`[ &_=+:]`)
+
+	dashes = regexp.MustCompile(`[\-]+`)
+)
+
+// cleanString replaces separators with - and removes characters listed in the regexp provided from string.
+// Accents, spaces, and all characters not in A-Za-z0-9 are replaced.
+func cleanString(s string, r *regexp.Regexp) string {
+
+	// Remove any trailing space to avoid ending on -
+	s = strings.Trim(s, " ")
+
+	// Flatten accents first so that if we remove non-ascii we still get a legible name
+	s = Accents(s)
+
+	// Replace certain joining characters with a dash
+	s = separators.ReplaceAllString(s, "-")
+
+	// Remove all other unrecognised characters - NB we do allow any printable characters
+	s = r.ReplaceAllString(s, "")
+
+	// Remove any multiple dashes caused by replacements above
+	s = dashes.ReplaceAllString(s, "-")
+
+	return s
+}
+
+// includes checks for inclusion of a string in a []string.
 func includes(a []string, s string) bool {
 	for _, as := range a {
 		if as == s {
@@ -310,39 +381,4 @@ func includes(a []string, s string) bool {
 		}
 	}
 	return false
-}
-
-func cleanAttributes(a []parser.Attribute, allowed []string) []parser.Attribute {
-	if len(a) == 0 {
-		return a
-	}
-
-	cleaned := make([]parser.Attribute, 0)
-	for _, attr := range a {
-		if includes(allowed, attr.Key) {
-
-			// If the attribute contains data: or javascript: anywhere, ignore it
-			// we don't allow this in attributes as it is so frequently used for xss
-			// NB we allow spaces in the value, and lowercase
-			re := regexp.MustCompile(`(d\s*a\s*t\s*a|j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t\s*)\s*:`)
-			val := strings.ToLower(attr.Val)
-			if re.FindString(val) != "" {
-				attr.Val = ""
-			}
-
-			// We are far more restrictive with href attributes
-			// The url may start with /, mailto://, http:// or https://
-			if attr.Key == "href" {
-				urlre := regexp.MustCompile(`\A/[^/\\]?|mailto://|http://|https://`)
-				if urlre.FindString(strings.ToLower(attr.Val)) == "" {
-					attr.Val = ""
-				}
-			}
-
-			if attr.Val != "" {
-				cleaned = append(cleaned, attr)
-			}
-		}
-	}
-	return cleaned
 }

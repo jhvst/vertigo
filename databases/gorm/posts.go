@@ -7,10 +7,10 @@ import (
 
 	. "github.com/9uuso/vertigo/misc"
 
-	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/sessions"
 	"github.com/russross/blackfriday"
+	slug "github.com/shurcooL/sanitized_anchor_name"
 )
 
 // Post struct contains all relevant data when it comes to posts. Most fields
@@ -53,7 +53,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	post.Created = time.Now().UTC().Unix()
 	post.Updated = post.Created
 	post.Excerpt = Excerpt(post.Content)
-	post.Slug = slug.Make(post.Title)
+	post.Slug = slug.Create(post.Title)
 	post.Published = false
 	query := connection.Gorm.Create(&post)
 	if query.Error != nil {
@@ -87,7 +87,7 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 	if post.Author == user.ID {
 		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
 		entry.Excerpt = Excerpt(entry.Content)
-		entry.Slug = slug.Make(entry.Title)
+		entry.Slug = slug.Create(entry.Title)
 		entry.Updated = time.Now().UTC().Unix()
 		query := connection.Gorm.Where(&Post{Slug: post.Slug, Author: user.ID}).First(&post).Updates(entry)
 		if query.Error != nil {

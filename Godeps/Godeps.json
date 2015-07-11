@@ -3,11 +3,6 @@
 	"GoVersion": "go1.4",
 	"Deps": [
 		{
-			"ImportPath": "code.google.com/p/cascadia",
-			"Comment": "null-31",
-			"Rev": "5d796540e3cb93ea0556c897e6a3c7690f614d35"
-		},
-		{
 			"ImportPath": "github.com/9uuso/go-jaro-winkler-distance",
 			"Rev": "7ba0a88086a06506363ecc81485ea44d2308a647"
 		},
@@ -17,8 +12,8 @@
 		},
 		{
 			"ImportPath": "github.com/PuerkitoBio/goquery",
-			"Comment": "v0.3.2-58-gffa8a68",
-			"Rev": "ffa8a68c9f2882d21c77b65737c84e2f8690fa1f"
+			"Comment": "v0.3.2-79-gb444041",
+			"Rev": "b4440419d81240f8451a505b2f806c853bc2befc"
 		},
 		{
 			"ImportPath": "github.com/boj/redistore",
@@ -65,10 +60,6 @@
 			"Rev": "aa5e036e6c44aec69a32eb41097001978b29ad31"
 		},
 		{
-			"ImportPath": "github.com/gosimple/slug",
-			"Rev": "f7b92c2623d955e0137a140e7df493ba23708697"
-		},
-		{
 			"ImportPath": "github.com/jinzhu/gorm",
 			"Rev": "84954e67798bd69748207dbab310c9800c29685a"
 		},
@@ -78,7 +69,7 @@
 		},
 		{
 			"ImportPath": "github.com/kennygrant/sanitize",
-			"Rev": "f2c9d81a418ab09c76ed48965aae009c60e5ff67"
+			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
@@ -141,14 +132,6 @@
 			"ImportPath": "golang.org/x/net/html",
 			"Comment": "null-223",
 			"Rev": "5dedbdc181629d2f3557caf2667e60eb82c5e6d7"
-		},
-		{
-			"ImportPath": "gopkgs.com/pool.v1",
-			"Rev": "c850f092aad1780cbffff25f471c5cc32097932a"
-		},
-		{
-			"ImportPath": "gopkgs.com/unidecode.v1",
-			"Rev": "4deae2c05236b41cc39f8144ac87a837ba974d40"
 		}
 	]
 }

@@ -14,6 +14,19 @@ func TestAttrExists(t *testing.T) {
 	}
 }
 
+func TestAttrOr(t *testing.T) {
+	if val := Doc().Find("a").AttrOr("fake-attribute", "alternative"); val != "alternative" {
+		t.Error("Expected an alternative value for 'fake-attribute' attribute.")
+	} else {
+		t.Logf("Value returned for not existing attribute: %v.", val)
+	}
+	if val := Doc().Find("zz").AttrOr("fake-attribute", "alternative"); val != "alternative" {
+		t.Error("Expected an alternative value for 'fake-attribute' on an empty selection.")
+	} else {
+		t.Logf("Value returned for empty selection: %v.", val)
+	}
+}
+
 func TestAttrNotExist(t *testing.T) {
 	if val, ok := Doc().Find("div.row-fluid").Attr("href"); ok {
 		t.Errorf("Expected no value for the href attribute, got %v.", val)
@@ -43,6 +56,21 @@ func TestSetAttr(t *testing.T) {
 
 	if val != "not-main" {
 		t.Errorf("Expected an attribute id to be not-main, got %s", val)
+	}
+}
+
+func TestSetAttr2(t *testing.T) {
+	sel := Doc2Clone().Find("#main")
+
+	sel.SetAttr("foo", "bar")
+
+	val, ok := sel.Attr("foo")
+	if !ok {
+		t.Error("Expected an 'foo' attribute on main")
+	}
+
+	if val != "bar" {
+		t.Errorf("Expected an attribute 'foo' to be 'bar', got '%s'", val)
 	}
 }
 

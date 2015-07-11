@@ -5,21 +5,22 @@ import (
 	"testing"
 )
 
-var Format string = "\ninput:    %q\nexpected: %q\noutput:   %q"
+var Format = "\ninput:    %q\nexpected: %q\noutput:   %q"
 
 type Test struct {
 	input    string
 	expected string
 }
 
+// NB the treatment of accents - they are removed and replaced with ascii transliterations
 var urls = []Test{
 	{"ReAd ME.md", `read-me.md`},
-	{"E88E08A7-279C-4CC1-8B90-86DE0D70443C.html", `e88e08a7-279c-4cc1-8b90-86de0d70443c.html`},
+	{"E88E08A7-279C-4CC1-8B90-86DE0D7044_3C.html", `e88e08a7-279c-4cc1-8b90-86de0d7044-3c.html`},
 	{"/user/test/I am a long url's_-?ASDF@£$%£%^testé.html", `/user/test/i-am-a-long-urls-asdfteste.html`},
 	{"/../../4-icon.jpg", `/4-icon.jpg`},
-	{"/Images/../4-icon.jpg", `/images/4-icon.jpg`},
+	{"/Images_dir/../4-icon.jpg", `/images-dir/4-icon.jpg`},
 	{"../4 icon.*", `/4-icon.`},
-	{"Spac ey/Name/test før url", `spac-ey/name/test-foer-url`},
+	{"Spac ey/Nôm/test før url", `spac-ey/nom/test-foer-url`},
 	{"../*", `/`},
 }
 
@@ -32,18 +33,58 @@ func TestPath(t *testing.T) {
 	}
 }
 
+func BenchmarkPath(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, test := range urls {
+			output := Path(test.input)
+			if output != test.expected {
+				b.Fatalf(Format, test.input, test.expected, output)
+			}
+		}
+	}
+}
+
 var fileNames = []Test{
 	{"ReAd ME.md", `read-me.md`},
 	{"/var/etc/jobs/go/go/src/pkg/foo/bar.go", `bar.go`},
-	{"I am a long url's_-?ASDF@£$%£%^é.html", `i-am-a-long-urls-asdf.html`},
+	{"I am a long url's_-?ASDF@£$%£%^é.html", `i-am-a-long-urls-asdfe.html`},
 	{"/../../4-icon.jpg", `4-icon.jpg`},
 	{"/Images/../4-icon.jpg", `4-icon.jpg`},
 	{"../4 icon.jpg", `4-icon.jpg`},
+	{"../4 icon-testé *8%^\"'\".jpg ", `4-icon-teste-8.jpg`},
 }
 
 func TestName(t *testing.T) {
 	for _, test := range fileNames {
 		output := Name(test.input)
+		if output != test.expected {
+			t.Fatalf(Format, test.input, test.expected, output)
+		}
+	}
+}
+
+func BenchmarkName(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, test := range fileNames {
+			output := Name(test.input)
+			if output != test.expected {
+				b.Fatalf(Format, test.input, test.expected, output)
+			}
+		}
+	}
+}
+
+var baseFileNames = []Test{
+	{"The power & the Glory jpg file. The end", `The-power-the-Glory-jpg-file-The-end`},
+	{"/../../4-iCoN.jpg", `-4-iCoN-jpg`},
+	{"And/Or", `And-Or`},
+	{"Sonic.EXE", `Sonic-EXE`},
+	{"012: #Fetch for Defaults", `012-Fetch-for-Defaults`},
+}
+
+func TestBaseName(t *testing.T) {
+	for _, test := range baseFileNames {
+		output := BaseName(test.input)
 		if output != test.expected {
 			t.Fatalf(Format, test.input, test.expected, output)
 		}
@@ -132,6 +173,7 @@ var htmlTestsAllowing = []Test{
 		`<a href="http://www.google.com/"><img src="https://ssl.gstatic.com/accounts/ui/logo_2x.png"/></a>`},
 	{`<a href="javascript:alert(&#39;XSS1&#39;)" "document.write('<HTML> Tags and markup');">XSS<a>`, `<a> Tags and markup&#39;);&#34;&gt;XSS<a>`},
 	{`<a <script>document.write("UNTRUSTED INPUT: " + document.location.hash);<script/> >`, `<a>document.write(&#34;UNTRUSTED INPUT: &#34; + document.location.hash); &gt;`},
+	{`<a href="#anchor">foo</a>`, `<a href="#anchor">foo</a>`},
 	{`<IMG SRC=&#x6A&#x61&#x76&#x61&#x73&#x63&#x72&#x69&#x70&#x74&#x3A&#x61&#x6C&#x65&#x72&#x74&#x28&#x27&#x58&#x53&#x53&#x27&#x29>`, `<img>`},
 	{`<IMG SRC="jav	ascript:alert('XSS');">`, `<img>`},
 	{`<IMG SRC="jav&#x09;ascript:alert('XSS');">`, `<img>`},
@@ -153,6 +195,20 @@ func TestHTMLAllowed(t *testing.T) {
 		}
 		if output != test.expected {
 			t.Fatalf(Format, test.input, test.expected, output)
+		}
+	}
+}
+
+func BenchmarkHTMLAllowed(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		for _, test := range htmlTestsAllowing {
+			output, err := HTMLAllowing(test.input)
+			if err != nil {
+				b.Fatalf(Format, test.input, test.expected, output, err)
+			}
+			if output != test.expected {
+				b.Fatalf(Format, test.input, test.expected, output)
+			}
 		}
 	}
 }
