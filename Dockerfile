@@ -4,7 +4,7 @@ FROM golang
 
 ADD . /go/src/github.com/9uuso/vertigo
 
-RUN go get github.com/tools/godep && cd /go/src/github.com/9uuso/vertigo && godep get ./ && godep go build
+RUN go get github.com/tools/godep && cd /go/src/github.com/9uuso/vertigo && godep go build
 
 WORKDIR /go/src/github.com/9uuso/vertigo
 
