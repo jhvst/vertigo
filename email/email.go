@@ -34,13 +34,6 @@ type RecipientStruct struct {
 	RecoveryKey string
 }
 
-var auth = smtp.PlainAuth(
-	"",
-	Settings.Mailer.Login,
-	Settings.Mailer.Password,
-	Settings.Mailer.Hostname,
-)
-
 // RecoveryTemplate is the text template used when sending recovery emails.
 // The structure passed to it is type Email.
 var RecoveryTemplate = `Hello {{ .Recipient.Name }}
@@ -90,10 +83,17 @@ func SendRecoveryEmail(id, name, address, recovery string) error {
 	}
 	message += "\r\n" + base64.StdEncoding.EncodeToString(buf.Bytes())
 
+	auth := smtp.PlainAuth(
+		"",
+		Settings.Mailer.Login,
+		Settings.Mailer.Password,
+		Settings.Mailer.Hostname,
+	)
+
 	err = smtp.SendMail(
 		fmt.Sprintf("%s:%d", Settings.Mailer.Hostname, Settings.Mailer.Port),
 		auth,
-		email.Sender,
+		from.Address,
 		[]string{to.Address},
 		[]byte(message),
 	)
