@@ -76,7 +76,7 @@ func (user User) Recover() error {
 	}
 
 	id := strconv.Itoa(int(user.ID))
-	err = SendRecoveryEmail(id, user.Email, user.Recovery)
+	err = SendRecoveryEmail(id, user.Name, user.Email, user.Recovery)
 	if err != nil {
 		return err
 	}
