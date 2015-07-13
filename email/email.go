@@ -7,17 +7,10 @@ import (
 	"fmt"
 	"net/mail"
 	"net/smtp"
-	"strings"
 	"text/template"
 
 	. "github.com/9uuso/vertigo/settings"
 )
-
-func encodeRFC2047(s string) string {
-	// use mail's rfc2047 to encode any string
-	addr := mail.Address{s, ""}
-	return strings.Trim(addr.String(), " <>")
-}
 
 // Email holds data of email sender and recipient for easier handling in templates.
 type Email struct {
@@ -72,7 +65,7 @@ func SendRecoveryEmail(id, name, address, recovery string) error {
 	header := make(map[string]string)
 	header["From"] = from.String()
 	header["To"] = to.String()
-	header["Subject"] = encodeRFC2047(title)
+	header["Subject"] = title
 	header["MIME-Version"] = "1.0"
 	header["Content-Type"] = "text/plain; charset=\"utf-8\""
 	header["Content-Transfer-Encoding"] = "base64"
