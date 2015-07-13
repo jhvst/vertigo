@@ -1,4 +1,3 @@
-// Feeds.go contain HTTP routes for rendering RSS and Atom feeds.
 package routes
 
 import (

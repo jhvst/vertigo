@@ -1,3 +1,4 @@
+// Package email handles password recovery. Makes use of standard library's net/smtp package.
 package email
 
 import (

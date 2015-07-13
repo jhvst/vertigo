@@ -1,5 +1,3 @@
-// connection.go stores the Gorm specific database connection settings,
-// including the init() function
 package gorm
 
 import (

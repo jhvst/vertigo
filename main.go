@@ -1,5 +1,3 @@
-// Main.go contains settings related to the web server, such as
-// template helper functions, HTTP routes and Martini settings.
 package main
 
 import (
@@ -29,12 +27,12 @@ func init() {
 func NewServer() *martini.ClassicMartini {
 
 	helpers := template.FuncMap{
-		// Unescape unescapes and parses HTML from database objects.
+		// unescape unescapes HTML of s.
 		// Used in templates such as "/post/display.tmpl"
 		"unescape": func(s string) template.HTML {
 			return template.HTML(s)
 		},
-		// Title renders post name as a page title.
+		// title renders post's Title as the HTML document's title.
 		"title": func(t interface{}) string {
 			post, exists := t.(Post)
 			if exists {
@@ -42,29 +40,30 @@ func NewServer() *martini.ClassicMartini {
 			}
 			return Settings.Name
 		},
-		// Description renders page description.
+		// description renders page description.
+		// If none is defined, returns "Blog in Go" instead.
 		"description": func() string {
 			if Settings.Description == "" {
 				return "Blog in Go"
 			}
 			return Settings.Description
 		},
-		// Checks if post has been updated.
+		// updated checks if post has been updated.
 		"updated": func(p Post) bool {
 			if p.Updated > p.Created {
 				return true
 			}
 			return false
 		},
-		// Date helper returns unix date as more readable one in string format. Format of YYYY-MM-DD
-		// https://html.spec.whatwg.org/multipage/semantics.html#datetime-value
+		// date calculates unix date from d and offset in format: Monday, January 2, 2006 3:04PM (-0700 GMT)
 		"date": func(d int64, offset int) string {
 			return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Monday, January 2, 2006 3:04PM (-0700 GMT)")
 		},
-		// Env helper returns environment variable of s.
+		// env returns environment variable of s.
 		"env": func(s string) string {
 			return os.Getenv(s)
 		},
+		// timezones returns all 416 valid IANA timezone locations.
 		"timezones": func() [416]timezone.Timezone {
 			return timezone.Locations
 		},

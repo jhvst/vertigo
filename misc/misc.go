@@ -1,6 +1,5 @@
-// This file contains bunch of miscful helper functions.
-// The functions here are either too rare to be assiociated to some known file
-// or are met more or less everywhere across the code.
+// Package misc contains bunch of miscful helpers,
+// which cannot easily be associated to any other package.
 package misc
 
 import (

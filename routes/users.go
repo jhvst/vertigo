@@ -1,6 +1,3 @@
-// This file contains about everything related to users aka users. At the top you will find routes
-// and at the bottom you can find CRUD options. Some functions in this file are analogous
-// to the ones in posts.go.
 package routes
 
 import (

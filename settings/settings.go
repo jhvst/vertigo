@@ -1,5 +1,6 @@
-// Settings.go includes everything you would think site-wide settings need. It also contains a installation wizard
-// route at the bottom of the file. You generally should not need to change anything in here.
+// Package settings defines site-wide settings variable, which is stored in
+// local disk in JSON format. The file is written to disk with 0600 permissions
+// and is called settings.json.
 package settings
 
 import (
@@ -11,8 +12,7 @@ import (
 	"github.com/pborman/uuid"
 )
 
-// Vertigo struct is used as a site wide settings structure. Different from posts and person
-// it is saved on local disk in JSON format.
+// Vertigo struct is used as a site wide settings structure.
 // Firstrun and CookieHash are generated and controlled by the application and should not be
 // rendered or made editable anywhere on the site.
 type Vertigo struct {
@@ -34,10 +34,42 @@ type SMTP struct {
 	Hostname string `json:"hostname" form:"smtp-hostname"`
 }
 
-// Settings is a global variable which holds settings stored in the settings.json file.
-// You can call it globally anywhere by simply using the Settings keyword. For example
-// fmt.Println(Settings.Name) will print out your site's name.
-// As mentioned in the Vertigo struct, be careful when dealing with the Firstun and CookieHash values.
+// Settings is the global variable which holds settings stored in the settings.json file.
+// After importing the package, you can manipulate the variable using the Settings keyword.
+// Although, as mentioned in the Vertigo struct, be careful when dealing with the Firstrun and CookieHash values.
+// Rewriting Firstrun to true will render installation wizard on homepage, letting anyone redeclare your settings.
+// CookieHash on the other hand will return the secret hash used to sign your cookies, which might result in accounts getting compromised.
+//
+//  package mypackage
+//  
+//  import "github.com/9uuso/vertigo/settings"
+//  
+//  func Foobar() {
+//    fmt.Println(Settings.Name)
+//    // Output: Foobar's Blog
+//    settings = *Settings
+//    settings.Name = "Juuso's Blog"
+//    settings.Save()
+//    if err != nil {
+// 	    panic(err)
+//    }
+//    fmt.Println(Settings.Name)
+//    // Output: Juuso's Blog
+//  }
+//
+//  func ReadSettings() {
+// 	  var safesettings Vertigo
+// 	  safesettings = *Settings
+// 	  safesettings.CookieHash = "" // CookieHash wont be exposed
+// 	  switch Root(req) {
+// 	  case "api":
+//      render.JSON(200, safesettings)
+//      return
+//    case "user":
+//      render.HTML(200, "settings", safesettings)
+//      return
+//    }
+//  }
 var Settings = VertigoSettings()
 
 // VertigoSettings populates the global namespace with data from settings.json.
