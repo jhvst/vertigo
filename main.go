@@ -64,7 +64,7 @@ func NewServer() *martini.ClassicMartini {
 			return os.Getenv(s)
 		},
 		// timezones returns all 416 valid IANA timezone locations.
-		"timezones": func() [416]timezone.Timezone {
+		"timezones": func() []timezone.Timezone {
 			return timezone.Locations
 		},
 	}

@@ -5,8 +5,7 @@ import (
 	"log"
 	"time"
 
-	. "github.com/9uuso/vertigo/misc"
-
+	"github.com/9uuso/timezone"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/sessions"
 	"github.com/russross/blackfriday"
@@ -43,11 +42,11 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	if err != nil {
 		return post, err
 	}
-	timeOffset, err := TimeOffset(user.Location)
+	offset, err := timezone.Offset(user.Location)
 	if err != nil {
 		return post, err
 	}
-	post.TimeOffset = timeOffset
+	post.TimeOffset = offset
 	post.Content = string(blackfriday.MarkdownCommon([]byte(post.Markdown)))
 	post.Author = user.ID
 	post.Created = time.Now().UTC().Unix()
