@@ -46,7 +46,7 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 ###Source
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
-2. `go get github.com/tools/godep`
+2. `go get github.com/tools/godep && go get -u github.com/9uuso/vertigo`
 3. `git clone https://github.com/9uuso/vertigo`
 4. `cd vertigo && godep go build`
 5. `PORT="80" MARTINI_ENV="production" ./vertigo`
