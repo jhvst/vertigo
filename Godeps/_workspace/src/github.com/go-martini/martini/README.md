@@ -3,6 +3,7 @@
 Martini is a powerful package for quickly writing modular web applications/services in Golang.
 
 Language Translations:
+* [繁體中文](translations/README_zh_tw.md)
 * [简体中文](translations/README_zh_cn.md)
 * [Português Brasileiro (pt_BR)](translations/README_pt_br.md)
 * [Español](translations/README_es_ES.md)
@@ -10,6 +11,8 @@ Language Translations:
 * [Русский](translations/README_ru_RU.md)
 * [日本語](translations/README_ja_JP.md)
 * [French](translations/README_fr_FR.md)
+* [Turkish](translations/README_tr_TR.md)
+* [German](translations/README_de_DE.md)
 
 ## Getting Started
 
@@ -29,7 +32,7 @@ func main() {
 }
 ~~~
 
-Then install the Martini package (**go 1.1** and greater is required):
+Then install the Martini package (**go 1.1** or greater is required):
 ~~~
 go get github.com/go-martini/martini
 ~~~
@@ -129,6 +132,7 @@ The following services are included with [martini.Classic()](http://godoc.org/gi
   * [martini.Context](http://godoc.org/github.com/go-martini/martini#Context) - http request context.
   * [martini.Params](http://godoc.org/github.com/go-martini/martini#Params) - `map[string]string` of named params found by route matching.
   * [martini.Routes](http://godoc.org/github.com/go-martini/martini#Routes) - Route helper service.
+  * [martini.Route](http://godoc.org/github.com/go-martini/martini#Route) - Current active route.
   * [http.ResponseWriter](http://godoc.org/net/http/#ResponseWriter) - http Response writer interface.
   * [*http.Request](http://godoc.org/net/http/#Request) - http Request.
 
@@ -266,7 +270,7 @@ The following example serves the `/index.html` file whenever any URL is
 requested that does not match any local file and does not start with `/api/v`:
 ~~~ go
 static := martini.Static("assets", martini.StaticOptions{Fallback: "/index.html", Exclude: "/api/v"})
-r.NotFound(static, http.NotFound)
+m.NotFound(static, http.NotFound)
 ~~~
 
 ## Middleware Handlers
@@ -319,19 +323,29 @@ Some Martini handlers make use of the `martini.Env` global variable to provide s
 
 Start by looking in the [martini-contrib](https://github.com/martini-contrib) projects. If it is not there feel free to contact a martini-contrib team member about adding a new repo to the organization.
 
+* [acceptlang](https://github.com/martini-contrib/acceptlang) - Handler for parsing the `Accept-Language` HTTP header.
+* [accessflags](https://github.com/martini-contrib/accessflags) - Handler to enable Access Control.
 * [auth](https://github.com/martini-contrib/auth) - Handlers for authentication.
 * [binding](https://github.com/martini-contrib/binding) - Handler for mapping/validating a raw request into a structure.
-* [gzip](https://github.com/martini-contrib/gzip) - Handler for adding gzip compress to requests
-* [render](https://github.com/martini-contrib/render) - Handler that provides a service for easily rendering JSON and HTML templates.
-* [acceptlang](https://github.com/martini-contrib/acceptlang) - Handler for parsing the `Accept-Language` HTTP header.
-* [sessions](https://github.com/martini-contrib/sessions) - Handler that provides a Session service.
-* [strip](https://github.com/martini-contrib/strip) - URL Prefix stripping.
-* [method](https://github.com/martini-contrib/method) - HTTP method overriding via Header or form fields.
-* [secure](https://github.com/martini-contrib/secure) - Implements a few quick security wins.
-* [encoder](https://github.com/martini-contrib/encoder) - Encoder service for rendering data in several formats and content negotiation.
 * [cors](https://github.com/martini-contrib/cors) - Handler that enables CORS support.
+* [csrf](https://github.com/martini-contrib/csrf) - CSRF protection for applications
+* [encoder](https://github.com/martini-contrib/encoder) - Encoder service for rendering data in several formats and content negotiation.
+* [gzip](https://github.com/martini-contrib/gzip) - Handler for adding gzip compress to requests
+* [gorelic](https://github.com/martini-contrib/gorelic) - NewRelic middleware
+* [logstasher](https://github.com/martini-contrib/logstasher) - Middleware that prints logstash-compatiable JSON 
+* [method](https://github.com/martini-contrib/method) - HTTP method overriding via Header or form fields.
 * [oauth2](https://github.com/martini-contrib/oauth2) - Handler that provides OAuth 2.0 login for Martini apps. Google Sign-in, Facebook Connect and Github login is supported.
+* [permissions2](https://github.com/xyproto/permissions2) - Handler for keeping track of users, login states and permissions.
+* [render](https://github.com/martini-contrib/render) - Handler that provides a service for easily rendering JSON and HTML templates.
+* [secure](https://github.com/martini-contrib/secure) - Implements a few quick security wins.
+* [sessions](https://github.com/martini-contrib/sessions) - Handler that provides a Session service.
+* [sessionauth](https://github.com/martini-contrib/sessionauth) - Handler that provides a simple way to make routes require a login, and to handle user logins in the session
+* [strict](https://github.com/martini-contrib/strict) - Strict Mode 
+* [strip](https://github.com/martini-contrib/strip) - URL Prefix stripping.
+* [staticbin](https://github.com/martini-contrib/staticbin) - Handler for serving static files from binary data
+* [throttle](https://github.com/martini-contrib/throttle) - Request rate throttling middleware.
 * [vauth](https://github.com/rafecolton/vauth) - Handlers for vender webhook authentication (currently GitHub and TravisCI)
+* [web](https://github.com/martini-contrib/web) - hoisie web.go's Context
 
 ### How do I integrate with existing servers?
 
@@ -358,12 +372,12 @@ func init() {
 ### How do I change the port/host?
 
 Martini's `Run` function looks for the PORT and HOST environment variables and uses those. Otherwise Martini will default to localhost:3000.
-To have more flexibility over port and host, use the `http.ListenAndServe` function instead.
+To have more flexibility over port and host, use the `martini.RunOnAddr` function instead.
 
 ~~~ go
   m := martini.Classic()
   // ...
-  log.Fatal(http.ListenAndServe(":8080", m))
+  log.Fatal(m.RunOnAddr(":8080"))
 ~~~
 
 ### Live code reload?

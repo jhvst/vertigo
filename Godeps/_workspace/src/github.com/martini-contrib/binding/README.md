@@ -34,7 +34,7 @@ Then we simply add our route in Martini:
 
 ```go
 m.Post("/contact/submit", binding.Bind(ContactForm{}), func(contact ContactForm) string {
-	return fmt.Sprintf("Name: %s\nEmail: %s\nMessage: %s",
+	return fmt.Sprintf("Name: %s\nEmail: %s\nMessage: %s\n",
 		contact.Name, contact.Email, contact.Message)
 })
 ```

@@ -1,10 +1,10 @@
 # Martini  [![wercker status](https://app.wercker.com/status/9b7dbc6e2654b604cd694d191c3d5487/s/master "wercker status")](https://app.wercker.com/project/bykey/9b7dbc6e2654b604cd694d191c3d5487)[![GoDoc](https://godoc.org/github.com/go-martini/martini?status.png)](http://godoc.org/github.com/go-martini/martini)
 
-마티니(Martini)는 강력하고 손쉬운 웹애플리캐이션 / 웹서비스개발을 위한 Golang 패키지입니다.
+마티니(Martini)는 강력하고 손쉬운 웹애플리케이션 / 웹서비스개발을 위한 Golang 패키지입니다.
 
 ## 시작하기
 
-Go 설치 및 [GOPATH](http://golang.org/doc/code.html#GOPATH) 환경변수 설정 이후에, `.go` 파일 하나를 만들어 보죠..흠... 일단 `server.go`라고 부르겠습니다.
+Go 인스톨 및 [GOPATH](http://golang.org/doc/code.html#GOPATH) 환경변수 설정 이후에, `.go` 파일 하나를 만들어 보죠..흠... 일단 `server.go`라고 부르겠습니다.
 ~~~go
 package main
 
@@ -19,12 +19,12 @@ func main() {
 }
 ~~~
 
-마티니 패키지를 설치 합니다. (**go 1.1** 혹은 그 이상 버젼 필요):
+마티니 패키지를 인스톨 합니다. (**go 1.1** 혹은 그 이상 버젼 필요):
 ~~~
 go get github.com/go-martini/martini
 ~~~
 
-이제 서버를 실행해 봅시다:
+이제 서버를 돌려 봅시다:
 ~~~
 go run server.go
 ~~~
@@ -37,12 +37,12 @@ go run server.go
 
 [데모 비디오](http://martini.codegangsta.io/#demo)도 있어요.
 
-혹은 Stackoverflow에 [마티니 태그](http://stackoverflow.com/questions/tagged/martini)를 이용해서 물어봐 주세요
+혹은 Stackoverflow에 [마티니 태크](http://stackoverflow.com/questions/tagged/martini)를 이용해서 물어봐 주세요
 
 GoDoc [문서(documentation)](http://godoc.org/github.com/go-martini/martini)
 
 문제는 전부다 영어로 되어 있다는 건데요 -_-;;;
-나는 한글 아니면 보기다 싫어! 이런 분들은 아래 링크를 참조하세요
+나는 한글 아니면 보기 싫다! 하는 분들은 아래 링크를 참조하세요
 - [golang-korea](https://code.google.com/p/golang-korea/)
 - 혹은 ([RexK](http://github.com/RexK))의 이메일로 연락주세요.
 
@@ -51,8 +51,8 @@ GoDoc [문서(documentation)](http://godoc.org/github.com/go-martini/martini)
 * 비간섭(Non-intrusive) 디자인
 * 다른 Golang 패키지들과 잘 어울립니다.
 * 끝내주는 경로 매칭과 라우팅.
-* 모듈 형 디자인 - 기능추가 쉽고, 코드 꺼내오기도 쉬움.
-* 쓸모있는 핸들러와 미들웨어가 많음.
+* 모듈형 디자인 - 기능추가가 쉽고, 코드 꺼내오기도 쉬움.
+* 유용한 핸들러와 미들웨어가 많음.
 * 훌륭한 패키지화(out of the box) 기능들
 * **[http.HandlerFunc](http://godoc.org/net/http#HandlerFunc) 인터페이스와 호환율 100%**
 
@@ -78,16 +78,16 @@ GoDoc [문서(documentation)](http://godoc.org/github.com/go-martini/martini)
   m.Run()
 ~~~
 
-아래는 [martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic)의 자동으로 장착하는 기본 기능들입니다.
+아래는 [martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic)에 자동으로 제공되는 기본 기능들 입니다.
 
-  * 요청/응답 로그 기능 - [martini.Logger](http://godoc.org/github.com/go-martini/martini#Logger)
+  * Request/Response 로그 기능 - [martini.Logger](http://godoc.org/github.com/go-martini/martini#Logger)
   * 패닉 리커버리 (Panic Recovery) - [martini.Recovery](http://godoc.org/github.com/go-martini/martini#Recovery)
   * 정적 파일 서빙 - [martini.Static](http://godoc.org/github.com/go-martini/martini#Static)
   * 라우팅(Routing) - [martini.Router](http://godoc.org/github.com/go-martini/martini#Router)
 
 ### 핸들러(Handlers)
 
-핸들러(Handlers)는 마티니의 핵심입니다. 핸들러는 기본적으로 실행 가능한 모든형태의 함수들입니다.
+핸들러(Handlers)는 마티니의 핵심입니다. 핸들러는 기본적으로 실행 가능한 모든 형태의 함수들입니다.
 ~~~ go
 m.Get("/", func() {
   println("hello 세계")
@@ -102,7 +102,7 @@ m.Get("/", func() string {
 })
 ~~~
 
-원하신다면, 선택적으로 상태코드도 함께 반화 할 수 있습니다.
+원하신다면, 선택적으로 상태코드도 함께 반환 할 수 있습니다.
 ~~~ go
 m.Get("/", func() (int, string) {
   return 418, "난 주전자야!" // HTTP 418 : "난 주전자야!"
@@ -112,7 +112,7 @@ m.Get("/", func() (int, string) {
 #### 서비스 주입(Service Injection)
 핸들러들은 리플렉션을 통해 호출됩니다. 마티니는 *의존성 주입*을 이용해서 핸들러의 인수들을 주입합니다. **이것이 마티니를 `http.HandlerFunc` 인터페이스와 100% 호환할 수 있게 해줍니다.**
 
-핸들러의 인수를 입력했다면, 마티니가 서비스 목록들을 살펴본 후 타입확인(type assertion)을 통해 의존성을 해결을 시도 할 것입니다.
+핸들러의 인수를 입력했다면, 마티니가 서비스 목록들을 살펴본 후 타입확인(type assertion)을 통해 의존성문제 해결을 시도 할 것입니다.
 ~~~ go
 m.Get("/", func(res http.ResponseWriter, req *http.Request) { // res와 req는 마티니에 의해 주입되었다.
   res.WriteHeader(200) // HTTP 200
@@ -120,10 +120,10 @@ m.Get("/", func(res http.ResponseWriter, req *http.Request) { // res와 req는 �
 ~~~
 
 아래 서비스들은 [martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic):에 포함되어 있습니다.
-  * [*log.Logger](http://godoc.org/log#Logger) - 마티니의 전역 로그.
+  * [*log.Logger](http://godoc.org/log#Logger) - 마티니의 글로벌(전역) 로그.
   * [martini.Context](http://godoc.org/github.com/go-martini/martini#Context) - http 요청 컨텍스트.
   * [martini.Params](http://godoc.org/github.com/go-martini/martini#Params) - 루트 매칭으로 찾은 인자를 `map[string]string`으로 변형.
-  * [martini.Routes](http://godoc.org/github.com/go-martini/martini#Routes) - 루트 도우미 서미스.
+  * [martini.Routes](http://godoc.org/github.com/go-martini/martini#Routes) - 루트 도우미 서비스.
   * [http.ResponseWriter](http://godoc.org/net/http/#ResponseWriter) - http Response writer 인터페이스.
   * [*http.Request](http://godoc.org/net/http/#Request) - http 리퀘스트.
 
@@ -144,7 +144,7 @@ m.Post("/", func() {
 })
 
 m.Put("/", func() {
-  // 교환해봐
+  // 변경해봐
 })
 
 m.Delete("/", func() {
@@ -160,7 +160,7 @@ m.NotFound(func() {
 })
 ~~~
 
-루트들은 정의된 순서대로 매칭된다. 들어온 요청에 첫번째 매칭된 루트가 호출된다.
+루트들은 정의된 순서대로 매칭된다. 들어온 요구에 처음으로 매칭된 루트가 호출된다.
 
 루트 패턴은 [martini.Params](http://godoc.org/github.com/go-martini/martini#Params) service로 액세스 가능한 인자들을 포함하기도 한다:
 ~~~ go
@@ -176,7 +176,6 @@ m.Get("/hello/**", func(params martini.Params) string {
 })
 ~~~
 
-Regular expressions can be used as well:
 정규식도 사용가능합니다:
 ~~~go
 m.Get("/hello/(?P<name>[a-zA-Z]+)", func(params martini.Params) string {
@@ -192,7 +191,7 @@ m.Get("/secret", authorize, func() {
 })
 ~~~
 
-루트그룹은 루트들을 한 곳에 모아 정리하는데 유용합니다.
+```RootGroup```은 루트들을 한 곳에 모아 정리하는데 유용합니다.
 ~~~ go
 m.Group("/books", func(r martini.Router) {
     r.Get("/:id", GetBooks)
@@ -202,7 +201,7 @@ m.Group("/books", func(r martini.Router) {
 })
 ~~~
 
-핸들러에 미들웨어를 집어넣을 수 있었듯이, 그룹에도 미들웨어 집어넣는게 가능합니다.
+핸들러에 미들웨어를 집어넣을 수 있는것과 같이, 그룹에도 미들웨어를 집어넣는 것이 가능합니다.
 ~~~ go
 m.Group("/books", func(r martini.Router) {
     r.Get("/:id", GetBooks)
@@ -213,7 +212,7 @@ m.Group("/books", func(r martini.Router) {
 ~~~
 
 ### 서비스(Services)
-서비스는 핸들러의 인수목록에 주입될수 있는 오브젝트들을 말합니다. 서비스는 *글로벌* 혹은 *리퀘스트* 레벨단위로 주입이 가능합니다.
+서비스는 핸들러의 인수목록에 주입 될 수 있는 오브젝트들을 말합니다. 서비스는 *글로벌* 혹은 *리퀘스트* 레벨단위로 주입이 가능합니다.
 
 #### 글로벌 맵핑(Global Mapping)
 마타니 인스턴스는 서비스 맵핑을 쉽게 하기 위해서 inject.Injector 인터페이스를 반형합니다:
@@ -235,17 +234,17 @@ func MyCustomLoggerHandler(c martini.Context, req *http.Request) {
 ~~~
 
 #### 인터페이스로 값들 맵핑(Mapping values to Interfaces)
-서비스의 강력한 기능중 하나는 서비스를 인터페이스로 맵핑이 가능하다는 것입니다. 예를들어, [http.ResponseWriter](http://godoc.org/net/http#ResponseWriter)를 치환(override)해서 부가 기능들을 수행하게 하고 싶으시다면, 아래와 같은 핸들러를 작성 하시면 됩니다.
+서비스의 강력한 기능중 하나는 서비스를 인터페이스로 맵핑이 가능하다는 것입니다. 예를들어, [http.ResponseWriter](http://godoc.org/net/http#ResponseWriter)를 재정의(override)해서 부가 기능들을 수행하게 하고 싶으시다면, 아래와 같이 핸들러를 작성 하시면 됩니다.
 
 ~~~ go
 func WrapResponseWriter(res http.ResponseWriter, c martini.Context) {
   rw := NewSpecialResponseWriter(res)
-  c.MapTo(rw, (*http.ResponseWriter)(nil)) // ResponseWriter를 NewResponseWriter로 오버라이드
+  c.MapTo(rw, (*http.ResponseWriter)(nil)) // ResponseWriter를 NewResponseWriter로 치환(override)
 }
 ~~~
 
 ### 정적파일 서빙(Serving Static Files)
-[martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic) 인스턴스는 "public" 폴더안에 있는 파일들은 정적파일로서 자동으로 서빙합니다. 더 많은 폴더들은 정적파일 폴더에 포함시키시려면 [martini.Static](http://godoc.org/github.com/go-martini/martini#Static) 핸들러를 이용하시면 됩니다.
+[martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic) 인스턴스는 "public" 폴더안에 있는 파일들을 정적파일로써 자동으로 서빙합니다. 더 많은 폴더들은 정적파일 폴더에 포함시키시려면 [martini.Static](http://godoc.org/github.com/go-martini/martini#Static) 핸들러를 이용하시면 됩니다.
 
 ~~~ go
 m.Use(martini.Static("assets")) // "assets" 폴더에서도 정적파일 서빙.
@@ -286,7 +285,7 @@ m.Use(func(c martini.Context, log *log.Logger){
   log.Println("request전입니다.")
 
   c.Next()
-  
+
   log.Println("request후 입니다.")
 })
 ~~~
@@ -299,16 +298,16 @@ m.Use(func(c martini.Context, log *log.Logger){
 ### 미들웨어들을 어디서 찾아야 하나요?
 
 깃헙에서 [martini-contrib](https://github.com/martini-contrib) 프로젝트들을 찾아보세요. 만약에 못 찾으시겠으면, martini-contrib 팀원들에게 연락해서 하나 만들어 달라고 해보세요.
-* [auth](https:	//github.com/martini-contrib/auth) - 인증작업을 도와주는 핸들러.
+* [auth](https://github.com/martini-contrib/auth) - 인증작업을 도와주는 핸들러.
 * [binding](https://github.com/martini-contrib/binding) - request를 맵핑하고 검사하는 핸들러.
 * [gzip](https://github.com/martini-contrib/gzip) - gzip 핸들러.
 * [render](https://github.com/martini-contrib/render) - HTML 템플레이트들과 JSON를 사용하기 편하게 해주는 핸들러.
-* [acceptlang](https://github.com/martini-contrib/acceptlang) - `Accept-Language` HTTP 해더를 파싱할때 유용한 핸들러.
+* [acceptlang](https://github.com/martini-contrib/acceptlang) - `Accept-Language` HTTP 해더를 파싱 할 때 유용한 핸들러.
 * [sessions](https://github.com/martini-contrib/sessions) - 세션 서비스를 제공하는 핸들러.
 * [strip](https://github.com/martini-contrib/strip) - URL 프리틱스를 없애주는 핸들러.
 * [method](https://github.com/martini-contrib/method) - 해더나 폼필드를 이용한 HTTP 메소드 치환.
 * [secure](https://github.com/martini-contrib/secure) - 몇몇 보안설정을 위한 핸들러.
-* [encoder](https://github.com/martini-contrib/encoder) - 데이터 렌더링과 컨텐트 타엽을위한 인코딩 서비스.
+* [encoder](https://github.com/martini-contrib/encoder) - 데이터 렌더링과 컨텐트 타입을위한 인코딩 서비스.
 * [cors](https://github.com/martini-contrib/cors) - CORS 서포트를 위한 핸들러.
 * [oauth2](https://github.com/martini-contrib/oauth2) - OAuth2.0 로그인 핸들러. 페이스북, 구글, 깃헙 지원.
 
@@ -336,17 +335,17 @@ func init() {
 ### 포트와 호스트는 어떻게 바꾸나요?
 
 마티니의 `Run` 함수는 PORT와 HOST 환경변수를 이용하는데, 설정이 안되어 있다면 localhost:3000으로 설정 되어 집니다.
-좀더 유연하게 설정을 하고 싶다면, `http.ListenAndServe`를 활용해 주세요.
+좀더 유연하게 설정을 하고 싶다면, `martini.RunOnAddr`를 활용해 주세요.
 
 ~~~ go
   m := martini.Classic()
   // ...
-  log.Fatal(http.ListenAndServe(":8080", m))
+  log.Fatal(m.RunOnAddr(":8080"))
 ~~~
 
-### 라이브 포드 리로드?
+### 라이브 코드 리로드?
 
-[gin](https://github.com/codegangsta/gin) and [fresh](https://github.com/pilu/fresh) 마티니 앱의 라이브 리로드를 도와줍니다.
+[gin](https://github.com/codegangsta/gin) 과 [fresh](https://github.com/pilu/fresh) 가 마티니 앱의 라이브 리로드를 도와줍니다.
 
 ## 공헌하기(Contributing)
 

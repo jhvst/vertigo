@@ -93,7 +93,7 @@ func (user User) Recover() error {
 	return nil
 }
 
-func (user User) PasswordReset(entry User) error {
+func (user User) PasswordReset(entry User) (User, error) {
 	digest, err := GenerateHash(entry.Password)
 	if err != nil {
 		return entry, err

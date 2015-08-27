@@ -6,6 +6,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"sync"
 )
 
 // Params is a map of name/value pairs for named routes. An instance of martini.Params is available to be injected into any route handler.
@@ -33,6 +34,8 @@ type Router interface {
 	Head(string, ...Handler) Route
 	// Any adds a route for any HTTP method request to the specified matching pattern.
 	Any(string, ...Handler) Route
+	// AddRoute adds a route for a given HTTP method request to the specified matching pattern.
+	AddRoute(string, string, ...Handler) Route
 
 	// NotFound sets the handlers that are called when a no route matches a request. Throws a basic 404 by default.
 	NotFound(...Handler)
@@ -42,9 +45,10 @@ type Router interface {
 }
 
 type router struct {
-	routes    []*route
-	notFounds []Handler
-	groups    []group
+	routes     []*route
+	notFounds  []Handler
+	groups     []group
+	routesLock sync.RWMutex
 }
 
 type group struct {
@@ -103,15 +107,30 @@ func (r *router) Any(pattern string, h ...Handler) Route {
 	return r.addRoute("*", pattern, h)
 }
 
+func (r *router) AddRoute(method, pattern string, h ...Handler) Route {
+	return r.addRoute(method, pattern, h)
+}
+
 func (r *router) Handle(res http.ResponseWriter, req *http.Request, context Context) {
-	for _, route := range r.routes {
-		ok, vals := route.Match(req.Method, req.URL.Path)
-		if ok {
-			params := Params(vals)
-			context.Map(params)
-			route.Handle(context, res)
-			return
+	bestMatch := NoMatch
+	var bestVals map[string]string
+	var bestRoute *route
+	for _, route := range r.getRoutes() {
+		match, vals := route.Match(req.Method, req.URL.Path)
+		if match.BetterThan(bestMatch) {
+			bestMatch = match
+			bestVals = vals
+			bestRoute = route
+			if match == ExactMatch {
+				break
+			}
 		}
+	}
+	if bestMatch != NoMatch {
+		params := Params(bestVals)
+		context.Map(params)
+		bestRoute.Handle(context, res)
+		return
 	}
 
 	// no routes exist, 404
@@ -140,12 +159,24 @@ func (r *router) addRoute(method string, pattern string, handlers []Handler) *ro
 
 	route := newRoute(method, pattern, handlers)
 	route.Validate()
-	r.routes = append(r.routes, route)
+	r.appendRoute(route)
 	return route
 }
 
+func (r *router) appendRoute(rt *route) {
+	r.routesLock.Lock()
+	defer r.routesLock.Unlock()
+	r.routes = append(r.routes, rt)
+}
+
+func (r *router) getRoutes() []*route {
+	r.routesLock.RLock()
+	defer r.routesLock.RUnlock()
+	return r.routes[:]
+}
+
 func (r *router) findRoute(name string) *route {
-	for _, route := range r.routes {
+	for _, route := range r.getRoutes() {
 		if route.name == name {
 			return route
 		}
@@ -176,15 +207,16 @@ type route struct {
 	name     string
 }
 
+var routeReg1 = regexp.MustCompile(`:[^/#?()\.\\]+`)
+var routeReg2 = regexp.MustCompile(`\*\*`)
+
 func newRoute(method string, pattern string, handlers []Handler) *route {
 	route := route{method, nil, handlers, pattern, ""}
-	r := regexp.MustCompile(`:[^/#?()\.\\]+`)
-	pattern = r.ReplaceAllStringFunc(pattern, func(m string) string {
+	pattern = routeReg1.ReplaceAllStringFunc(pattern, func(m string) string {
 		return fmt.Sprintf(`(?P<%s>[^/#?]+)`, m[1:])
 	})
-	r2 := regexp.MustCompile(`\*\*`)
 	var index int
-	pattern = r2.ReplaceAllStringFunc(pattern, func(m string) string {
+	pattern = routeReg2.ReplaceAllStringFunc(pattern, func(m string) string {
 		index++
 		return fmt.Sprintf(`(?P<_%d>[^#?]*)`, index)
 	})
@@ -193,14 +225,38 @@ func newRoute(method string, pattern string, handlers []Handler) *route {
 	return &route
 }
 
-func (r route) MatchMethod(method string) bool {
-	return r.method == "*" || method == r.method || (method == "HEAD" && r.method == "GET")
+type RouteMatch int
+
+const (
+	NoMatch RouteMatch = iota
+	StarMatch
+	OverloadMatch
+	ExactMatch
+)
+
+//Higher number = better match
+func (r RouteMatch) BetterThan(o RouteMatch) bool {
+	return r > o
 }
 
-func (r route) Match(method string, path string) (bool, map[string]string) {
+func (r route) MatchMethod(method string) RouteMatch {
+	switch {
+	case method == r.method:
+		return ExactMatch
+	case method == "HEAD" && r.method == "GET":
+		return OverloadMatch
+	case r.method == "*":
+		return StarMatch
+	default:
+		return NoMatch
+	}
+}
+
+func (r route) Match(method string, path string) (RouteMatch, map[string]string) {
 	// add Any method matching support
-	if !r.MatchMethod(method) {
-		return false, nil
+	match := r.MatchMethod(method)
+	if match == NoMatch {
+		return match, nil
 	}
 
 	matches := r.regex.FindStringSubmatch(path)
@@ -211,9 +267,9 @@ func (r route) Match(method string, path string) (bool, map[string]string) {
 				params[name] = matches[i]
 			}
 		}
-		return true, params
+		return match, params
 	}
-	return false, nil
+	return NoMatch, nil
 }
 
 func (r *route) Validate() {
@@ -229,13 +285,14 @@ func (r *route) Handle(c Context, res http.ResponseWriter) {
 	context.run()
 }
 
+var urlReg = regexp.MustCompile(`:[^/#?()\.\\]+|\(\?P<[a-zA-Z0-9]+>.*\)`)
+
 // URLWith returns the url pattern replacing the parameters for its values
 func (r *route) URLWith(args []string) string {
 	if len(args) > 0 {
-		reg := regexp.MustCompile(`:[^/#?()\.\\]+|\(\?P<[a-zA-Z0-9]+>.*\)`)
 		argCount := len(args)
 		i := 0
-		url := reg.ReplaceAllStringFunc(r.pattern, func(m string) string {
+		url := urlReg.ReplaceAllStringFunc(r.pattern, func(m string) string {
 			var val interface{}
 			if i < argCount {
 				val = args[i]
@@ -303,9 +360,10 @@ func (r *router) URLFor(name string, params ...interface{}) string {
 }
 
 func (r *router) All() []Route {
-	var ri = make([]Route, len(r.routes))
+	routes := r.getRoutes()
+	var ri = make([]Route, len(routes))
 
-	for i, route := range r.routes {
+	for i, route := range routes {
 		ri[i] = Route(route)
 	}
 
@@ -324,7 +382,7 @@ func hasMethod(methods []string, method string) bool {
 // MethodsFor returns all methods available for path
 func (r *router) MethodsFor(path string) []string {
 	methods := []string{}
-	for _, route := range r.routes {
+	for _, route := range r.getRoutes() {
 		matches := route.regex.FindStringSubmatch(path)
 		if len(matches) > 0 && matches[0] == path && !hasMethod(methods, route.method) {
 			methods = append(methods, route.method)
