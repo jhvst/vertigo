@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"strconv"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
 	"vertigo/render"
 
 	"github.com/go-martini/martini"

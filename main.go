@@ -5,10 +5,10 @@ import (
 	"runtime"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/routes"
 	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
 
 	"vertigo/render"
 
