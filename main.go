@@ -5,12 +5,12 @@ import (
 	"runtime"
 	"time"
 
+	. "github.com/9uuso/vertigo/databases/sqlx"
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/routes"
 	. "github.com/9uuso/vertigo/settings"
-	. "vertigo/databases/sqlx"
 
-	"vertigo/render"
+	"github.com/9uuso/vertigo/render"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"

@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/9uuso/vertigo/render"
 	. "github.com/9uuso/vertigo/settings"
-	"vertigo/render"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/sessions"

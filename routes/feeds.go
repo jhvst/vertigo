@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	. "github.com/9uuso/vertigo/databases/sqlx"
+	"github.com/9uuso/vertigo/render"
 	. "github.com/9uuso/vertigo/settings"
-	. "vertigo/databases/sqlx"
-	"vertigo/render"
 
 	"github.com/gorilla/feeds"
 )

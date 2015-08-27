@@ -6,10 +6,10 @@ import (
 	"net/url"
 	"strings"
 
+	. "github.com/9uuso/vertigo/databases/sqlx"
 	. "github.com/9uuso/vertigo/misc"
+	"github.com/9uuso/vertigo/render"
 	. "github.com/9uuso/vertigo/settings"
-	. "vertigo/databases/sqlx"
-	"vertigo/render"
 
 	"github.com/martini-contrib/sessions"
 )

@@ -5,8 +5,8 @@ import (
 	"os"
 	"time"
 
-	. "vertigo/databases/sqlx"
-	. "vertigo/settings"
+	. "github.com/9uuso/vertigo/databases/sqlx"
+	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/9uuso/timezone"
 	unrolled "github.com/unrolled/render"

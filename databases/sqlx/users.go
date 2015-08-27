@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"time"
 
-	. "vertigo/crypto"
-	. "vertigo/email"
+	. "github.com/9uuso/vertigo/crypto"
+	. "github.com/9uuso/vertigo/email"
 
 	"github.com/martini-contrib/sessions"
 	"github.com/pborman/uuid"
