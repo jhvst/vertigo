@@ -47,8 +47,14 @@ func SendRecoveryEmail(id, name, address, recovery string) error {
 	email.Recipient.Address = address
 	email.Recipient.RecoveryKey = recovery
 
-	from := mail.Address{Settings.Name, email.Sender}
-	to := mail.Address{email.Recipient.Name, email.Recipient.Address}
+	from := mail.Address{
+		Name:    Settings.Name,
+		Address: email.Sender,
+	}
+	to := mail.Address{
+		Name:    email.Recipient.Name,
+		Address: email.Recipient.Address,
+	}
 	title := "Password reset"
 
 	t, err := template.New("mail").Parse(RecoveryTemplate)
