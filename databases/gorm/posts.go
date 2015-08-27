@@ -5,6 +5,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/9uuso/excerpt"
 	"github.com/9uuso/timezone"
 	"github.com/jinzhu/gorm"
 	"github.com/martini-contrib/sessions"
@@ -42,7 +43,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	if err != nil {
 		return post, err
 	}
-	offset, err := timezone.Offset(user.Location)
+	_, offset, err := timezone.Offset(user.Location)
 	if err != nil {
 		return post, err
 	}
@@ -51,7 +52,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	post.Author = user.ID
 	post.Created = time.Now().UTC().Unix()
 	post.Updated = post.Created
-	post.Excerpt = Excerpt(post.Content)
+	post.Excerpt = excerpt.Make(post.Content, 15)
 	post.Slug = slug.Create(post.Title)
 	post.Published = false
 	query := connection.Gorm.Create(&post)
@@ -85,7 +86,7 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 	}
 	if post.Author == user.ID {
 		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-		entry.Excerpt = Excerpt(entry.Content)
+		entry.Excerpt = excerpt.Make(entry.Content, 15)
 		entry.Slug = slug.Create(entry.Title)
 		entry.Updated = time.Now().UTC().Unix()
 		query := connection.Gorm.Where(&Post{Slug: post.Slug, Author: user.ID}).First(&post).Updates(entry)
