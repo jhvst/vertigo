@@ -76,7 +76,7 @@ CookieHash on the other hand will return the secret hash used to sign your cooki
 			return
 		}
 	}
-	
+
 */
 var Settings = VertigoSettings()
 
