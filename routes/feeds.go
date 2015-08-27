@@ -7,14 +7,14 @@ import (
 
 	. "github.com/9uuso/vertigo/databases/gorm"
 	. "github.com/9uuso/vertigo/settings"
+	"vertigo/render"
 
 	"github.com/gorilla/feeds"
-	"github.com/martini-contrib/render"
 )
 
 // ReadFeed renders RSS or Atom feed of latest published posts.
 // It determines the feed type with strings.Split(r.URL.Path[1:], "/")[1].
-func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
+func ReadFeed(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/xml")
 
@@ -28,7 +28,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 	posts, err := post.GetAll()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
@@ -39,7 +39,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 		user, err := user.Get()
 		if err != nil {
 			log.Println(err)
-			res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
 
@@ -64,7 +64,7 @@ func ReadFeed(w http.ResponseWriter, res render.Render, r *http.Request) {
 	result, err := feed.ToRss()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 

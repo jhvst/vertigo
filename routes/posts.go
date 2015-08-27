@@ -9,28 +9,28 @@ import (
 	. "github.com/9uuso/vertigo/databases/gorm"
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/settings"
+	"vertigo/render"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/go-martini/martini"
-	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 )
 
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
 // Normally you'd use this function as your "/" route.
-func Homepage(res render.Render) {
+func Homepage(w http.ResponseWriter, r *http.Request) {
 	if Settings.Firstrun {
-		res.HTML(200, "installation/wizard", nil)
+		render.R.HTML(w, 200, "installation/wizard", nil)
 		return
 	}
 	var post Post
 	posts, err := post.GetAll()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	res.HTML(200, "home", posts)
+	render.R.HTML(w, 200, "home", posts)
 }
 
 // Search struct is basically just a type check to make sure people don't add anything nasty to
@@ -91,52 +91,52 @@ func (search Search) Get() (Search, error) {
 
 // SearchPost is a route which returns all posts and aggregates the ones which contain
 // the POSTed search query in either Title or Content field.
-func SearchPost(req *http.Request, res render.Render, search Search) {
+func SearchPost(w http.ResponseWriter, r *http.Request, search Search) {
 	search, err := search.Get()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, search.Posts)
+		render.R.JSON(w, 200, search.Posts)
 		return
 	case "post":
-		res.HTML(200, "search", search.Posts)
+		render.R.HTML(w, 200, "search", search.Posts)
 		return
 	}
 }
 
 // CreatePost is a route which creates a new post according to the posted data.
-// API response contains the created post object and normal request redirects to "/user" page.
+// API renderponse contains the created post object and normal request redirects to "/user" page.
 // Does not publish the post automatically. See PublishPost for more.
-func CreatePost(req *http.Request, s sessions.Session, res render.Render, post Post) {
+func CreatePost(w http.ResponseWriter, r *http.Request, s sessions.Session, post Post) {
 	post, err := post.Insert(s)
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, post)
+		render.R.JSON(w, 200, post)
 		return
 	case "post":
-		res.Redirect("/user", 302)
+		http.Redirect(w, r, "/user", 302)
 		return
 	}
 }
 
 // ReadPosts is a route which returns all posts without merged owner data (although the object does include author field)
-// Not available on frontend, so therefore it only returns a JSON response, hence the post iteration in Go.
-func ReadPosts(res render.Render) {
+// Not available on frontend, so therefore it only returns a JSON renderponse, hence the post iteration in Go.
+func ReadPosts(w http.ResponseWriter, r *http.Request) {
 	var post Post
 	published := make([]Post, 0)
 	posts, err := post.GetAll()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	for _, post := range posts {
@@ -144,15 +144,15 @@ func ReadPosts(res render.Render) {
 			published = append(published, post)
 		}
 	}
-	res.JSON(200, published)
+	render.R.JSON(w, 200, published)
 }
 
 // ReadPost is a route which returns post with given post.Slug.
 // Returns post data on JSON call and displays a formatted page on frontend.
-func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res render.Render) {
+func ReadPost(w http.ResponseWriter, r *http.Request, s sessions.Session, params martini.Params) {
 	var post Post
 	if params["slug"] == "new" {
-		res.JSON(400, map[string]interface{}{"error": "There can't be a post called 'new'."})
+		render.R.JSON(w, 400, map[string]interface{}{"error": "There can't be a post called 'new'."})
 		return
 	}
 	post.Slug = params["slug"]
@@ -160,19 +160,19 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
+			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	go post.Increment()
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, post)
+		render.R.JSON(w, 200, post)
 		return
 	case "post":
-		res.HTML(200, "post/display", post)
+		render.R.HTML(w, 200, "post/display", post)
 		return
 	}
 }
@@ -180,31 +180,31 @@ func ReadPost(req *http.Request, s sessions.Session, params martini.Params, res 
 // EditPost is a route which returns a post object to be displayed and edited on frontend.
 // Not available for JSON API.
 // Analogous to ReadPost. Could be replaced at some point.
-func EditPost(req *http.Request, params martini.Params, res render.Render) {
+func EditPost(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	res.HTML(200, "post/edit", post)
+	render.R.HTML(w, 200, "post/edit", post)
 }
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
-// Requires session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
-func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render, entry Post) {
+// Requirender session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
+func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session, entry Post) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
+			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
@@ -212,19 +212,19 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, post)
+		render.R.JSON(w, 200, post)
 		return
 	case "post":
-		res.Redirect("/user", 302)
+		http.Redirect(w, r, "/user", 302)
 		return
 	}
 }
@@ -232,40 +232,41 @@ func UpdatePost(req *http.Request, params martini.Params, s sessions.Session, re
 // PublishPost is a route which publishes a post and therefore making it appear on frontpage and search.
 // JSON request returns `HTTP 200 {"success": "Post published"}` on success. Frontend call will redirect to
 // published page.
-// Requires active session cookie.
-func PublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render) {
+// Requirender active session cookie.
+func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
+			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
 	var entry Post
+	entry = post
 	entry.Published = true
 	post, err = post.Update(s, entry)
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, map[string]interface{}{"success": "Post published"})
+		render.R.JSON(w, 200, map[string]interface{}{"success": "Post published"})
 		return
 	case "post":
-		res.Redirect("/post/"+post.Slug, 302)
+		http.Redirect(w, r, "/post/"+post.Slug, 302)
 		return
 	}
 }
@@ -273,18 +274,18 @@ func PublishPost(req *http.Request, params martini.Params, s sessions.Session, r
 // UnpublishPost is a route which unpublishes a post and therefore making it disappear from frontpage and search.
 // JSON request returns `HTTP 200 {"success": "Post unpublished"}` on success. Frontend call will redirect to
 // user control panel.
-// Requires active session cookie.
+// Requirender active session cookie.
 // The route is anecdotal to route PublishPost().
-func UnpublishPost(req *http.Request, params martini.Params, s sessions.Session, res render.Render) {
+func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
 		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
+			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
@@ -292,19 +293,19 @@ func UnpublishPost(req *http.Request, params martini.Params, s sessions.Session,
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, map[string]interface{}{"success": "Post unpublished"})
+		render.R.JSON(w, 200, map[string]interface{}{"success": "Post unpublished"})
 		return
 	case "post":
-		res.Redirect("/user", 302)
+		http.Redirect(w, r, "/user", 302)
 		return
 	}
 }
@@ -312,36 +313,36 @@ func UnpublishPost(req *http.Request, params martini.Params, s sessions.Session,
 // DeletePost is a route which deletes a post according to martini parameter "title".
 // JSON request returns `HTTP 200 {"success": "Post deleted"}` on success. Frontend call will redirect to
 // "/user" page on successful request.
-// Requires active session cookie.
-func DeletePost(req *http.Request, params martini.Params, s sessions.Session, res render.Render) {
+// Requirender active session cookie.
+func DeletePost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
 	var post Post
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
 		if err.Error() == "not found" {
-			res.JSON(404, NotFound())
+			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
 		log.Println(err)
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	err = post.Delete(s)
 	if err != nil {
 		log.Println(err)
 		if err.Error() == "unauthorized" {
-			res.JSON(401, map[string]interface{}{"error": "Unauthorized"})
+			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
 		}
-		res.JSON(500, map[string]interface{}{"error": "Internal server error"})
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	switch Root(req) {
+	switch Root(r) {
 	case "api":
-		res.JSON(200, map[string]interface{}{"success": "Post deleted"})
+		render.R.JSON(w, 200, map[string]interface{}{"success": "Post deleted"})
 		return
 	case "post":
-		res.Redirect("/user", 302)
+		http.Redirect(w, r, "/user", 302)
 		return
 	}
 }
