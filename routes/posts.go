@@ -26,7 +26,7 @@ func Homepage(w http.ResponseWriter, r *http.Request) {
 	var post Post
 	posts, err := post.GetAll()
 	if err != nil {
-		log.Println(err)
+		log.Println("route Homepage, post.GetAll:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -48,7 +48,6 @@ func (search Search) Get() (Search, error) {
 	var post Post
 	posts, err := post.GetAll()
 	if err != nil {
-		log.Println(err)
 		return search, err
 	}
 	for _, post := range posts {
@@ -94,7 +93,7 @@ func (search Search) Get() (Search, error) {
 func SearchPost(w http.ResponseWriter, r *http.Request, search Search) {
 	search, err := search.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route SearchPost, search.Get:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -114,7 +113,7 @@ func SearchPost(w http.ResponseWriter, r *http.Request, search Search) {
 func CreatePost(w http.ResponseWriter, r *http.Request, s sessions.Session, post Post) {
 	post, err := post.Insert(s)
 	if err != nil {
-		log.Println(err)
+		log.Println("route CreatePost, post.Insert:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -135,7 +134,7 @@ func ReadPosts(w http.ResponseWriter, r *http.Request) {
 	published := make([]Post, 0)
 	posts, err := post.GetAll()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ReadPosts, post.GetAll:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -158,7 +157,7 @@ func ReadPost(w http.ResponseWriter, r *http.Request, s sessions.Session, params
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ReadPost, post.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
@@ -185,7 +184,7 @@ func EditPost(w http.ResponseWriter, r *http.Request, params martini.Params) {
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route EditPost, post.Get:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -199,7 +198,7 @@ func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route UpdatePost, post.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
@@ -210,7 +209,7 @@ func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 
 	post, err = post.Update(s, entry)
 	if err != nil {
-		log.Println(err)
+		log.Println("route UpdatePost, post.Update:", err)
 		if err.Error() == "unauthorized" {
 			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
@@ -238,7 +237,7 @@ func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, 
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route PublishPost, post.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
@@ -252,7 +251,7 @@ func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, 
 	entry.Published = true
 	post, err = post.Update(s, entry)
 	if err != nil {
-		log.Println(err)
+		log.Println("route PublishPost, post.Update:", err)
 		if err.Error() == "unauthorized" {
 			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
@@ -281,6 +280,7 @@ func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
+		log.Println("route UnpublishPost, post.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
@@ -291,7 +291,7 @@ func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params
 
 	err = post.Unpublish(s)
 	if err != nil {
-		log.Println(err)
+		log.Println("route UnpublishPost, post.Unpublish:", err)
 		if err.Error() == "unauthorized" {
 			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return
@@ -319,17 +319,17 @@ func DeletePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 	post.Slug = params["slug"]
 	post, err := post.Get()
 	if err != nil {
+		log.Println("route DeletePost, post.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 			return
 		}
-		log.Println(err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 	err = post.Delete(s)
 	if err != nil {
-		log.Println(err)
+		log.Println("route DeletePost, post.Delete:", err)
 		if err.Error() == "unauthorized" {
 			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 			return

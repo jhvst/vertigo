@@ -27,7 +27,7 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 	var post Post
 	posts, err := post.GetAll()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ReadFeed, post.GetAll:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -38,7 +38,7 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 		user.ID = post.Author
 		user, err := user.Get()
 		if err != nil {
-			log.Println(err)
+			log.Println("route ReadFeed, user.Get:", err)
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
@@ -63,7 +63,7 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 
 	result, err := feed.ToRss()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ReadFeed, feed.ToRss:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}

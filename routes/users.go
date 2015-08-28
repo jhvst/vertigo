@@ -32,7 +32,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 	}
 	user, err := user.Insert()
 	if err != nil {
-		log.Println(err)
+		log.Println("route CreateUser, user.Insert:", err)
 		if err.Error() == "user email exists" {
 			render.R.JSON(w, 422, map[string]interface{}{"error": "Email already in use"})
 			return
@@ -46,7 +46,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 	}
 	user, err = user.Login()
 	if err != nil {
-		log.Println(err)
+		log.Println("route CreateUser, user.Login:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -101,14 +101,14 @@ func ReadUser(w http.ResponseWriter, r *http.Request, params martini.Params, s s
 	case "api":
 		id, err := strconv.Atoi(params["id"])
 		if err != nil {
-			log.Println(err)
+			log.Println("route ReadUser, strconv.Atoi:", err)
 			render.R.JSON(w, 400, map[string]interface{}{"error": "The user ID could not be parsed from the request URL."})
 			return
 		}
 		user.ID = int64(id)
 		user, err := user.Get()
 		if err != nil {
-			log.Println(err)
+			log.Println("route ReadUser, user.Get:", err)
 			if err.Error() == "not found" {
 				render.R.JSON(w, 404, map[string]interface{}{"error": "Not found"})
 				return
@@ -125,7 +125,7 @@ func ReadUser(w http.ResponseWriter, r *http.Request, params martini.Params, s s
 	case "user":
 		user, err := user.Session(s)
 		if err != nil {
-			log.Println(err)
+			log.Println("route ReadUser, user.Session:", err)
 			s.Set("user", -1)
 			render.R.HTML(w, 500, "error", err)
 			return
@@ -141,7 +141,7 @@ func ReadUsers(w http.ResponseWriter, r *http.Request) {
 	var user User
 	users, err := user.GetAll()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ReadUsers, user.GetAll:", err)
 		render.R.JSON(w, 500, err)
 		return
 	}
@@ -174,7 +174,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 	case "api":
 		user, err := user.Login()
 		if err != nil {
-			log.Println(err)
+			log.Println("route LoginUser, user.Login:", err)
 			if err.Error() == "wrong username or password" {
 				render.R.JSON(w, 401, map[string]interface{}{"error": "Wrong username or password."})
 				return
@@ -193,7 +193,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 	case "user":
 		user, err := user.Login()
 		if err != nil {
-			log.Println(err)
+			log.Println("route LoginUser, user.Login:", err)
 			if err.Error() == "wrong username or password" {
 				render.R.HTML(w, 401, "user/login", "Wrong username or password.")
 				return
@@ -216,7 +216,7 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 func RecoverUser(w http.ResponseWriter, r *http.Request, user User) {
 	err := user.Recover()
 	if err != nil {
-		log.Println(err)
+		log.Println("route RecoverUser, user.Recover:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 401, map[string]interface{}{"error": "User with that email does not exist."})
 			return
@@ -239,14 +239,14 @@ func RecoverUser(w http.ResponseWriter, r *http.Request, user User) {
 func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Params, user User) {
 	id, err := strconv.Atoi(params["id"])
 	if err != nil {
-		log.Println(err)
+		log.Println("route ResetUserPassword, strconv.Atoi:", err)
 		render.R.JSON(w, 400, map[string]interface{}{"error": "User ID could not be parsed from request URL."})
 		return
 	}
 	user.ID = int64(id)
 	entry, err := user.Get()
 	if err != nil {
-		log.Println(err)
+		log.Println("route ResetUserPassword, user.Get:", err)
 		if err.Error() == "not found" {
 			render.R.JSON(w, 400, map[string]interface{}{"error": "User with that ID does not exist."})
 			return
@@ -258,6 +258,7 @@ func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Pa
 	// which would otherwise result in succesful password reset
 	UUID := uuid.Parse(params["recovery"])
 	if UUID == nil {
+		log.Println("route ResetUserPassword, uuid.Parse:", err)
 		log.Println("there was a problem trying to verify password reset UUID for", entry.Email)
 		render.R.JSON(w, 400, map[string]interface{}{"error": "Could not parse UUID from the request."})
 		return
@@ -266,7 +267,7 @@ func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Pa
 		entry.Password = user.Password
 		_, err = user.PasswordReset(entry)
 		if err != nil {
-			log.Println(err)
+			log.Println("route ResetUserPassword, user.PasswordReset:", err)
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}

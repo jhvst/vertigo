@@ -35,7 +35,7 @@ func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s 
 		var user User
 		user, err := user.Session(s)
 		if err != nil {
-			log.Println(err)
+			log.Println("route UpdateSettings, user.Session:", err)
 			render.R.JSON(w, 406, map[string]interface{}{"error": "You are not allowed to change the settings this time."})
 			return
 		}
@@ -43,7 +43,7 @@ func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s 
 		settings.Firstrun = Settings.Firstrun
 		err = settings.Save()
 		if err != nil {
-			log.Println(err)
+			log.Println("route UpdateSettings, firstrun settings.Save:", err)
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
@@ -59,7 +59,7 @@ func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s 
 	settings.Hostname = strings.TrimRight(settings.Hostname, "/")
 	u, err := url.Parse(settings.Hostname)
 	if err != nil {
-		log.Println(err)
+		log.Println("route UpdateSettings, url.Parse:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -68,7 +68,7 @@ func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s 
 	settings.AllowRegistrations = true
 	err = settings.Save()
 	if err != nil {
-		log.Println(err)
+		log.Println("route UpdateSettings, settings.Save:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
