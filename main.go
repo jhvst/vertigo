@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-	"runtime"
 	"time"
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
@@ -17,10 +16,6 @@ import (
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/strict"
 )
-
-func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU()) // defining gomaxprocs is proven to add performance by few percentages
-}
 
 // NewServer spaws a new Vertigo server
 func NewServer() *martini.ClassicMartini {
