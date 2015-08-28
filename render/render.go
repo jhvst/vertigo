@@ -55,13 +55,6 @@ var helpers = template.FuncMap{
 	},
 }
 
-type content struct {
-	Page     template.HTML
-	Data     interface{}
-	Settings Vertigo
-	LoggedIn bool
-}
-
 var R *unrolled.Render
 
 func init() {
