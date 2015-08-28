@@ -28,7 +28,7 @@ CREATE TABLE post (
     slug varchar(255) NOT NULL,
     author integer NOT NULL,
     excerpt varchar(255) NOT NULL,
-    viewcount integer unsigned NOT NULL,
+    viewcount integer unsigned NOT NULL DEFAULT 0,
     published bool NOT NULL DEFAULT false,
     created integer unsigned NOT NULL,
     updated integer unsigned NOT NULL,

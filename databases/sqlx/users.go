@@ -2,7 +2,6 @@ package sqlx
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -62,15 +61,10 @@ func (user User) Update(entry User) (User, error) {
 // to the corresponding user.Email address. It will also add TTL to Recovery field.
 func (user User) Recover() error {
 
-	fmt.Println("user recover", user)
-
 	user, err := user.GetByEmail()
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("user recover after", user.Recovery)
-	fmt.Println("user email", user.Email)
 
 	entry := user
 	entry.Recovery = uuid.New()
@@ -78,9 +72,6 @@ func (user User) Recover() error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println("entry", user.Recovery)
-	fmt.Println("entry email", user.Email)
 
 	id := strconv.Itoa(int(user.ID))
 	err = SendRecoveryEmail(id, user.Name, user.Email, user.Recovery)
@@ -110,7 +101,6 @@ func (user User) PasswordReset(entry User) (User, error) {
 // This function is supposed to be run as goroutine to avoid blocking exection for t.
 func (user User) ExpireRecovery(t time.Duration) {
 	time.Sleep(t)
-	log.Println(user.ID)
 	_, err := db.Exec("UPDATE user SET recovery = ? WHERE id = ?", "", user.ID)
 	if err != nil {
 		log.Println("expire recovery:", err)
@@ -145,7 +135,6 @@ func (user User) Get() (User, error) {
 // GetByEmail or user.GetByEmail returns User object according to given .Email
 // with post information merged.
 func (user User) GetByEmail() (User, error) {
-	log.Println("getbyemail", user.Email)
 	err := db.Get(&user, "SELECT * FROM user WHERE email = ?", user.Email)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
