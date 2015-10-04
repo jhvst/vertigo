@@ -6,7 +6,10 @@
 		<input type="password" name="password" placeholder="Password" required="required">
 
 		<button type="submit">Log in</button>
-		<a href="/user/recover">Forgot your password?</a>
+		<p><a href="/user/recover">Forgot your password?</a></p>
+		{{ if registerationsallowed }}
+			<p><a href="/user/register">Need an account registered?</a></p>
+		{{ end }}
 	</fieldset>
 </form>
 {{/* check if there is a login error */}}

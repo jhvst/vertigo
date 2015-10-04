@@ -53,6 +53,10 @@ var helpers = template.FuncMap{
 	"timezones": func() []timezone.Timezone {
 		return timezone.Locations
 	},
+	// returns whether registrations are allowed on user/login.tmpl
+	"registerationsallowed": func() bool {
+		return Settings.AllowRegistrations
+	},	
 }
 
 var R *unrolled.Render
