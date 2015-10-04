@@ -48,7 +48,7 @@ func (user User) Login() (User, error) {
 // Currently not used elsewhere than in password Recovery, that's why the Digest generation.
 func (user User) Update(entry User) (User, error) {
 	_, err := db.NamedExec(
-		"UPDATE user SET name = :name, digest = :digest, location = :location, recovery = :recovery WHERE id = :id",
+		"UPDATE users SET name = :name, digest = :digest, location = :location, recovery = :recovery WHERE id = :id",
 		entry)
 	if err != nil {
 		return entry, err
@@ -91,7 +91,7 @@ func (user User) PasswordReset(entry User) (User, error) {
 	entry.Digest = digest
 	entry.Recovery = ""
 	entry.ID = user.ID
-	_, err = db.NamedExec("UPDATE user SET digest = :digest, recovery = :recovery WHERE id = :id", entry)
+	_, err = db.NamedExec("UPDATE users SET digest = :digest, recovery = :recovery WHERE id = :id", entry)
 	if err != nil {
 		return entry, err
 	}
@@ -103,7 +103,7 @@ func (user User) PasswordReset(entry User) (User, error) {
 func (user User) ExpireRecovery(t time.Duration) {
 	time.Sleep(t)
 	user.Recovery = ""
-	_, err := db.NamedExec("UPDATE user SET recovery = :recovery WHERE id = :id", user)
+	_, err := db.NamedExec("UPDATE users SET recovery = :recovery WHERE id = :id", user)
 	if err != nil {
 		log.Println("expire recovery:", err)
 	}
@@ -113,10 +113,10 @@ func (user User) ExpireRecovery(t time.Duration) {
 // Requires session session as a parameter.
 // Returns Ad and error object.
 func (user User) Get() (User, error) {
-	stmt, err := db.PrepareNamed("SELECT * FROM user WHERE id = :id")
+	stmt, err := db.PrepareNamed("SELECT * FROM users WHERE id = :id")
 	if err != nil {
 		return user, err
-	}	
+	}
 	err = stmt.Get(&user, user)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -125,10 +125,10 @@ func (user User) Get() (User, error) {
 		return user, err
 	}
 	var posts []Post
-	stmt, err = db.PrepareNamed("SELECT * FROM post WHERE author = :id ORDER BY created")
+	stmt, err = db.PrepareNamed("SELECT * FROM posts WHERE author = :id ORDER BY created")
 	if err != nil {
 		return user, err
-	}	
+	}
 	err = stmt.Select(&posts, user)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -145,10 +145,10 @@ func (user User) Get() (User, error) {
 // GetByEmail or user.GetByEmail returns User object according to given .Email
 // with post information merged.
 func (user User) GetByEmail() (User, error) {
-	stmt, err := db.PrepareNamed("SELECT * FROM user WHERE email = :email")
+	stmt, err := db.PrepareNamed("SELECT * FROM users WHERE email = :email")
 	if err != nil {
 		return user, err
-	}	
+	}
 	err = stmt.Get(&user, user)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -157,10 +157,10 @@ func (user User) GetByEmail() (User, error) {
 		return user, err
 	}
 	var posts []Post
-	stmt, err = db.PrepareNamed("SELECT * FROM post WHERE author = :id ORDER BY created")
+	stmt, err = db.PrepareNamed("SELECT * FROM posts WHERE author = :id ORDER BY created")
 	if err != nil {
 		return user, err
-	}	
+	}
 	err = stmt.Select(&posts, user)
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
@@ -203,9 +203,9 @@ func (user User) Insert() (User, error) {
 		return user, errors.New("user location invalid")
 	}
 	user.Digest = digest
-	_, err = db.NamedExec("INSERT INTO user (name, digest, email, location) VALUES (:name, :digest, :email, :location)", user)
+	_, err = db.NamedExec("INSERT INTO users (name, digest, email, location) VALUES (:name, :digest, :email, :location)", user)
 	if err != nil {
-		if err.Error() == "UNIQUE constraint failed: user.email" {
+		if err.Error() == "UNIQUE constraint failed: users.email" || err.Error() == `pq: duplicate key value violates unique constraint "users_email_key"` {
 			return user, errors.New("user email exists")
 		}
 		return user, err
@@ -216,7 +216,7 @@ func (user User) Insert() (User, error) {
 // GetAll or user.GetAll fetches all users with post data merged from the database.
 func (user User) GetAll() ([]User, error) {
 	var users []User
-	rows, err := db.Queryx("SELECT * FROM user")
+	rows, err := db.Queryx("SELECT * FROM users")
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			users = make([]User, 0)
@@ -224,13 +224,13 @@ func (user User) GetAll() ([]User, error) {
 		}
 		return users, err
 	}
-    for rows.Next() {
-        err := rows.StructScan(&user)
-        if err != nil {
-            return users, err
-        } 
-        users = append(users, user)
-    }
+	for rows.Next() {
+		err := rows.StructScan(&user)
+		if err != nil {
+			return users, err
+		}
+		users = append(users, user)
+	}
 	for index, user := range users {
 		user, err := user.Get()
 		if err != nil {

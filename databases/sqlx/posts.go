@@ -55,7 +55,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 	post.Slug = slug.Create(post.Title)
 	post.Published = false
 	post.Viewcount = 0
-	_, err = db.NamedExec(`INSERT INTO post (title, content, markdown, slug, author, excerpt, viewcount, published, created, updated, timeoffset)
+	_, err = db.NamedExec(`INSERT INTO posts (title, content, markdown, slug, author, excerpt, viewcount, published, created, updated, timeoffset)
 		VALUES (:title, :content, :markdown, :slug, :author, :excerpt, :viewcount, :published, :created, :updated, :timeoffset)`, post)
 	if err != nil {
 		return post, err
@@ -67,7 +67,7 @@ func (post Post) Insert(s sessions.Session) (Post, error) {
 // Requires session session as a parameter.
 // Returns Ad and error object.
 func (post Post) Get() (Post, error) {
-	stmt, err := db.PrepareNamed("SELECT * FROM post WHERE slug = :slug")
+	stmt, err := db.PrepareNamed("SELECT * FROM posts WHERE slug = :slug")
 	if err != nil {
 		return post, err
 	}
@@ -91,13 +91,13 @@ func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
 		return post, err
 	}
 	if post.Author == user.ID {
-		entry.ID = post.ID		
+		entry.ID = post.ID
 		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
 		entry.Excerpt = excerpt.Make(entry.Content, 15)
 		entry.Slug = slug.Create(entry.Title)
 		entry.Updated = time.Now().UTC().Round(time.Second).Unix()
 		_, err := db.NamedExec(
-			"UPDATE post SET title = :title, content = :content, markdown = :markdown, slug = :slug, excerpt = :excerpt, published = :published, updated = :updated WHERE id = :id",
+			"UPDATE posts SET title = :title, content = :content, markdown = :markdown, slug = :slug, excerpt = :excerpt, published = :published, updated = :updated WHERE id = :id",
 			entry)
 		if err != nil {
 			return post, err
@@ -119,7 +119,7 @@ func (post Post) Unpublish(s sessions.Session) error {
 	}
 	if post.Author == user.ID {
 		post.Published = false
-		_, err := db.NamedExec("UPDATE post SET published = :published WHERE id = :id", post)
+		_, err := db.NamedExec("UPDATE posts SET published = :published WHERE id = :id", post)
 		if err != nil {
 			return err
 		}
@@ -138,7 +138,7 @@ func (post Post) Delete(s sessions.Session) error {
 		return err
 	}
 	if post.Author == user.ID {
-		_, err := db.NamedExec("DELETE FROM post WHERE id = :id", post)
+		_, err := db.NamedExec("DELETE FROM posts WHERE id = :id", post)
 		if err != nil {
 			return err
 		}
@@ -151,7 +151,7 @@ func (post Post) Delete(s sessions.Session) error {
 // Returns []User and error object.
 func (post Post) GetAll() ([]Post, error) {
 	var posts []Post
-    rows, err := db.Queryx("SELECT * FROM post ORDER BY created DESC")
+	rows, err := db.Queryx("SELECT * FROM posts ORDER BY created DESC")
 	if err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			posts = make([]Post, 0)
@@ -159,13 +159,13 @@ func (post Post) GetAll() ([]Post, error) {
 		}
 		return posts, err
 	}
-    for rows.Next() {
-        err := rows.StructScan(&post)
-        if err != nil {
-            return posts, err
-        } 
-        posts = append(posts, post)
-    }
+	for rows.Next() {
+		err := rows.StructScan(&post)
+		if err != nil {
+			return posts, err
+		}
+		posts = append(posts, post)
+	}
 	return posts, nil
 }
 
@@ -174,7 +174,7 @@ func (post Post) GetAll() ([]Post, error) {
 // Returns updated Ad object and an error object.
 func (post Post) Increment() {
 	post.Viewcount += 1
-	_, err := db.NamedExec("UPDATE post SET viewcount = :viewcount WHERE id = :id", post)
+	_, err := db.NamedExec("UPDATE posts SET viewcount = :viewcount WHERE id = :id", post)
 	if err != nil {
 		log.Println("analytics error:", err)
 	}
