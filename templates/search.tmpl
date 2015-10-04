@@ -3,7 +3,7 @@
 	{{range .}}
 		<article>
 			<span role="shortdate">{{shortdate .Created .TimeOffset}}</span>
-			<a href="/post/{{.Slug}}">{{.Title}}</a>
+			<a class="title" href="/post/{{.Slug}}">{{.Title}}</a>
 			<span role="viewcount">{{.Viewcount}}</span>
 		</article>
 	{{end}}

@@ -9,7 +9,7 @@
 {{if .Published}}
 <article>
 	<span role="shortdate">{{shortdate .Created .TimeOffset}}</span>
-	<a href="/post/{{.Slug}}">{{.Title}}</a>
+	<a class="title" href="/post/{{.Slug}}">{{.Title}}</a>
 	<span role="align-right">{{.Viewcount}}</span>
 </article>
 {{end}}

@@ -603,7 +603,7 @@ func TestPostListing(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("article h1").Text()
+			sel := doc.Find("article .title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 	})
@@ -751,7 +751,7 @@ func TestPostAfterUpdating(t *testing.T) {
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
 		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-		sel := doc.Find("article h1").Text()
+		sel := doc.Find("article .title").Text()
 		So(sel, ShouldEqual, post.Title)
 	})
 
@@ -1141,7 +1141,7 @@ func TestSearch(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("h1").Text()
+			sel := doc.Find(".title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 
@@ -1152,7 +1152,7 @@ func TestSearch(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("h1").Text()
+			sel := doc.Find(".title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 
