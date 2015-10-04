@@ -47,6 +47,11 @@
 			"Rev": "184178ffc6b2f7b86b8b99c2a411de8771708a0a"
 		},
 		{
+			"ImportPath": "github.com/go-sql-driver/mysql",
+			"Comment": "v1.2-118-g3dd7008",
+			"Rev": "3dd7008ac1529aca1bcd8a9db75228a71ba23cac"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "1c83b3eabd45b6d76072b66b746c20815fb2872d"
 		},
@@ -74,6 +79,11 @@
 		{
 			"ImportPath": "github.com/kennygrant/sanitize",
 			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-59-gb269bd0",
+			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
 		},
 		{
 			"ImportPath": "github.com/martini-contrib/binding",
