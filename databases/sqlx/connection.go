@@ -94,6 +94,7 @@ CREATE TABLE "posts" (
 func Drop() {
 	db.MustExec("DROP TABLE users")
 	db.MustExec("DROP TABLE posts")
+	os.Remove("settings.json")
 	os.Remove("vertigo.db")
 }
 

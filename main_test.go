@@ -918,7 +918,10 @@ func TestDeletePost(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			So(recorder.Body.String(), ShouldEqual, `{"success":"Post deleted"}`)
-			post.ID--
+			if *Driver == "sqlite3" {
+				// SQLite's re-assigns ID if one is removed
+				post.ID--
+			}
 		})
 	})
 
@@ -1229,9 +1232,9 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	Convey("the latest user should have recovery key defined", t, func() {
 		user, _ = user.GetByEmail()
 		if value == false {
-			So(user.Recovery, ShouldNotBeBlank)
+			So(strings.TrimSpace(user.Recovery), ShouldNotBeBlank)
 		} else {
-			So(user.Recovery, ShouldEqual, "")
+			So(strings.TrimSpace(user.Recovery), ShouldEqual, "")
 		}
 		recovery = user.Recovery
 	})
@@ -1308,7 +1311,7 @@ func TestRecoveryKeyExpiration(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		u, _ = user.Get()
-		So(u.Recovery, ShouldEqual, "")
+		So(strings.TrimSpace(u.Recovery), ShouldEqual, "")
 	})
 }
 
@@ -1370,6 +1373,5 @@ func TestPostSecurity(t *testing.T) {
 }
 
 func TestDropDatabase(t *testing.T) {
-	os.Remove("settings.json")
-	os.Remove("vertigo.db")
+	Drop()
 }

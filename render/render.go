@@ -53,7 +53,7 @@ var helpers = template.FuncMap{
 	},
 	"shortdate": func(d int64, offset int) string {
 		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Jan 02 2006")
-	},	
+	},
 	// env returns environment variable of s.
 	"env": func(s string) string {
 		return os.Getenv(s)
@@ -65,7 +65,7 @@ var helpers = template.FuncMap{
 	// returns whether registrations are allowed on user/login.tmpl
 	"registerationsallowed": func() bool {
 		return Settings.AllowRegistrations
-	},	
+	},
 }
 
 var R *unrolled.Render
