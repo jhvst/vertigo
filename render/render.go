@@ -26,6 +26,12 @@ var helpers = template.FuncMap{
 		}
 		return Settings.Name
 	},
+	"blogname": func() string {
+		if Settings.Name == "" {
+			return "Blog in Go"
+		}
+		return Settings.Name
+	},
 	// description renders page description.
 	// If none is defined, returns "Blog in Go" instead.
 	"description": func() string {
@@ -45,6 +51,9 @@ var helpers = template.FuncMap{
 	"date": func(d int64, offset int) string {
 		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Monday, January 2, 2006 3:04PM (-0700 GMT)")
 	},
+	"shortdate": func(d int64, offset int) string {
+		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Jan 02 2006")
+	},	
 	// env returns environment variable of s.
 	"env": func(s string) string {
 		return os.Getenv(s)

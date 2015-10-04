@@ -1,5 +1,5 @@
 <article>
-	<small><time>{{date .Created .TimeOffset}}</time></small>
+	<small>Posted on <time>{{date .Created .TimeOffset}}</time>, viewed {{.Viewcount}} times</small>
 	<h1 role="title">{{.Title}}</h1>
 	{{unescape .Content}}
 </article>

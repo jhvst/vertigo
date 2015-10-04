@@ -6,8 +6,9 @@
 {{if .Posts}}
 <h2>Your posts</h2>
 {{range .Posts}}
-<ul>
+<ul role="post-container">
 	<li>
+		<span role="shortdate">{{shortdate .Created .TimeOffset}}</span>
 		<a href="/post/{{.Slug}}">{{.Title}}</a>
 		<a href="/post/{{.Slug}}/edit">[edit]</a>
 		{{/* Before modidying the line below please see the additional comments on the bottom of this template */}}
@@ -24,8 +25,7 @@
 {{end}}
 <script type="text/javascript">
 	// NOTICE: If you modify the delete <a> element, you will need to pass the class="delete" and the slug generator onto the new one.
-	// Otherwise your localStorage will be messy and may cause some confusion if you create a entry with a same title as before, as
-	// the old values are still intact in your cache.
+	// Otherwise your localStorage will be messy and may cause some confusion if you create a entry with a same title as before, as the old values are still intact in your cache.
 	//
 	// This small JS snippet attaches a click event listener
 	// to delete buttons so that the localStorage content will be wiped out
