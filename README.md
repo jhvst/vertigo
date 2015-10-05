@@ -67,6 +67,7 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 * `SMTP_PASSWORD` - Password for the mailbox defined with SMTP_LOGIN
 * `SMTP_PORT` - SMTP port which to use to send email. Defaults to 587.
 * `SMTP_SERVER` - SMTP server hostname or IP address. Example: smtp.example.org
+* `DATABASE_URL` - Database connection URL for PostgreSQL
 
 ##Using SQLite
 
@@ -76,9 +77,19 @@ Using SQLite as database is simple and requires no additional parameters. You ca
 
 ##Using Postgres
 
-To use Postgres you have to pass two flags, `driver` and `source`. The driver should be always `postgres` and the `source` should be the [connection URL](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING). For example:
+With Postgres you have two choices:
+
+1. ###Flags
+
+Pass two flags, `driver` and `source`. The driver should always be `postgres` and the `source` should be [connection URL](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING). For example:
 
 `PORT="80" MARTINI_ENV="production" ./vertigo -driver=postgres -source=examplesource@cloudhosting.com`
+
+2. ###Environment variable
+
+Define environment variable `DATABASE_URL` with connection URL. After you have set `DATABASE_URL`, you can just Vertigo as you would with SQLite:
+
+`PORT="80" MARTINI_ENV="production" ./vertigo`
 
 ##Contribute
 

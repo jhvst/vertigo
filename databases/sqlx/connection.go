@@ -105,6 +105,11 @@ func init() {
 
 	flag.Parse()
 
+    if os.Getenv("DATABASE_URL") != "" {
+        *Driver = "postgres"
+        *Source = os.Getenv("DATABASE_URL")
+    }    
+
 	conn, err := sqlx.Connect(*Driver, *Source)
 	if err != nil {
 		log.Fatal("sqlx connect:", err)
