@@ -3,7 +3,7 @@ package timezone
 import "testing"
 
 var expectedLocations = []Timezone{
-	Timezone{"Africa/Abidjan", "CI"},
+	Timezone{"Africa/Abidjan", "CI", "Ivory Coast"},
 }
 
 func TestLocations(t *testing.T) {
@@ -11,7 +11,7 @@ func TestLocations(t *testing.T) {
 		t.Errorf("ZonesTest returned %s", Locations[0])
 	}
 
-	if len(Locations) != 416 {
-		t.Errorf("Length of zones was not 3, actual %d", len(Locations))
+	if len(Locations) != 584 {
+		t.Errorf("Length of zones was not 584, actual %d", len(Locations))
 	}
 }

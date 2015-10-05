@@ -6,7 +6,10 @@
 package sqlite3
 
 /*
-#include <sqlite3.h>
+#cgo CFLAGS: -std=gnu99
+#cgo CFLAGS: -DSQLITE_ENABLE_RTREE -DSQLITE_THREADSAFE
+#cgo CFLAGS: -DSQLITE_ENABLE_FTS3 -DSQLITE_ENABLE_FTS3_PARENTHESIS
+#include <sqlite3-binding.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -44,14 +47,23 @@ _sqlite3_bind_blob(sqlite3_stmt *stmt, int n, void *p, int np) {
 #include <stdio.h>
 #include <stdint.h>
 
-static long
-_sqlite3_last_insert_rowid(sqlite3* db) {
-  return (long) sqlite3_last_insert_rowid(db);
+static int
+_sqlite3_exec(sqlite3* db, const char* pcmd, long long* rowid, long long* changes)
+{
+  int rv = sqlite3_exec(db, pcmd, 0, 0, 0);
+  *rowid = (long long) sqlite3_last_insert_rowid(db);
+  *changes = (long long) sqlite3_changes(db);
+  return rv;
 }
 
-static long
-_sqlite3_changes(sqlite3* db) {
-  return (long) sqlite3_changes(db);
+static int
+_sqlite3_step(sqlite3_stmt* stmt, long long* rowid, long long* changes)
+{
+  int rv = sqlite3_step(stmt);
+  sqlite3* db = sqlite3_db_handle(stmt);
+  *rowid = (long long) sqlite3_last_insert_rowid(db);
+  *changes = (long long) sqlite3_changes(db);
+  return rv;
 }
 
 */
@@ -60,8 +72,11 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"errors"
+	"fmt"
 	"io"
+	"net/url"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -102,7 +117,9 @@ type SQLiteDriver struct {
 
 // Conn struct.
 type SQLiteConn struct {
-	db *C.sqlite3
+	db     *C.sqlite3
+	loc    *time.Location
+	txlock string
 }
 
 // Tx struct.
@@ -114,6 +131,8 @@ type SQLiteTx struct {
 type SQLiteStmt struct {
 	c      *SQLiteConn
 	s      *C.sqlite3_stmt
+	nv     int
+	nn     []string
 	t      string
 	closed bool
 	cls    bool
@@ -174,7 +193,7 @@ func (c *SQLiteConn) Exec(query string, args []driver.Value) (driver.Result, err
 		if s.(*SQLiteStmt).s != nil {
 			na := s.NumInput()
 			if len(args) < na {
-				return nil, errors.New("args is not enough to execute query")
+				return nil, fmt.Errorf("Not enough args to execute query. Expected %d, got %d.", na, len(args))
 			}
 			res, err = s.Exec(args[:na])
 			if err != nil && err != driver.ErrSkip {
@@ -201,6 +220,9 @@ func (c *SQLiteConn) Query(query string, args []driver.Value) (driver.Rows, erro
 		}
 		s.(*SQLiteStmt).cls = true
 		na := s.NumInput()
+		if len(args) < na {
+			return nil, fmt.Errorf("Not enough args to execute query. Expected %d, got %d.", na, len(args))
+		}
 		rows, err := s.Query(args[:na])
 		if err != nil && err != driver.ErrSkip {
 			s.Close()
@@ -220,19 +242,18 @@ func (c *SQLiteConn) Query(query string, args []driver.Value) (driver.Rows, erro
 func (c *SQLiteConn) exec(cmd string) (driver.Result, error) {
 	pcmd := C.CString(cmd)
 	defer C.free(unsafe.Pointer(pcmd))
-	rv := C.sqlite3_exec(c.db, pcmd, nil, nil, nil)
+
+	var rowid, changes C.longlong
+	rv := C._sqlite3_exec(c.db, pcmd, &rowid, &changes)
 	if rv != C.SQLITE_OK {
 		return nil, c.lastError()
 	}
-	return &SQLiteResult{
-		int64(C._sqlite3_last_insert_rowid(c.db)),
-		int64(C._sqlite3_changes(c.db)),
-	}, nil
+	return &SQLiteResult{int64(rowid), int64(changes)}, nil
 }
 
 // Begin transaction.
 func (c *SQLiteConn) Begin() (driver.Tx, error) {
-	if _, err := c.exec("BEGIN"); err != nil {
+	if _, err := c.exec(c.txlock); err != nil {
 		return nil, err
 	}
 	return &SQLiteTx{c}, nil
@@ -248,9 +269,67 @@ func errorString(err Error) string {
 //   file:test.db?cache=shared&mode=memory
 //   :memory:
 //   file::memory:
+// go-sqlite handle especially query parameters.
+//   _loc=XXX
+//     Specify location of time format. It's possible to specify "auto".
+//   _busy_timeout=XXX
+//     Specify value for sqlite3_busy_timeout.
+//   _txlock=XXX
+//     Specify locking behavior for transactions.  XXX can be "immediate",
+//     "deferred", "exclusive".
 func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 	if C.sqlite3_threadsafe() == 0 {
 		return nil, errors.New("sqlite library was not compiled for thread-safe operation")
+	}
+
+	var loc *time.Location
+	txlock := "BEGIN"
+	busy_timeout := 5000
+	pos := strings.IndexRune(dsn, '?')
+	if pos >= 1 {
+		params, err := url.ParseQuery(dsn[pos+1:])
+		if err != nil {
+			return nil, err
+		}
+
+		// _loc
+		if val := params.Get("_loc"); val != "" {
+			if val == "auto" {
+				loc = time.Local
+			} else {
+				loc, err = time.LoadLocation(val)
+				if err != nil {
+					return nil, fmt.Errorf("Invalid _loc: %v: %v", val, err)
+				}
+			}
+		}
+
+		// _busy_timeout
+		if val := params.Get("_busy_timeout"); val != "" {
+			iv, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Invalid _busy_timeout: %v: %v", val, err)
+			}
+			busy_timeout = int(iv)
+		}
+
+		// _txlock
+		if val := params.Get("_txlock"); val != "" {
+			switch val {
+			case "immediate":
+				txlock = "BEGIN IMMEDIATE"
+			case "exclusive":
+				txlock = "BEGIN EXCLUSIVE"
+			case "deferred":
+				txlock = "BEGIN"
+			default:
+				return nil, fmt.Errorf("Invalid _txlock: %v", val)
+			}
+		}
+
+		if !strings.HasPrefix(dsn, "file:") {
+			dsn = dsn[:pos]
+		}
 	}
 
 	var db *C.sqlite3
@@ -268,12 +347,12 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 		return nil, errors.New("sqlite succeeded without returning a database")
 	}
 
-	rv = C.sqlite3_busy_timeout(db, 5000)
+	rv = C.sqlite3_busy_timeout(db, C.int(busy_timeout))
 	if rv != C.SQLITE_OK {
 		return nil, Error{Code: ErrNo(rv)}
 	}
 
-	conn := &SQLiteConn{db}
+	conn := &SQLiteConn{db: db, loc: loc, txlock: txlock}
 
 	if len(d.Extensions) > 0 {
 		rv = C.sqlite3_enable_load_extension(db, 1)
@@ -281,19 +360,13 @@ func (d *SQLiteDriver) Open(dsn string) (driver.Conn, error) {
 			return nil, errors.New(C.GoString(C.sqlite3_errmsg(db)))
 		}
 
-		stmt, err := conn.Prepare("SELECT load_extension(?);")
-		if err != nil {
-			return nil, err
-		}
-
 		for _, extension := range d.Extensions {
-			if _, err = stmt.Exec([]driver.Value{extension}); err != nil {
-				return nil, err
+			cext := C.CString(extension)
+			defer C.free(unsafe.Pointer(cext))
+			rv = C.sqlite3_load_extension(db, cext, nil, nil)
+			if rv != C.SQLITE_OK {
+				return nil, errors.New(C.GoString(C.sqlite3_errmsg(db)))
 			}
-		}
-
-		if err = stmt.Close(); err != nil {
-			return nil, err
 		}
 
 		rv = C.sqlite3_enable_load_extension(db, 0)
@@ -333,10 +406,18 @@ func (c *SQLiteConn) Prepare(query string) (driver.Stmt, error) {
 		return nil, c.lastError()
 	}
 	var t string
-	if tail != nil && C.strlen(tail) > 0 {
+	if tail != nil && *tail != '\000' {
 		t = strings.TrimSpace(C.GoString(tail))
 	}
-	ss := &SQLiteStmt{c: c, s: s, t: t}
+	nv := int(C.sqlite3_bind_parameter_count(s))
+	var nn []string
+	for i := 0; i < nv; i++ {
+		pn := C.GoString(C.sqlite3_bind_parameter_name(s, C.int(i+1)))
+		if len(pn) > 1 && pn[0] == '$' && 48 <= pn[1] && pn[1] <= 57 {
+			nn = append(nn, C.GoString(C.sqlite3_bind_parameter_name(s, C.int(i+1))))
+		}
+	}
+	ss := &SQLiteStmt{c: c, s: s, nv: nv, nn: nn, t: t}
 	runtime.SetFinalizer(ss, (*SQLiteStmt).Close)
 	return ss, nil
 }
@@ -360,7 +441,12 @@ func (s *SQLiteStmt) Close() error {
 
 // Return a number of parameters.
 func (s *SQLiteStmt) NumInput() int {
-	return int(C.sqlite3_bind_parameter_count(s.s))
+	return s.nv
+}
+
+type bindArg struct {
+	n int
+	v driver.Value
 }
 
 func (s *SQLiteStmt) bind(args []driver.Value) error {
@@ -369,8 +455,24 @@ func (s *SQLiteStmt) bind(args []driver.Value) error {
 		return s.c.lastError()
 	}
 
-	for i, v := range args {
-		n := C.int(i + 1)
+	var vargs []bindArg
+	narg := len(args)
+	vargs = make([]bindArg, narg)
+	if len(s.nn) > 0 {
+		for i, v := range s.nn {
+			if pi, err := strconv.Atoi(v[1:]); err == nil {
+				vargs[i] = bindArg{pi, args[i]}
+			}
+		}
+	} else {
+		for i, v := range args {
+			vargs[i] = bindArg{i + 1, v}
+		}
+	}
+
+	for _, varg := range vargs {
+		n := C.int(varg.n)
+		v := varg.v
 		switch v := v.(type) {
 		case nil:
 			rv = C.sqlite3_bind_null(s.s, n)
@@ -431,19 +533,18 @@ func (r *SQLiteResult) RowsAffected() (int64, error) {
 func (s *SQLiteStmt) Exec(args []driver.Value) (driver.Result, error) {
 	if err := s.bind(args); err != nil {
 		C.sqlite3_reset(s.s)
+		C.sqlite3_clear_bindings(s.s)
 		return nil, err
 	}
-	rv := C.sqlite3_step(s.s)
+	var rowid, changes C.longlong
+	rv := C._sqlite3_step(s.s, &rowid, &changes)
 	if rv != C.SQLITE_ROW && rv != C.SQLITE_OK && rv != C.SQLITE_DONE {
+		err := s.c.lastError()
 		C.sqlite3_reset(s.s)
-		return nil, s.c.lastError()
+		C.sqlite3_clear_bindings(s.s)
+		return nil, err
 	}
-
-	res := &SQLiteResult{
-		int64(C._sqlite3_last_insert_rowid(s.c.db)),
-		int64(C._sqlite3_changes(s.c.db)),
-	}
-	return res, nil
+	return &SQLiteResult{int64(rowid), int64(changes)}, nil
 }
 
 // Close the rows.
@@ -499,7 +600,22 @@ func (rc *SQLiteRows) Next(dest []driver.Value) error {
 			val := int64(C.sqlite3_column_int64(rc.s.s, C.int(i)))
 			switch rc.decltype[i] {
 			case "timestamp", "datetime", "date":
-				dest[i] = time.Unix(val, 0).Local()
+				unixTimestamp := strconv.FormatInt(val, 10)
+				var t time.Time
+				if len(unixTimestamp) == 13 {
+					duration, err := time.ParseDuration(unixTimestamp + "ms")
+					if err != nil {
+						return fmt.Errorf("error parsing %s value %d, %s", rc.decltype[i], val, err)
+					}
+					epoch := time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)
+					t = epoch.Add(duration)
+				} else {
+					t = time.Unix(val, 0)
+				}
+				if rc.s.c.loc != nil {
+					t = t.In(rc.s.c.loc)
+				}
+				dest[i] = t
 			case "boolean":
 				dest[i] = val > 0
 			default:
@@ -527,20 +643,28 @@ func (rc *SQLiteRows) Next(dest []driver.Value) error {
 		case C.SQLITE_TEXT:
 			var err error
 			var timeVal time.Time
-			s := C.GoString((*C.char)(unsafe.Pointer(C.sqlite3_column_text(rc.s.s, C.int(i)))))
+
+			n := int(C.sqlite3_column_bytes(rc.s.s, C.int(i)))
+			s := C.GoStringN((*C.char)(unsafe.Pointer(C.sqlite3_column_text(rc.s.s, C.int(i)))), C.int(n))
 
 			switch rc.decltype[i] {
 			case "timestamp", "datetime", "date":
+				var t time.Time
+				s = strings.TrimSuffix(s, "Z")
 				for _, format := range SQLiteTimestampFormats {
 					if timeVal, err = time.ParseInLocation(format, s, time.UTC); err == nil {
-						dest[i] = timeVal.Local()
+						t = timeVal
 						break
 					}
 				}
 				if err != nil {
 					// The column is a time value, so return the zero time on parse failure.
-					dest[i] = time.Time{}
+					t = time.Time{}
 				}
+				if rc.s.c.loc != nil {
+					t = t.In(rc.s.c.loc)
+				}
+				dest[i] = t
 			default:
 				dest[i] = []byte(s)
 			}

@@ -17,16 +17,35 @@ import (
 	"testing"
 )
 
+func runMarkdownBlockWithRenderer(input string, extensions int, renderer Renderer) string {
+	return string(Markdown([]byte(input), renderer, extensions))
+}
+
 func runMarkdownBlock(input string, extensions int) string {
 	htmlFlags := 0
 	htmlFlags |= HTML_USE_XHTML
 
 	renderer := HtmlRenderer(htmlFlags, "", "")
 
-	return string(Markdown([]byte(input), renderer, extensions))
+	return runMarkdownBlockWithRenderer(input, extensions, renderer)
+}
+
+func runnerWithRendererParameters(parameters HtmlRendererParameters) func(string, int) string {
+	return func(input string, extensions int) string {
+		htmlFlags := 0
+		htmlFlags |= HTML_USE_XHTML
+
+		renderer := HtmlRendererWithParameters(htmlFlags, "", "", parameters)
+
+		return runMarkdownBlockWithRenderer(input, extensions, renderer)
+	}
 }
 
 func doTestsBlock(t *testing.T, tests []string, extensions int) {
+	doTestsBlockWithRunner(t, tests, extensions, runMarkdownBlock)
+}
+
+func doTestsBlockWithRunner(t *testing.T, tests []string, extensions int, runner func(string, int) string) {
 	// catch and report panics
 	var candidate string
 	defer func() {
@@ -39,7 +58,7 @@ func doTestsBlock(t *testing.T, tests []string, extensions int) {
 		input := tests[i]
 		candidate = input
 		expected := tests[i+1]
-		actual := runMarkdownBlock(candidate, extensions)
+		actual := runner(candidate, extensions)
 		if actual != expected {
 			t.Errorf("\nInput   [%#v]\nExpected[%#v]\nActual  [%#v]",
 				candidate, expected, actual)
@@ -113,6 +132,15 @@ func TestPrefixHeaderNoExtensions(t *testing.T) {
 		"*   List\n    * Nested list\n    # Nested header\n",
 		"<ul>\n<li><p>List</p>\n\n<ul>\n<li><p>Nested list</p>\n\n" +
 			"<h1>Nested header</h1></li>\n</ul></li>\n</ul>\n",
+
+		"#Header 1 \\#\n",
+		"<h1>Header 1 #</h1>\n",
+
+		"#Header 1 \\# foo\n",
+		"<h1>Header 1 # foo</h1>\n",
+
+		"#Header 1 #\\##\n",
+		"<h1>Header 1 ##</h1>\n",
 	}
 	doTestsBlock(t, tests, 0)
 }
@@ -237,6 +265,54 @@ func TestPrefixHeaderIdExtension(t *testing.T) {
 	doTestsBlock(t, tests, EXTENSION_HEADER_IDS)
 }
 
+func TestPrefixHeaderIdExtensionWithPrefixAndSuffix(t *testing.T) {
+	var tests = []string{
+		"# header 1 {#someid}\n",
+		"<h1 id=\"PRE:someid:POST\">header 1</h1>\n",
+
+		"## header 2 {#someid}\n",
+		"<h2 id=\"PRE:someid:POST\">header 2</h2>\n",
+
+		"### header 3 {#someid}\n",
+		"<h3 id=\"PRE:someid:POST\">header 3</h3>\n",
+
+		"#### header 4 {#someid}\n",
+		"<h4 id=\"PRE:someid:POST\">header 4</h4>\n",
+
+		"##### header 5 {#someid}\n",
+		"<h5 id=\"PRE:someid:POST\">header 5</h5>\n",
+
+		"###### header 6 {#someid}\n",
+		"<h6 id=\"PRE:someid:POST\">header 6</h6>\n",
+
+		"####### header 7 {#someid}\n",
+		"<h6 id=\"PRE:someid:POST\"># header 7</h6>\n",
+
+		"# header 1 # {#someid}\n",
+		"<h1 id=\"PRE:someid:POST\">header 1</h1>\n",
+
+		"## header 2 ## {#someid}\n",
+		"<h2 id=\"PRE:someid:POST\">header 2</h2>\n",
+
+		"* List\n# Header {#someid}\n* List\n",
+		"<ul>\n<li><p>List</p>\n\n<h1 id=\"PRE:someid:POST\">Header</h1></li>\n\n<li><p>List</p></li>\n</ul>\n",
+
+		"* List\n#Header {#someid}\n* List\n",
+		"<ul>\n<li><p>List</p>\n\n<h1 id=\"PRE:someid:POST\">Header</h1></li>\n\n<li><p>List</p></li>\n</ul>\n",
+
+		"*   List\n    * Nested list\n    # Nested header {#someid}\n",
+		"<ul>\n<li><p>List</p>\n\n<ul>\n<li><p>Nested list</p>\n\n" +
+			"<h1 id=\"PRE:someid:POST\">Nested header</h1></li>\n</ul></li>\n</ul>\n",
+	}
+
+	parameters := HtmlRendererParameters{
+		HeaderIDPrefix: "PRE:",
+		HeaderIDSuffix: ":POST",
+	}
+
+	doTestsBlockWithRunner(t, tests, EXTENSION_HEADER_IDS, runnerWithRendererParameters(parameters))
+}
+
 func TestPrefixAutoHeaderIdExtension(t *testing.T) {
 	var tests = []string{
 		"# Header 1\n",
@@ -261,7 +337,7 @@ func TestPrefixAutoHeaderIdExtension(t *testing.T) {
 		"<h6 id=\"header-6\">Header 6</h6>\n",
 
 		"####### Header 7\n",
-		"<h6 id=\"-header-7\"># Header 7</h6>\n",
+		"<h6 id=\"header-7\"># Header 7</h6>\n",
 
 		"Hello\n# Header 1\nGoodbye\n",
 		"<p>Hello</p>\n\n<h1 id=\"header-1\">Header 1</h1>\n\n<p>Goodbye</p>\n",
@@ -275,8 +351,82 @@ func TestPrefixAutoHeaderIdExtension(t *testing.T) {
 		"*   List\n    * Nested list\n    # Nested header\n",
 		"<ul>\n<li><p>List</p>\n\n<ul>\n<li><p>Nested list</p>\n\n" +
 			"<h1 id=\"nested-header\">Nested header</h1></li>\n</ul></li>\n</ul>\n",
+
+		"# Header\n\n# Header\n",
+		"<h1 id=\"header\">Header</h1>\n\n<h1 id=\"header-1\">Header</h1>\n",
+
+		"# Header 1\n\n# Header 1",
+		"<h1 id=\"header-1\">Header 1</h1>\n\n<h1 id=\"header-1-1\">Header 1</h1>\n",
+
+		"# Header\n\n# Header 1\n\n# Header\n\n# Header",
+		"<h1 id=\"header\">Header</h1>\n\n<h1 id=\"header-1\">Header 1</h1>\n\n<h1 id=\"header-1-1\">Header</h1>\n\n<h1 id=\"header-1-2\">Header</h1>\n",
 	}
 	doTestsBlock(t, tests, EXTENSION_AUTO_HEADER_IDS)
+}
+
+func TestPrefixAutoHeaderIdExtensionWithPrefixAndSuffix(t *testing.T) {
+	var tests = []string{
+		"# Header 1\n",
+		"<h1 id=\"PRE:header-1:POST\">Header 1</h1>\n",
+
+		"# Header 1   \n",
+		"<h1 id=\"PRE:header-1:POST\">Header 1</h1>\n",
+
+		"## Header 2\n",
+		"<h2 id=\"PRE:header-2:POST\">Header 2</h2>\n",
+
+		"### Header 3\n",
+		"<h3 id=\"PRE:header-3:POST\">Header 3</h3>\n",
+
+		"#### Header 4\n",
+		"<h4 id=\"PRE:header-4:POST\">Header 4</h4>\n",
+
+		"##### Header 5\n",
+		"<h5 id=\"PRE:header-5:POST\">Header 5</h5>\n",
+
+		"###### Header 6\n",
+		"<h6 id=\"PRE:header-6:POST\">Header 6</h6>\n",
+
+		"####### Header 7\n",
+		"<h6 id=\"PRE:header-7:POST\"># Header 7</h6>\n",
+
+		"Hello\n# Header 1\nGoodbye\n",
+		"<p>Hello</p>\n\n<h1 id=\"PRE:header-1:POST\">Header 1</h1>\n\n<p>Goodbye</p>\n",
+
+		"* List\n# Header\n* List\n",
+		"<ul>\n<li><p>List</p>\n\n<h1 id=\"PRE:header:POST\">Header</h1></li>\n\n<li><p>List</p></li>\n</ul>\n",
+
+		"* List\n#Header\n* List\n",
+		"<ul>\n<li><p>List</p>\n\n<h1 id=\"PRE:header:POST\">Header</h1></li>\n\n<li><p>List</p></li>\n</ul>\n",
+
+		"*   List\n    * Nested list\n    # Nested header\n",
+		"<ul>\n<li><p>List</p>\n\n<ul>\n<li><p>Nested list</p>\n\n" +
+			"<h1 id=\"PRE:nested-header:POST\">Nested header</h1></li>\n</ul></li>\n</ul>\n",
+
+		"# Header\n\n# Header\n",
+		"<h1 id=\"PRE:header:POST\">Header</h1>\n\n<h1 id=\"PRE:header-1:POST\">Header</h1>\n",
+
+		"# Header 1\n\n# Header 1",
+		"<h1 id=\"PRE:header-1:POST\">Header 1</h1>\n\n<h1 id=\"PRE:header-1-1:POST\">Header 1</h1>\n",
+
+		"# Header\n\n# Header 1\n\n# Header\n\n# Header",
+		"<h1 id=\"PRE:header:POST\">Header</h1>\n\n<h1 id=\"PRE:header-1:POST\">Header 1</h1>\n\n<h1 id=\"PRE:header-1-1:POST\">Header</h1>\n\n<h1 id=\"PRE:header-1-2:POST\">Header</h1>\n",
+	}
+
+	parameters := HtmlRendererParameters{
+		HeaderIDPrefix: "PRE:",
+		HeaderIDSuffix: ":POST",
+	}
+
+	doTestsBlockWithRunner(t, tests, EXTENSION_AUTO_HEADER_IDS, runnerWithRendererParameters(parameters))
+}
+
+func TestPrefixMultipleHeaderExtensions(t *testing.T) {
+	var tests = []string{
+		"# Header\n\n# Header {#header}\n\n# Header 1",
+		"<h1 id=\"header\">Header</h1>\n\n<h1 id=\"header-1\">Header</h1>\n\n<h1 id=\"header-1-1\">Header 1</h1>\n",
+	}
+	doTestsBlock(t, tests, EXTENSION_AUTO_HEADER_IDS|EXTENSION_HEADER_IDS)
 }
 
 func TestUnderlineHeaders(t *testing.T) {
@@ -369,6 +519,12 @@ func TestUnderlineHeadersAutoIDs(t *testing.T) {
 
 		"Double underline\n=====\n=====\n",
 		"<h1 id=\"double-underline\">Double underline</h1>\n\n<p>=====</p>\n",
+
+		"Header\n======\n\nHeader\n======\n",
+		"<h1 id=\"header\">Header</h1>\n\n<h1 id=\"header-1\">Header</h1>\n",
+
+		"Header 1\n========\n\nHeader 1\n========\n",
+		"<h1 id=\"header-1\">Header 1</h1>\n\n<h1 id=\"header-1-1\">Header 1</h1>\n",
 	}
 	doTestsBlock(t, tests, EXTENSION_AUTO_HEADER_IDS)
 }
@@ -643,6 +799,108 @@ func TestOrderedList(t *testing.T) {
 		"<ol>\n<li>numbers</li>\n<li>are ignored</li>\n</ol>\n",
 	}
 	doTestsBlock(t, tests, 0)
+}
+
+func TestDefinitionList(t *testing.T) {
+	var tests = []string{
+		"Term 1\n:   Definition a\n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a \n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a\n:   Definition b\n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a</dd>\n<dd>Definition b</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a\n\nTerm 2\n:   Definition b\n",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd>Definition a</dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd>Definition b</dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n:   Definition a\n\nTerm 2\n:   Definition b\n\nTerm 3\n:   Definition c\n",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd>Definition a</dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd>Definition b</dd>\n" +
+			"<dt>Term 3</dt>\n" +
+			"<dd>Definition c</dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n:   Definition a\n:   Definition b\n\nTerm 2\n:   Definition c\n",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd>Definition a</dd>\n" +
+			"<dd>Definition b</dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd>Definition c</dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n\n:   Definition a\n\nTerm 2\n\n:   Definition b\n",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd><p>Definition a</p></dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd><p>Definition b</p></dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n\n:   Definition a\n\n:   Definition b\n\nTerm 2\n\n:   Definition c\n",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd><p>Definition a</p></dd>\n" +
+			"<dd><p>Definition b</p></dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd><p>Definition c</p></dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n:   Definition a\nNext line\n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a\nNext line</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a\n  Next line\n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a\nNext line</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a \n  Next line \n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a\nNext line</dd>\n</dl>\n",
+
+		"Term 1\n:   Definition a\nNext line\n\nTerm 2\n:   Definition b",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd>Definition a\nNext line</dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd>Definition b</dd>\n" +
+			"</dl>\n",
+
+		"Term 1\n: Definition a\n",
+		"<dl>\n<dt>Term 1</dt>\n<dd>Definition a</dd>\n</dl>\n",
+
+		"Term 1\n:Definition a\n",
+		"<p>Term 1\n:Definition a</p>\n",
+
+		"Term 1\n\n:   Definition a\n\nTerm 2\n\n:   Definition b\n\nText 1",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd><p>Definition a</p></dd>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd><p>Definition b</p></dd>\n" +
+			"</dl>\n" +
+			"\n<p>Text 1</p>\n",
+
+		"Term 1\n\n:   Definition a\n\nText 1\n\nTerm 2\n\n:   Definition b\n\nText 2",
+		"<dl>\n" +
+			"<dt>Term 1</dt>\n" +
+			"<dd><p>Definition a</p></dd>\n" +
+			"</dl>\n" +
+			"\n<p>Text 1</p>\n" +
+			"\n<dl>\n" +
+			"<dt>Term 2</dt>\n" +
+			"<dd><p>Definition b</p></dd>\n" +
+			"</dl>\n" +
+			"\n<p>Text 2</p>\n",
+	}
+	doTestsBlock(t, tests, EXTENSION_DEFINITION_LISTS)
 }
 
 func TestPreformattedHtml(t *testing.T) {

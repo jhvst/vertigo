@@ -196,7 +196,11 @@ func (mc *mysqlConn) readInitPacket() ([]byte, error) {
 		//	return
 		//}
 		//return ErrMalformPkt
-		return cipher, nil
+
+		// make a memory safe copy of the cipher slice
+		var b [20]byte
+		copy(b[:], cipher)
+		return b[:], nil
 	}
 
 	// make a memory safe copy of the cipher slice
@@ -214,6 +218,7 @@ func (mc *mysqlConn) writeAuthPacket(cipher []byte) error {
 		clientLongPassword |
 		clientTransactions |
 		clientLocalFiles |
+		clientPluginAuth |
 		mc.flags&clientLongFlag
 
 	if mc.cfg.clientFoundRows {
@@ -228,7 +233,7 @@ func (mc *mysqlConn) writeAuthPacket(cipher []byte) error {
 	// User Password
 	scrambleBuff := scramblePassword(cipher, []byte(mc.cfg.passwd))
 
-	pktLen := 4 + 4 + 1 + 23 + len(mc.cfg.user) + 1 + 1 + len(scrambleBuff)
+	pktLen := 4 + 4 + 1 + 23 + len(mc.cfg.user) + 1 + 1 + len(scrambleBuff) + 21 + 1
 
 	// To specify a db name
 	if n := len(mc.cfg.dbname); n > 0 {
@@ -294,7 +299,12 @@ func (mc *mysqlConn) writeAuthPacket(cipher []byte) error {
 	if len(mc.cfg.dbname) > 0 {
 		pos += copy(data[pos:], mc.cfg.dbname)
 		data[pos] = 0x00
+		pos++
 	}
+
+	// Assume native client during response
+	pos += copy(data[pos:], "mysql_native_password")
+	data[pos] = 0x00
 
 	// Send Auth packet
 	return mc.writePacket(data)
@@ -306,7 +316,7 @@ func (mc *mysqlConn) writeOldAuthPacket(cipher []byte) error {
 	// User password
 	scrambleBuff := scrambleOldPassword(cipher, []byte(mc.cfg.passwd))
 
-	// Calculate the packet lenght and add a tailing 0
+	// Calculate the packet length and add a tailing 0
 	pktLen := len(scrambleBuff) + 1
 	data := mc.buf.takeSmallBuffer(4 + pktLen)
 	if data == nil {
@@ -317,6 +327,25 @@ func (mc *mysqlConn) writeOldAuthPacket(cipher []byte) error {
 
 	// Add the scrambled password [null terminated string]
 	copy(data[4:], scrambleBuff)
+	data[4+pktLen-1] = 0x00
+
+	return mc.writePacket(data)
+}
+
+//  Client clear text authentication packet
+// http://dev.mysql.com/doc/internals/en/connection-phase-packets.html#packet-Protocol::AuthSwitchResponse
+func (mc *mysqlConn) writeClearAuthPacket() error {
+	// Calculate the packet length and add a tailing 0
+	pktLen := len(mc.cfg.passwd) + 1
+	data := mc.buf.takeSmallBuffer(4 + pktLen)
+	if data == nil {
+		// can not take the buffer. Something must be wrong with the connection
+		errLog.Print(ErrBusyBuffer)
+		return driver.ErrBadConn
+	}
+
+	// Add the clear password [null terminated string]
+	copy(data[4:], mc.cfg.passwd)
 	data[4+pktLen-1] = 0x00
 
 	return mc.writePacket(data)
@@ -405,8 +434,20 @@ func (mc *mysqlConn) readResultOK() error {
 			return mc.handleOkPacket(data)
 
 		case iEOF:
-			// someone is using old_passwords
-			return ErrOldPassword
+			if len(data) > 1 {
+				plugin := string(data[1:bytes.IndexByte(data, 0x00)])
+				if plugin == "mysql_old_password" {
+					// using old_passwords
+					return ErrOldPassword
+				} else if plugin == "mysql_clear_password" {
+					// using clear text password
+					return ErrCleartextPassword
+				} else {
+					return ErrUnknownPlugin
+				}
+			} else {
+				return ErrOldPassword
+			}
 
 		default: // Error otherwise
 			return mc.handleErrorPacket(data)
@@ -484,6 +525,7 @@ func (mc *mysqlConn) handleOkPacket(data []byte) error {
 	mc.insertId, _, m = readLengthEncodedInteger(data[1+n:])
 
 	// server_status [2 bytes]
+	mc.status = statusFlag(data[1+n+m]) | statusFlag(data[1+n+m+1])<<8
 
 	// warning count [2 bytes]
 	if !mc.strict {
@@ -530,11 +572,20 @@ func (mc *mysqlConn) readColumns(count int) ([]mysqlField, error) {
 		pos += n
 
 		// Table [len coded string]
-		n, err = skipLengthEncodedString(data[pos:])
-		if err != nil {
-			return nil, err
+		if mc.cfg.columnsWithAlias {
+			tableName, _, n, err := readLengthEncodedString(data[pos:])
+			if err != nil {
+				return nil, err
+			}
+			pos += n
+			columns[i].tableName = string(tableName)
+		} else {
+			n, err = skipLengthEncodedString(data[pos:])
+			if err != nil {
+				return nil, err
+			}
+			pos += n
 		}
-		pos += n
 
 		// Original table [len coded string]
 		n, err = skipLengthEncodedString(data[pos:])
@@ -593,7 +644,12 @@ func (rows *textRows) readRow(dest []driver.Value) error {
 
 	// EOF Packet
 	if data[0] == iEOF && len(data) == 5 {
+		rows.mc = nil
 		return io.EOF
+	}
+	if data[0] == iERR {
+		rows.mc = nil
+		return mc.handleErrorPacket(data)
 	}
 
 	// RowSet Packet
@@ -958,6 +1014,7 @@ func (rows *binaryRows) readRow(dest []driver.Value) error {
 
 	// packet indicator [1 byte]
 	if data[0] != iOK {
+		rows.mc = nil
 		// EOF Packet
 		if data[0] == iEOF && len(data) == 5 {
 			return io.EOF

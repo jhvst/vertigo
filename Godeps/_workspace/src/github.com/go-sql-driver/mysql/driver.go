@@ -72,7 +72,9 @@ func (d MySQLDriver) Open(dsn string) (driver.Conn, error) {
 	// Enable TCP Keepalives on TCP connections
 	if tc, ok := mc.netConn.(*net.TCPConn); ok {
 		if err := tc.SetKeepAlive(true); err != nil {
-			mc.Close()
+			// Don't send COM_QUIT before handshake.
+			mc.netConn.Close()
+			mc.netConn = nil
 			return nil, err
 		}
 	}
@@ -98,6 +100,15 @@ func (d MySQLDriver) Open(dsn string) (driver.Conn, error) {
 		// Retry with old authentication method, if allowed
 		if mc.cfg != nil && mc.cfg.allowOldPasswords && err == ErrOldPassword {
 			if err = mc.writeOldAuthPacket(cipher); err != nil {
+				mc.Close()
+				return nil, err
+			}
+			if err = mc.readResultOK(); err != nil {
+				mc.Close()
+				return nil, err
+			}
+		} else if mc.cfg != nil && mc.cfg.allowCleartextPasswords && err == ErrCleartextPassword {
+			if err = mc.writeClearAuthPacket(); err != nil {
 				mc.Close()
 				return nil, err
 			}

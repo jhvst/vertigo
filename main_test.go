@@ -13,10 +13,10 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
-	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/databases/sqlx"
 	. "github.com/9uuso/vertigo/settings"
 
+	"github.com/9uuso/excerpt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/russross/blackfriday"
 	slug "github.com/shurcooL/sanitized_anchor_name"
@@ -433,8 +433,6 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
 		json.Unmarshal(recorder.Body.Bytes(), &post)
-		fmt.Println(post)
-		fmt.Println(p)
 		So(post.ID, ShouldEqual, p.ID)
 		So(post.Title, ShouldEqual, p.Title)
 		So(post.Content, ShouldEqual, p.Content)
@@ -443,7 +441,7 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 		So(post.Author, ShouldEqual, p.Author)
 		So(post.Created, ShouldBeGreaterThan, int64(1400000000))
 		if post.Updated != post.Created {
-			So(post.Updated, ShouldBeGreaterThan, post.Created)
+			So(post.Updated, ShouldAlmostEqual, post.Created, 5)
 		}
 		So(post.Excerpt, ShouldEqual, p.Excerpt)
 		So(post.Viewcount, ShouldEqual, p.Viewcount)
@@ -459,10 +457,22 @@ func TestReadPost(t *testing.T) {
 			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s", post.Slug), nil)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
-			var returnedPost Post
-			json.Unmarshal(recorder.Body.Bytes(), &returnedPost)
-			So(post, ShouldResemble, returnedPost)
-			post.Viewcount = uint(post.Viewcount + 1)
+			var p Post
+			json.Unmarshal(recorder.Body.Bytes(), &p)
+			So(post.ID, ShouldEqual, p.ID)
+			So(post.Title, ShouldEqual, p.Title)
+			So(post.Content, ShouldEqual, p.Content)
+			So(post.Markdown, ShouldEqual, p.Markdown)
+			So(post.Slug, ShouldEqual, p.Slug)
+			So(post.Author, ShouldEqual, p.Author)
+			So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+			if post.Updated != post.Created {
+				So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+			}
+			So(post.Excerpt, ShouldEqual, p.Excerpt)
+			So(post.Viewcount, ShouldEqual, p.Viewcount)
+			post.Viewcount += 1
+			time.Sleep(1 * time.Second)
 		})
 	})
 
@@ -473,7 +483,8 @@ func TestReadPost(t *testing.T) {
 			request, _ := http.NewRequest("GET", fmt.Sprintf("/post/%s", post.Slug), nil)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
-			post.Viewcount = uint(post.Viewcount + 1)
+			post.Viewcount += 1
+			time.Sleep(1 * time.Second)
 		})
 	})
 }
@@ -568,9 +579,20 @@ func TestPostListing(t *testing.T) {
 			So(recorder.Code, ShouldEqual, 200)
 			var posts []Post
 			json.Unmarshal(recorder.Body.Bytes(), &posts)
-			for i, returnedPost := range posts {
+			for i, p := range posts {
 				So(i, ShouldEqual, 0)
-				So(returnedPost, ShouldResemble, post)
+				So(post.ID, ShouldEqual, p.ID)
+				So(post.Title, ShouldEqual, p.Title)
+				So(post.Content, ShouldEqual, p.Content)
+				So(post.Markdown, ShouldEqual, p.Markdown)
+				So(post.Slug, ShouldEqual, p.Slug)
+				So(post.Author, ShouldEqual, p.Author)
+				So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+				if post.Updated != post.Created {
+					So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+				}
+				So(post.Excerpt, ShouldEqual, p.Excerpt)
+				So(post.Viewcount, ShouldEqual, p.Viewcount)
 			}
 		})
 	})
@@ -583,7 +605,7 @@ func TestPostListing(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("article h1").Text()
+			sel := doc.Find("article .title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 	})
@@ -604,7 +626,19 @@ func TestPostOwner(t *testing.T) {
 			So(u.ID, ShouldEqual, user.ID)
 			So(u.Name, ShouldEqual, user.Name)
 			So(u.Email, ShouldEqual, user.Email)
-			So(u.Posts[0], ShouldResemble, post)
+			p := u.Posts[0]
+			So(post.ID, ShouldEqual, p.ID)
+			So(post.Title, ShouldEqual, p.Title)
+			So(post.Content, ShouldEqual, p.Content)
+			So(post.Markdown, ShouldEqual, p.Markdown)
+			So(post.Slug, ShouldEqual, p.Slug)
+			So(post.Author, ShouldEqual, p.Author)
+			So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+			if post.Updated != post.Created {
+				So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+			}
+			So(post.Excerpt, ShouldEqual, p.Excerpt)
+			So(post.Viewcount, ShouldEqual, p.Viewcount)
 		})
 	})
 }
@@ -673,22 +707,53 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 		request.Header.Set("Content-Type", "application/json")
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
-		var returnedPost Post
-		json.Unmarshal(recorder.Body.Bytes(), &returnedPost)
-		post.Slug = returnedPost.Slug
-		So(post, ShouldResemble, returnedPost)
+		var p Post
+		json.Unmarshal(recorder.Body.Bytes(), &p)
+		post.Slug = p.Slug
+		So(post.ID, ShouldEqual, p.ID)
+		So(post.Title, ShouldEqual, p.Title)
+		So(post.Content, ShouldEqual, p.Content)
+		So(post.Markdown, ShouldEqual, p.Markdown)
+		So(post.Slug, ShouldEqual, p.Slug)
+		So(post.Author, ShouldEqual, p.Author)
+		So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+		if post.Updated != post.Created {
+			So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+		}
+		So(post.Excerpt, ShouldEqual, p.Excerpt)
+		So(post.Viewcount, ShouldEqual, p.Viewcount)
 	})
 }
 
 func TestPostAfterUpdating(t *testing.T) {
 
-	Convey("the post should be displayed on frontpage", t, func() {
+	Convey("the post should not be displayed on frontpage", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/", nil)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
 		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
 		sel := doc.Find("article h1").Text()
+		So(sel, ShouldBeEmpty)
+	})
+
+	Convey("update should return HTTP 200", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
+		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request.AddCookie(cookie)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Body.String(), ShouldEqual, `{"success":"Post published"}`)
+		So(recorder.Code, ShouldEqual, 200)
+	})
+
+	Convey("after updating, post should be displayed on frontpage", t, func() {
+		var recorder = httptest.NewRecorder()
+		request, _ := http.NewRequest("GET", "/", nil)
+		server.ServeHTTP(recorder, request)
+		So(recorder.Code, ShouldEqual, 200)
+		doc, _ := goquery.NewDocumentFromReader(recorder.Body)
+		sel := doc.Find("article .title").Text()
 		So(sel, ShouldEqual, post.Title)
 	})
 
@@ -699,9 +764,19 @@ func TestPostAfterUpdating(t *testing.T) {
 		So(recorder.Code, ShouldEqual, 200)
 		var posts []Post
 		json.Unmarshal(recorder.Body.Bytes(), &posts)
-		for i, returnedPost := range posts {
+		for i, p := range posts {
 			So(i, ShouldEqual, 0)
-			So(returnedPost, ShouldResemble, post)
+			So(post.ID, ShouldEqual, p.ID)
+			So(post.Title, ShouldEqual, p.Title)
+			So(post.Content, ShouldEqual, p.Content)
+			So(post.Markdown, ShouldEqual, p.Markdown)
+			So(post.Slug, ShouldEqual, p.Slug)
+			So(post.Author, ShouldEqual, p.Author)
+			So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+			if post.Updated != post.Created {
+				So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+			}
+			So(post.Excerpt, ShouldEqual, p.Excerpt)
 		}
 	})
 }
@@ -727,20 +802,15 @@ func testCreatePost(t *testing.T, owner int64, title string, markdown string) {
 	p.ID = post.ID + 1
 	p.Title = title
 	p.Markdown = markdown
-	fmt.Println("markdown", markdown)
 	p.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
-	fmt.Println("content", p.Content)
 	p.Slug = slug.Create(p.Title)
 	p.Author = u.ID
-	p.Excerpt = Excerpt(p.Content)
+	p.Excerpt = excerpt.Make(p.Content, 15)
 	p.Viewcount = 0
-
 	payload, err := json.Marshal(p)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(string(payload))
-
 	testCreatePostRequest(t, payload, p)
 }
 
@@ -760,7 +830,7 @@ func testUpdatePost(t *testing.T, title string, markdown string) {
 	post.Title = p.Title
 	post.Content = string(blackfriday.MarkdownCommon([]byte(markdown)))
 	post.Markdown = markdown
-	post.Excerpt = Excerpt(p.Content)
+	post.Excerpt = excerpt.Make(p.Content, 15)
 
 	testUpdatePostAPI(t, apiPayload)
 
@@ -773,7 +843,7 @@ func testUpdatePost(t *testing.T, title string, markdown string) {
 	// save changes to global object for further testing comparison
 	post.Title = p2.Get("title")
 	post.Markdown = p2.Get("markdown")
-	post.Excerpt = Excerpt(post.Content)
+	post.Excerpt = excerpt.Make(post.Content, 15)
 
 	testUpdatePostFrontend(t, frontendPayload)
 	TestReadPost(t)
@@ -850,7 +920,10 @@ func TestDeletePost(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			So(recorder.Body.String(), ShouldEqual, `{"success":"Post deleted"}`)
-			post.ID--
+			if *Driver == "sqlite3" {
+				// SQLite's re-assigns ID if one is removed
+				post.ID--
+			}
 		})
 	})
 
@@ -1039,7 +1112,18 @@ func TestSearch(t *testing.T) {
 			json.Unmarshal(recorder.Body.Bytes(), &posts)
 			for i, p := range posts {
 				So(i, ShouldEqual, 0)
-				So(p, ShouldResemble, post)
+				So(post.ID, ShouldEqual, p.ID)
+				So(post.Title, ShouldEqual, p.Title)
+				So(post.Content, ShouldEqual, p.Content)
+				So(post.Markdown, ShouldEqual, p.Markdown)
+				So(post.Slug, ShouldEqual, p.Slug)
+				So(post.Author, ShouldEqual, p.Author)
+				So(post.Created, ShouldBeGreaterThan, int64(1400000000))
+				if post.Updated != post.Created {
+					So(post.Updated, ShouldAlmostEqual, post.Created, 5)
+				}
+				So(post.Excerpt, ShouldEqual, p.Excerpt)
+				So(post.Viewcount, ShouldEqual, p.Viewcount)
 			}
 		})
 
@@ -1062,7 +1146,7 @@ func TestSearch(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("h1").Text()
+			sel := doc.Find(".title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 
@@ -1073,7 +1157,7 @@ func TestSearch(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			doc, _ := goquery.NewDocumentFromReader(recorder.Body)
-			sel := doc.Find("h1").Text()
+			sel := doc.Find(".title").Text()
 			So(sel, ShouldEqual, post.Title)
 		})
 
@@ -1134,7 +1218,7 @@ func TestPasswordRecovery(t *testing.T) {
 
 		Convey("should return 200 with latest user email", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/user/recover", strings.NewReader(fmt.Sprintf(`email=%s`, user.Email)))
+			request, _ := http.NewRequest("POST", "/api/user/recover", strings.NewReader(fmt.Sprintf(`{"email": "%s"}`, user.Email)))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1150,9 +1234,9 @@ func testShouldRecoveryFieldBeBlank(t *testing.T, value bool) {
 	Convey("the latest user should have recovery key defined", t, func() {
 		user, _ = user.GetByEmail()
 		if value == false {
-			So(user.Recovery, ShouldNotBeBlank)
+			So(strings.TrimSpace(user.Recovery), ShouldNotBeBlank)
 		} else {
-			So(user.Recovery, ShouldEqual, " ")
+			So(strings.TrimSpace(user.Recovery), ShouldEqual, "")
 		}
 		recovery = user.Recovery
 	})
@@ -1182,7 +1266,7 @@ func TestPasswordReset(t *testing.T) {
 
 		Convey("should return 400 when user with given ID does not exist", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", fmt.Sprintf(`/user/reset/%d/%s`, user.ID+1, user.Recovery), strings.NewReader(`password=newpassword`))
+			request, _ := http.NewRequest("POST", fmt.Sprintf(`/user/reset/%d/%s`, 7, recovery), strings.NewReader(`password=newpassword`))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 400)
@@ -1194,7 +1278,7 @@ func TestPasswordReset(t *testing.T) {
 
 		Convey("should return 200 with valid information", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", fmt.Sprintf(`/api/user/reset/%d/%s`, user.ID, user.Recovery), strings.NewReader(`{"password":"newpassword"}`))
+			request, _ := http.NewRequest("POST", fmt.Sprintf(`/api/user/reset/%d/%s`, user.ID, recovery), strings.NewReader(`{"password":"newpassword"}`))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1212,7 +1296,7 @@ func TestRecoveryKeyExpiration(t *testing.T) {
 
 		Convey("should redirect to login page with notification", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(fmt.Sprintf(`email=vertigo-test@mailinator.com`, user.Email)))
+			request, _ := http.NewRequest("POST", "/user/recover", strings.NewReader(fmt.Sprintf(`email=%s`, user.Email)))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 302)
@@ -1229,7 +1313,7 @@ func TestRecoveryKeyExpiration(t *testing.T) {
 		time.Sleep(2 * time.Second)
 
 		u, _ = user.Get()
-		So(u.Recovery, ShouldEqual, " ")
+		So(strings.TrimSpace(u.Recovery), ShouldEqual, "")
 	})
 }
 
@@ -1291,6 +1375,5 @@ func TestPostSecurity(t *testing.T) {
 }
 
 func TestDropDatabase(t *testing.T) {
-	os.Remove("settings.json")
-	os.Remove("vertigo.db")
+	Drop()
 }

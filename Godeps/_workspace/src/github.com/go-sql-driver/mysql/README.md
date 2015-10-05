@@ -38,9 +38,10 @@ A MySQL-Driver for Go's [database/sql](http://golang.org/pkg/database/sql) packa
   * Intelligent `LONG DATA` handling in prepared statements
   * Secure `LOAD DATA LOCAL INFILE` support with file Whitelisting and `io.Reader` support
   * Optional `time.Time` parsing
+  * Optional placeholder interpolation
 
 ## Requirements
-  * Go 1.1 or higher
+  * Go 1.2 or higher
   * MySQL (4.1+), MariaDB, Percona Server, Google CloudSQL or Sphinx (2.2.3+)
 
 ---------------------------------------
@@ -122,6 +123,16 @@ Default:        false
 `allowAllFiles=true` disables the file Whitelist for `LOAD DATA LOCAL INFILE` and allows *all* files.
 [*Might be insecure!*](http://dev.mysql.com/doc/refman/5.7/en/load-data-local.html)
 
+##### `allowCleartextPasswords`
+
+```
+Type:           bool
+Valid Values:   true, false
+Default:        false
+```
+
+`allowCleartextPasswords=true` allows using the [cleartext client side plugin](http://dev.mysql.com/doc/en/cleartext-authentication-plugin.html) if required by an account, such as one defined with the [PAM authentication plugin](http://dev.mysql.com/doc/en/pam-authentication-plugin.html). Sending passwords in clear text may be a security problem in some configurations. To avoid problems if there is any possibility that the password would be intercepted, clients should connect to MySQL Server using a method that protects the password. Possibilities include [TLS / SSL](#tls), IPsec, or a private network.
+
 ##### `allowOldPasswords`
 
 ```
@@ -166,6 +177,33 @@ Default:        false
 
 `clientFoundRows=true` causes an UPDATE to return the number of matching rows instead of the number of rows changed.
 
+##### `columnsWithAlias`
+
+```
+Type:           bool
+Valid Values:   true, false
+Default:        false
+```
+
+When `columnsWithAlias` is true, calls to `sql.Rows.Columns()` will return the table alias and the column name separated by a dot. For example:
+
+```
+SELECT u.id FROM users as u
+```
+
+will return `u.id` instead of just `id` if `columnsWithAlias=true`.
+
+##### `interpolateParams`
+
+```
+Type:           bool
+Valid Values:   true, false
+Default:        false
+```
+
+If `interpolateParams` is true, placeholders (`?`) in calls to `db.Query()` and `db.Exec()` are interpolated into a single query string with given parameters. This reduces the number of roundtrips, since the driver has to prepare a statement, execute it with given parameters and close the statement again with `interpolateParams=false`.
+
+*This can not be used together with the multibyte encodings BIG5, CP932, GB2312, GBK or SJIS. These are blacklisted as they may [introduce a SQL injection vulnerability](http://stackoverflow.com/a/12118602/3430118)!*
 
 ##### `loc`
 
@@ -176,6 +214,8 @@ Default:        UTC
 ```
 
 Sets the location for time.Time values (when using `parseTime=true`). *"Local"* sets the system's location. See [time.LoadLocation](http://golang.org/pkg/time/#LoadLocation) for details.
+
+Note that this sets the location for time.Time values but does not change MySQL's [time_zone setting](https://dev.mysql.com/doc/refman/5.5/en/time-zone-support.html). For that see the [time_zone system variable](#system-variables), which can also be set as a DSN parameter.
 
 Please keep in mind, that param values must be [url.QueryEscape](http://golang.org/pkg/net/url/#QueryEscape)'ed. Alternatively you can manually replace the `/` with `%2F`. For example `US/Pacific` would be `loc=US%2FPacific`.
 
@@ -229,7 +269,7 @@ Default:        false
 
 All other parameters are interpreted as system variables:
   * `autocommit`: `"SET autocommit=<value>"`
-  * `time_zone`: `"SET time_zone=<value>"`
+  * [`time_zone`](https://dev.mysql.com/doc/refman/5.5/en/time-zone-support.html): `"SET time_zone=<value>"`
   * [`tx_isolation`](https://dev.mysql.com/doc/refman/5.5/en/server-system-variables.html#sysvar_tx_isolation): `"SET tx_isolation=<value>"`
   * `param`: `"SET <param>=<value>"`
 

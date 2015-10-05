@@ -1,23 +1,22 @@
+<form class="search" method="post" action="/post/search">
+	<fieldset class="search">
+		<legend>Search from posts</legend>
+		<input name="query" type="search" spellcheck="false" required="required" placeholder="Q">
+	</fieldset>
+</form>
+<section role="posts">
 {{range .}}
 {{if .Published}}
 <article>
-	<h1><a href="/post/{{.Slug}}">{{.Title}}</a></h1>
-	<p>{{unescape .Excerpt}} [...]</p>
-	<a href="/post/{{.Slug}}">Read more »</a>
+	<span role="shortdate">{{shortdate .Created .TimeOffset}}</span>
+	<a class="title" href="/post/{{.Slug}}">{{.Title}}</a>
+	<span role="align-right">{{.Viewcount}}</span>
 </article>
 {{end}}
 {{end}}
-<hr>
-<a href="/user/login">Log in</a>
-<a href="/user/register">Register</a>
-<hr>
-<a href="/api">JSON API</a>
-<hr>
-<a href="/rss">RSS</a>
-<hr>
-<form class="search" method="post" action="/post/search">
-	<fieldset class="search">
-		<legend>Search for posts</legend>
-		<input name="query" type="search" spellcheck="false" required="required" placeholder="Search ...">
-	</fieldset>
-</form>
+</section>
+<p>
+	<span>Homebrewed with <a href="https://github.com/9uuso/vertigo">Vertigo</a></span>
+	<span role="align-right"><a href="/user/login">User CP</a></span>
+	<span role="align-right"><a href="/api">API</a></span>
+</p>

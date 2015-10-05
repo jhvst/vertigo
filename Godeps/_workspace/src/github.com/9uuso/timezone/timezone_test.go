@@ -1,9 +1,12 @@
 package timezone
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 var validCodes = []Timezone{
-	{"Europe/Helsinki", "FI"},
+	{"Europe/Helsinki", "FI", "Finland"},
 }
 
 func TestCode(t *testing.T) {
@@ -37,6 +40,11 @@ func TestValidLocation(t *testing.T) {
 	}
 }
 
+func ExampleValidLocation() {
+	fmt.Println(ValidLocation("Europe/Helsinki"))
+	// Output: true
+}
+
 var invalidLocations = []string{
 	"Europe/Oulu",
 	"FI",
@@ -47,5 +55,43 @@ func TestInvalidLocation(t *testing.T) {
 		if ValidLocation(loc) {
 			t.Errorf("%s should not have been valid location", loc)
 		}
+	}
+}
+
+var expectedOffsets = []int{
+	10800,
+}
+
+func TestOffset(t *testing.T) {
+	for i, expectedOffset := range expectedOffsets {
+		zone, offset, err := Offset(validLocations[i])
+		if zone != "EEST" {
+			t.Errorf("zone of %s should have been %s", validLocations[i], zone)
+		}
+		if expectedOffset != offset {
+			t.Errorf("offset of %s should have been %s", validLocations[i], offset)
+		}
+		if err != nil {
+			t.Errorf("running Offset of %s should not return error, but returned %s", validLocations[i], err)
+		}
+	}
+}
+
+func ExampleOffset() {
+	zone, offset, _ := Offset("Europe/Helsinki")
+	fmt.Println(zone, offset)
+	// Output: EEST 10800
+}
+
+func TestCountry(t *testing.T) {
+	z, _ := Country("Finland")
+	if len(z) != 1 {
+		t.Errorf("expected length of Finland to be 1, got %d", len(z))
+	}
+	if z[0].Code != "FI" {
+		t.Errorf("country code of Finland should have been FI, got %s", z[0].Code)
+	}
+	if z[0].Location != "Europe/Helsinki" {
+		t.Errorf("location of Finland should have been Europe/Helsinki, got %s", z[0].Location)
 	}
 }

@@ -1,73 +1,24 @@
 package main
 
 import (
-	"html/template"
-	"os"
-	"runtime"
+	"net/http"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/gorm"
+	. "github.com/9uuso/vertigo/databases/sqlx"
 	. "github.com/9uuso/vertigo/misc"
 	. "github.com/9uuso/vertigo/routes"
 	. "github.com/9uuso/vertigo/settings"
 
-	"github.com/9uuso/timezone"
+	"github.com/9uuso/vertigo/render"
+
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
-	"github.com/martini-contrib/render"
 	"github.com/martini-contrib/sessions"
 	"github.com/martini-contrib/strict"
 )
 
-func init() {
-	runtime.GOMAXPROCS(runtime.NumCPU()) // defining gomaxprocs is proven to add performance by few percentages
-}
-
 // NewServer spaws a new Vertigo server
 func NewServer() *martini.ClassicMartini {
-
-	helpers := template.FuncMap{
-		// unescape unescapes HTML of s.
-		// Used in templates such as "/post/display.tmpl"
-		"unescape": func(s string) template.HTML {
-			return template.HTML(s)
-		},
-		// title renders post's Title as the HTML document's title.
-		"title": func(t interface{}) string {
-			post, exists := t.(Post)
-			if exists {
-				return post.Title
-			}
-			return Settings.Name
-		},
-		// description renders page description.
-		// If none is defined, returns "Blog in Go" instead.
-		"description": func() string {
-			if Settings.Description == "" {
-				return "Blog in Go"
-			}
-			return Settings.Description
-		},
-		// updated checks if post has been updated.
-		"updated": func(p Post) bool {
-			if p.Updated > p.Created {
-				return true
-			}
-			return false
-		},
-		// date calculates unix date from d and offset in format: Monday, January 2, 2006 3:04PM (-0700 GMT)
-		"date": func(d int64, offset int) string {
-			return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Monday, January 2, 2006 3:04PM (-0700 GMT)")
-		},
-		// env returns environment variable of s.
-		"env": func(s string) string {
-			return os.Getenv(s)
-		},
-		// timezones returns all 416 valid IANA timezone locations.
-		"timezones": func() [416]timezone.Timezone {
-			return timezone.Locations
-		},
-	}
 
 	m := martini.Classic()
 	store := sessions.NewCookieStore([]byte(Settings.CookieHash))
@@ -81,10 +32,6 @@ func NewServer() *martini.ClassicMartini {
 			return time.Now().Add(time.Hour * 168).UTC().Format("Mon, Jan 2 2006 15:04:05 GMT")
 		},
 	}))
-	m.Use(render.Renderer(render.Options{
-		Layout: "layout",
-		Funcs:  []template.FuncMap{helpers}, // Specify helper function maps for templates to access.
-	}))
 
 	m.Get("/", Homepage)
 
@@ -95,8 +42,8 @@ func NewServer() *martini.ClassicMartini {
 		// Please note that `/new` route has to be before the `/:slug` route. Otherwise the program will try
 		// to fetch for Post named "new".
 		// For now I'll keep it this way to streamline route naming.
-		r.Get("/new", ProtectedPage, func(res render.Render) {
-			res.HTML(200, "post/new", nil)
+		r.Get("/new", ProtectedPage, func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "post/new", nil)
 		})
 		r.Get("/:slug", ReadPost)
 		r.Get("/:slug/edit", ProtectedPage, EditPost)
@@ -119,22 +66,22 @@ func NewServer() *martini.ClassicMartini {
 
 		r.Post("/installation", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(Vertigo{}), binding.ErrorHandler, UpdateSettings)
 
-		r.Get("/register", SessionRedirect, func(res render.Render) {
-			res.HTML(200, "user/register", nil)
+		r.Get("/register", SessionRedirect, func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "user/register", nil)
 		})
 		r.Post("/register", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), binding.ErrorHandler, CreateUser)
 
-		r.Get("/recover", SessionRedirect, func(res render.Render) {
-			res.HTML(200, "user/recover", nil)
+		r.Get("/recover", SessionRedirect, func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "user/recover", nil)
 		})
 		r.Post("/recover", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), RecoverUser)
-		r.Get("/reset/:id/:recovery", SessionRedirect, func(res render.Render) {
-			res.HTML(200, "user/reset", nil)
+		r.Get("/reset/:id/:recovery", SessionRedirect, func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "user/reset", nil)
 		})
 		r.Post("/reset/:id/:recovery", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), ResetUserPassword)
 
-		r.Get("/login", SessionRedirect, func(res render.Render) {
-			res.HTML(200, "user/login", nil)
+		r.Get("/login", SessionRedirect, func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "user/login", nil)
 		})
 		r.Post("/login", strict.ContentType("application/x-www-form-urlencoded"), binding.Form(User{}), LoginUser)
 		r.Get("/logout", LogoutUser)
@@ -143,8 +90,8 @@ func NewServer() *martini.ClassicMartini {
 
 	m.Group("/api", func(r martini.Router) {
 
-		r.Get("", func(res render.Render) {
-			res.HTML(200, "api/index", nil)
+		r.Get("", func(w http.ResponseWriter) {
+			render.R.HTML(w, 200, "api/index", nil)
 		})
 		r.Get("/settings", ProtectedPage, ReadSettings)
 		r.Post("/settings", strict.ContentType("application/json"), binding.Json(Vertigo{}), binding.ErrorHandler, ProtectedPage, UpdateSettings)
@@ -155,7 +102,7 @@ func NewServer() *martini.ClassicMartini {
 		//r.Delete("/user", DeleteUser)
 		r.Post("/user", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, CreateUser)
 		r.Post("/user/login", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, LoginUser)
-		r.Post("/user/recover", strict.ContentType("application/json"), binding.Json(User{}), RecoverUser)
+		r.Post("/user/recover", strict.ContentType("application/json"), binding.Json(User{}), binding.ErrorHandler, RecoverUser)
 		r.Post("/user/reset/:id/:recovery", strict.ContentType("application/json"), binding.Json(User{}), ResetUserPassword)
 
 		r.Get("/posts", ReadPosts)
@@ -170,8 +117,8 @@ func NewServer() *martini.ClassicMartini {
 
 	})
 
-	m.Router.NotFound(strict.MethodNotAllowed, func(res render.Render) {
-		res.HTML(404, "404", nil)
+	m.Router.NotFound(strict.MethodNotAllowed, func(w http.ResponseWriter) {
+		render.R.HTML(w, 404, "404", nil)
 	})
 
 	return m

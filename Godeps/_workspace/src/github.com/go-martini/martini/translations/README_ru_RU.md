@@ -62,7 +62,7 @@ GoDoc [документация](http://godoc.org/github.com/go-martini/martini)
   * [Роутинг](#%D0%A0%D0%BE%D1%83%D1%82%D0%B8%D0%BD%D0%B3)
   * [Сервисы](#%D0%A1%D0%B5%D1%80%D0%B2%D0%B8%D1%81%D1%8B)
   * [Отдача статических файлов](#%D0%9E%D1%82%D0%B4%D0%B0%D1%87%D0%B0-%D1%81%D1%82%D0%B0%D1%82%D0%B8%D1%87%D0%B5%D1%81%D0%BA%D0%B8%D1%85-%D1%84%D0%B0%D0%B9%D0%BB%D0%BE%D0%B2)
-* [Middleware обработчики](#middleware-%D0%9E%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA%D0%B8) 
+* [Middleware обработчики](#middleware-%D0%9E%D0%B1%D1%80%D0%B0%D0%B1%D0%BE%D1%82%D1%87%D0%B8%D0%BA%D0%B8)
   * [Next()](#next)
 * [Окружение](#%D0%9E%D0%BA%D1%80%D1%83%D0%B6%D0%B5%D0%BD%D0%B8%D0%B5)
 * [FAQ](#faq)
@@ -91,7 +91,7 @@ m.Get("/", func() {
 ~~~
 
 #### Возвращаемые значения
-Если обработчик возвращает что либо, Martini запишет это как результат в текущий [http.ResponseWriter](http://godoc.org/net/http#ResponseWriter), в виде строки: 
+Если обработчик возвращает что либо, Martini запишет это как результат в текущий [http.ResponseWriter](http://godoc.org/net/http#ResponseWriter), в виде строки:
 ~~~ go
 m.Get("/", func() string {
   return "hello world" // HTTP 200 : "hello world"
@@ -115,7 +115,7 @@ m.Get("/", func(res http.ResponseWriter, req *http.Request) { // res и req бу
 })
 ~~~
 
-Следующие сервисы включены в [martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic): 
+Следующие сервисы включены в [martini.Classic()](http://godoc.org/github.com/go-martini/martini#Classic):
 
   * [*log.Logger](http://godoc.org/log#Logger) - Глобальный логгер для Martini.
   * [martini.Context](http://godoc.org/github.com/go-martini/martini#Context) - http request контекст.
@@ -331,19 +331,19 @@ func init() {
 ### Как изменить порт и/или хост?
 Функция `Run` смотрит переменные окружиения PORT и HOST, и использует их.
 В противном случае Martini по умолчанию будет использовать `localhost:3000`.
-Для большей гибкости используйте вместо этого функцию `http.ListenAndServe`.
+Для большей гибкости используйте вместо этого функцию `martini.RunOnAddr`.
 
 ~~~ go
   m := martini.Classic()
   // ...
-  log.Fatal(http.ListenAndServe(":8080", m))
+  log.Fatal(m.RunOnAddr(":8080"))
 ~~~
 
 ### Живая перезагрузка кода?
 
 [gin](https://github.com/codegangsta/gin) и [fresh](https://github.com/pilu/fresh) могут работать вместе с Martini.
 
-## Вклад в общее дело
+## Вклад в обшее дело
 
 Подразумевается что Martini чистый и маленький. Большинство улучшений должны быть в организации [martini-contrib](https://github.com/martini-contrib). Но если вы хотите улучшить ядро Martini, отправляйте пулл реквесты.
 
