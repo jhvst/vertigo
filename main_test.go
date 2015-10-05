@@ -472,6 +472,7 @@ func TestReadPost(t *testing.T) {
 			So(post.Excerpt, ShouldEqual, p.Excerpt)
 			So(post.Viewcount, ShouldEqual, p.Viewcount)
 			post.Viewcount += 1
+			time.Sleep(1 * time.Second)
 		})
 	})
 
@@ -483,6 +484,7 @@ func TestReadPost(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			post.Viewcount += 1
+			time.Sleep(1 * time.Second)
 		})
 	})
 }
