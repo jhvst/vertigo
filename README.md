@@ -4,13 +4,15 @@ vertigo
 [![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git) [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.svg)](https://godoc.org/github.com/9uuso/vertigo)
 [![Join Gitter Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg?style=flat)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
+![Vertigo](http://i.imgur.com/MiMlTL9.gifv)
 
-Vertigo is blogging platform similar to [Ghost](https://ghost.org), [Medium](https://medium.com) or [Tumblr](https://www.tumblr.com). What makes Vertigo different is that it has JSON API for reading and writing data and it is written in Go. Therefore, Vertigo is not only fast, but can be run using single binary on all major operating systems like Windows, Linux and MacOSX without the language development tools.
+Vertigo is a yet another Markdown blog engine in Go, but with JSON API. Vertigo is also quite fast and can be run using single binary on all major operating systems like Windows, Linux and MacOSX when using SQLite as database.
 
-The frontend code is powered by Go's `template/html` package, which syntax is similar to Mustache.js. The template files are in plain HTML and JavaScript (vanilla) only appears on few pages. JavaScript in general is aimed to be stripped down as much as possible to provide a better user experience on different devices. Vertigo also ships without any CSS frameworks, so it is easy to start customizing the frontend with the framework of your choice.
+The frontend code is powered by Go's `template/html` package and [is relatively simple to use](https://github.com/9uuso/vertigo/blob/master/templates/post/display.tmpl). The template files are in plain HTML and JavaScript (vanilla) only appears on few pages. Disabling JavaScript does not break Vertigo. JavaScript is in general tried to be avoided to provide a better user experience on different devices.
 
-Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top of Vertigo. This means that you can create users, submit posts and read data without writing a single line of Go code. So basically, one could write a SPA application on top of Vertigo just by using JavaScript. Whether you want to take that path or just edit the HTML template files found in `/templates/` is up to you.
+Vertigo ships without CSS frameworks, so it's easy to start customizing the frontend with tools of your choice.
+
+With JSON API it's also easy to add your preferred JavaScript MVC on top of Vertigo. The API is fully featured, so one could write a single page application on top of Vertigo just by using JavaScript. Whether you want to take that path or just edit the HTML template files found in `/templates/` is up to you.
 
 ##Features
 
@@ -30,7 +32,7 @@ See [my personal website](http://www.juusohaavisto.com/)
 
 ##Installation
 
-Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
+Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable.
 
 ###Gitdeploy
 
@@ -65,7 +67,18 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 * `SMTP_PASSWORD` - Password for the mailbox defined with SMTP_LOGIN
 * `SMTP_PORT` - SMTP port which to use to send email. Defaults to 587.
 * `SMTP_SERVER` - SMTP server hostname or IP address. Example: smtp.example.org
-* `DATABASE_URL` - database connection URL for PostgreSQL - if empty, SQLite will be used
+
+##Using SQLite
+
+Using SQLite as database is simple and requires no additional parameters. You can run SQLite as so:
+
+`PORT="80" MARTINI_ENV="production" ./vertigo`
+
+##Using Postgres
+
+To use Postgres you have to pass two flags, `driver` and `source`. The driver should be always `postgres` and the `source` should be the [connection URL](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING). For example:
+
+`PORT="80" MARTINI_ENV="production" ./vertigo -driver=postgres -source=examplesource@cloudhosting.com`
 
 ##Contribute
 
