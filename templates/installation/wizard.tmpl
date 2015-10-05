@@ -2,26 +2,28 @@
 <form method="post" action="/user/installation">
 	<fieldset>
 
-		<label>Hostname</label>
-		<p>The URL used to generate RSS and Atom links and any emails that link back to your site. This should be the absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
+		<p>Fields with * are required.</p>
+
+		<label>Hostname*</label>
+		<p>Used in RSS feeds and any emails that link back to your site. It should be absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
 		<input type="url" name="hostname" placeholder="http://example.com" required="required">
 
 		<br><br>
 
-		<label>Blog name</label>
-		<p>This is the text people see on their browser tabs when visiting your homepage.</p>
+		<label>Blog name*</label>
+		<p>Displayed on page header and browser tabs.</p>
 		<input name="name" placeholder="Foo's Blog" required="required">
 
 		<br><br>
 
-		<label>Blog description</label>
-		<p>Your beloved site's description. Used in RSS and Atom feeds.</p>
+		<label>Blog description*</label>
+		<p>Your beloved site's description. Used on page header, meta data and RSS feeds.</p>
 		<input name="description" placeholder="Thoughts about which witch is which" required="required">
 
 		<br><br>
 
 		<h3>SMTP settings</h3>
-		<p>Vertigo can use SMTP to send out password reminders. Though if you think there's no chance you could lose your password, then you don't have to fill these. You can also set these on a later date, provided that you can login to the site or have access to the server root folder.</p>
+		<p>Vertigo can use SMTP to send out password reminders. If you think there's no chance you could lose your password, then you don't have to fill these. You may also set these later, provided that you can login to the site or have access to the server settings file.</p>
 		
 		<label>SMTP Login</label>
 		<p>Address from which you want to send mail from.</p>
@@ -36,7 +38,7 @@
 		<br><br>
 
 		<label>SMTP Port</label>
-		<p>On some occasions this might be 25 instead.</p>
+		<p>Usually 587, but on some occasions it might be 25 instead.</p>
 		<input name="port" value="587" value="{{env "SMTP_PORT"}}">
 
 		<br><br>
