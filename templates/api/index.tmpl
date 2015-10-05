@@ -1,35 +1,40 @@
 <h1>JSON API index</h1>
 <h2>Users</h2>
 
-<pre><code class="go">type User struct {
-	ID       int64  `json:"id" gorm:"primary_key:yes"`
+<pre><code class="go">// User struct holds all relevant data for representing user accounts on Vertigo.
+// A complete User struct also includes Posts field (type []Post) which includes
+// all posts made by the user.
+type User struct {
+	ID       int64  `json:"id"`
 	Name     string `json:"name" form:"name"`
 	Password string `json:"password,omitempty" form:"password" sql:"-"`
 	Recovery string `json:"-"`
 	Digest   []byte `json:"-"`
-	Email    string `json:"email,omitempty" form:"email" binding:"required" sql:"unique"`
+	Email    string `json:"email" form:"email" binding:"required"`
 	Posts    []Post `json:"posts"`
+	Location string `json:"location" form:"location"`
 }
 </code></pre>
 
 <h3><a href="/api/users">GET /api/users</a></h3>
-<p>Displays all users and their data</p>
+<p>Fetch all users and their data</p>
 
 <h3>GET /api/user/:id</h3>
-<p>Displays data of a single user.</p>
+<p>Fetch data of a single user.</p>
 
 <h3>POST /api/user</h3>
-<p>Creates a new user. Required parameters are email and password.</p>
+<p>Creates a new user. Required parameters are email and password. Location is valid <a href="https://github.com/9uuso/timezone/blob/master/locations.go">IANA timezone location.</a></p>
 
 <pre><code class="json">{
 	"name": "Juuso",
 	"password": "foo",
-	"email": "foo@example.com"
+	"email": "foo@example.com",
+	"location": "Europe/Helsinki"
 }
 </code></pre>
 
 <h3>POST /api/user/login</h3>
-<p>Logins a user and if successful, returns session cookie. Required parameters are email and password.</p>
+<p>Logs in a user and if successful, returns session cookie. Required parameters are email and password.</p>
 
 <pre><code class="json">{
 	"email": "foo@example.com",
@@ -44,32 +49,47 @@
 
 <h2>Posts</h2>
 
-<pre><code class="go">type Post struct {
-	ID        int64  `json:"id" gorm:"primary_key:yes"`
-	Title     string `json:"title" form:"title" binding:"required"`
-	Content   string `json:"content" form:"content" sql:"type:text"`
-	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`
-	Date      int64  `json:"date"`
-	Slug      string `json:"slug"`
-	Author    int64  `json:"author"`
-	Excerpt   string `json:"excerpt"`
-	Viewcount uint   `json:"viewcount"`
-	Published bool   `json:"-"`
+<pre><code class="go">// Post struct contains all relevant data when it comes to posts. Most fields
+// are automatically filled when inserting new object into the database.
+// JSON field after type refer to JSON key which martini will use to render data.
+// Form field refers to frontend POST form `name` fields which martini uses to read data from.
+// Binding defines whether the field is required when inserting or updating the object.
+type Post struct {
+	ID         int64  `json:"id"`
+	Title      string `json:"title" form:"title" binding:"required"`
+	Content    string `json:"content"`
+	Markdown   string `json:"markdown" form:"markdown"`
+	Slug       string `json:"slug"`
+	Author     int64  `json:"author"`
+	Excerpt    string `json:"excerpt"`
+	Viewcount  uint   `json:"viewcount"`
+	Published  bool   `json:"-"`
+	Created    int64  `json:"created"`
+	Updated    int64  `json:"updated"`
+	TimeOffset int    `json:"timeoffset"`
 }
 </code></pre>
 
 <h3><a href="/api/posts">GET /api/posts</a></h3>
-<p>Displays all posts</p>
+<p>Fetches all posts</p>
 
 <h3>GET /api/post/:slug</h3>
-<p>Displays a single post</p>
+<p>Fetches a single post</p>
 
 <h3>POST /api/post</h3>
-<p>Creates a new post. Requires active session. Example payload:</p>
+<p>Creates a new post. Requires active session. Unlike on frontend, you can publish posts in raw HTML by passing in content string. However, if you want to edit the content on frontend, you should pass in content in Markdown as well. When posting Markdown, you don't have to encode it into HTML.</p>
+
+<p>The Markdown parser used is <a href="https://github.com/russross/blackfriday">blackfriday</a>.</p>
 
 <pre><code class="json">{
 	"title": "My first post",
 	"content": "This is my first post!"
+}
+</code></pre>
+
+<pre><code class="json">{
+	"title": "My second post",
+	"markdown": "This is my *second* post!"
 }
 </code></pre>
 
@@ -80,9 +100,9 @@
 <p>Updates a post. Requires active session. Required parameters are slug, content and title.</p>
 
 <pre><code class="json">{
-	"slug": "my-first-post",
-	"title": "My first post edited",
-	"content": "This is my first post, edited."
+	"slug": "my-second-post",
+	"title": "My second post edited",
+	"markdown": "This is my *second* post, edited."
 }
 </code></pre>
 
@@ -93,7 +113,9 @@
 
 <h2>Search</h2>
 
-<pre><code class="go">type Search struct {
+<pre><code class="go">// Search struct is basically just a type check to make sure people don't add anything nasty to
+// on-site search queries.
+type Search struct {
 	Query string `json:"query" form:"query" binding:"required"`
 	Score float64
 	Posts []Post
@@ -101,7 +123,7 @@
 </code></pre>
 
 <h3>POST /api/post/search</h3>
-<p>Uses site's search to find posts with given query. Example payload:</p>
+<p>Uses site's search to find posts with given query.</p>
 
 <pre><code class="json">{
 	"query": "first"
@@ -112,7 +134,10 @@
 
 <h2>Settings</h2>
 
-<pre><code class="go">type Vertigo struct {
+<pre><code class="go">// Vertigo struct is used as a site wide settings structure.
+// Firstrun and CookieHash are generated and controlled by the application and should not be
+// rendered or made editable anywhere on the site.
+type Vertigo struct {
 	Name               string  `json:"name" form:"name" binding:"required"`
 	Hostname           string  `json:"hostname" form:"hostname" binding:"required"`
 	URL                url.URL `json:"-,omitempty"`
@@ -122,10 +147,18 @@
 	Description        string  `json:"description" form:"description" binding:"required"`
 	Mailer             SMTP    `json:"smtp"`
 }
+
+// SMTP holds information necessary to send account recovery email.
+type SMTP struct {
+	Login    string `json:"login" form:"login"`
+	Port     int    `json:"port" form:"port"`
+	Password string `json:"password" form:"password"`
+	Hostname string `json:"hostname" form:"smtp-hostname"`
+}
 </code></pre>
 
 <h3><a href="/api/settings">GET /api/settings</a></h3>
-<p>Displays settings given in installation wizard. Requires active session cookie.</p>
+<p>Fetches settings given in installation wizard. Requires active session cookie.</p>
 
 <h3>POST /api/settings</h3>
 <p>Updates the settings with given data. Requires active session cookie.</p>
@@ -133,10 +166,6 @@
 <pre><code class="json">{
 	"hostname": "example.com",
 	"name": "Foo Blog",
-	"description": "Foo's test blog",
-	"mailgun": {
-		"mgdomain": "foo",
-		"mgprikey": "foo"
-	}
+	"description": "Foo's test blog"
 }
 </code></pre>
