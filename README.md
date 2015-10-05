@@ -4,7 +4,7 @@ vertigo
 [![Deploy vertigo via gitdeploy.io](https://img.shields.io/badge/gitdeploy.io-deploy%20vertigo/master-green.svg)](https://www.gitdeploy.io/deploy?repository=https%3A%2F%2Fgithub.com%2F9uuso%2Fvertigo.git) [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.svg)](https://godoc.org/github.com/9uuso/vertigo)
 [![Join Gitter Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg?style=flat)](https://gitter.im/9uuso/vertigo?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-![Vertigo](http://i.imgur.com/MiMlTL9.gifv)
+![Vertigo](http://i.imgur.com/MiMlTL9.gif)
 
 Vertigo is a yet another Markdown blog engine in Go, but with JSON API. Vertigo is also quite fast and can be run using single binary on all major operating systems like Windows, Linux and MacOSX when using SQLite as database.
 
