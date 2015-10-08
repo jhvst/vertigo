@@ -102,6 +102,8 @@ ul[role="post-container"] {
 span[role="shortdate"] {
 	text-transform: uppercase;
 	font-weight: 700;
+	font-family: monospace;
+	margin-right: .5em;
 }
 
 span[role="align-right"] {
