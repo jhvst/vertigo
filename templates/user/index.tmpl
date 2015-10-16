@@ -5,8 +5,8 @@
 <a href="/user/logout">Logout</a>
 {{if .Posts}}
 <h2>Your posts</h2>
-{{range .Posts}}
 <ul role="post-container">
+	{{range .Posts}}
 	<li>
 		<span role="shortdate">{{shortdate .Created .TimeOffset}}</span>
 		<a href="/post/{{.Slug}}">{{.Title}}</a>
@@ -20,8 +20,8 @@
 		{{end}}
 		<span>[views: {{.Viewcount}}]</span>
 	</li>
+	{{end}}
 </ul>
-{{end}}
 {{end}}
 <script type="text/javascript">
 	// NOTICE: If you modify the delete <a> element, you will need to pass the class="delete" and the slug generator onto the new one.

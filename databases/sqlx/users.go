@@ -125,7 +125,7 @@ func (user User) Get() (User, error) {
 		return user, err
 	}
 	var posts []Post
-	stmt, err = db.PrepareNamed("SELECT * FROM posts WHERE author = :id ORDER BY created")
+	stmt, err = db.PrepareNamed("SELECT * FROM posts WHERE author = :id ORDER BY created DESC")
 	if err != nil {
 		return user, err
 	}

@@ -94,6 +94,15 @@ abbr {
 	letter-spacing: 0.1em;
 }
 
+code {
+	border: 1px solid #ccc;
+	font-size: initial;
+	background-color: #f1f1f1;
+	padding-left: .4em;
+	padding-right: .4em;
+	display: inline-block;
+}
+
 ul[role="post-container"] {
 	padding-left: 0;
 	list-style: none;
