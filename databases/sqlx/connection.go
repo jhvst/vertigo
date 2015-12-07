@@ -3,6 +3,7 @@ package sqlx
 import (
 	"flag"
 	"log"
+	"net/url"
 	"os"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -63,33 +64,33 @@ CREATE TABLE "posts" (
     "timeoffset" integer NOT NULL DEFAULT '0'
 );`
 
-// var mysql = `
-// CREATE DATABASE vertigo;
-// USE vertigo;
+var mysql = `
+CREATE DATABASE vertigo;
+USE vertigo;
 
-// CREATE TABLE IF NOT EXISTS users (
-//     id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
-//     name varchar(255) NOT NULL,
-//     recovery char(36) NOT NULL DEFAULT "",
-//     digest blob NOT NULL,
-//     email varchar(255) NOT NULL UNIQUE,
-//     location varchar(255) NOT NULL DEFAULT "UTC"
-// );
+CREATE TABLE IF NOT EXISTS users (
+    id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    name varchar(255) NOT NULL,
+    recovery char(36) NOT NULL DEFAULT "",
+    digest blob NOT NULL,
+    email varchar(255) NOT NULL UNIQUE,
+    location varchar(255) NOT NULL DEFAULT "UTC"
+);
 
-// CREATE TABLE IF NOT EXISTS posts (
-//     id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
-//     title varchar(255) NOT NULL,
-//     content text NOT NULL,
-//     markdown text NOT NULL,
-//     slug varchar(255) NOT NULL,
-//     author integer NOT NULL,
-//     excerpt varchar(255) NOT NULL,
-//     viewcount integer unsigned NOT NULL DEFAULT 0,
-//     published bool NOT NULL DEFAULT false,
-//     created integer unsigned NOT NULL,
-//     updated integer unsigned NOT NULL,
-//     timeoffset integer NOT NULL DEFAULT 0
-// );`
+CREATE TABLE IF NOT EXISTS posts (
+    id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    title varchar(255) NOT NULL,
+    content text NOT NULL,
+    markdown text NOT NULL,
+    slug varchar(255) NOT NULL,
+    author integer NOT NULL,
+    excerpt varchar(255) NOT NULL,
+    viewcount integer unsigned NOT NULL DEFAULT 0,
+    published bool NOT NULL DEFAULT false,
+    created integer unsigned NOT NULL,
+    updated integer unsigned NOT NULL,
+    timeoffset integer NOT NULL DEFAULT 0
+);`
 
 func Drop() {
 	db.MustExec("DROP TABLE users")
@@ -101,28 +102,47 @@ func Drop() {
 var Driver = flag.String("driver", "sqlite3", "Database driver to use (sqlite3, mysql, postgres)")
 var Source = flag.String("source", "vertigo.db", "Database data source")
 
-func init() {
 
-	flag.Parse()
-
-	conn, err := sqlx.Connect(*Driver, *Source)
+func connect(driver, source string) {
+	conn, err := sqlx.Connect(driver, source)
 	if err != nil {
 		log.Fatal("sqlx connect:", err)
 	}
 
 	var schema string
-	switch *Driver {
+	switch driver {
 	case "sqlite3":
 		schema = sqlite3
-	// case "mysql":
-	//     schema = mysql
+	case "mysql":
+		schema = mysql
 	case "postgres":
 		schema = postgres
 	}
 
 	conn.Exec(schema)
 
-	log.Println("sqlx: using", *Driver)
+	log.Println("sqlx: using", driver)
 
 	db = conn
+}
+
+func init() {
+
+	flag.Parse()
+
+	log.Println(*Driver, *Source)
+
+	if os.Getenv("DATABASE_URL") != "" {
+		u, err := url.Parse(os.Getenv("DATABASE_URL"))
+		if err != nil {
+			log.Fatal("database url parameter could not be parsed")
+		}
+		if u.Scheme != "postgres" && u.Scheme != "mysql" {
+			log.Fatal("unsupported database type")
+		}
+		connect(u.Scheme, os.Getenv("DATABASE_URL"))
+		return
+	}
+
+	connect(*Driver, *Source)
 }
