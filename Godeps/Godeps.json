@@ -24,29 +24,6 @@
 			"Rev": "3ad29d1ad1c4f2023e355603324348cf1f4b2d48"
 		},
 		{
-			"ImportPath": "github.com/boj/redistore",
-			"Comment": "v1-9-g9c0e6ba",
-			"Rev": "9c0e6bab4dd444285424f189b8fb0cb03f653242"
-		},
-		{
-			"ImportPath": "github.com/codegangsta/inject",
-			"Comment": "v1.0-rc1-10-g33e0aa1",
-			"Rev": "33e0aa1cb7c019ccc3fbe049a8262a6403d30504"
-		},
-		{
-			"ImportPath": "github.com/garyburd/redigo/internal",
-			"Rev": "9d4db5d1dbeff473d50e1bb82f5405c8cca0f0ac"
-		},
-		{
-			"ImportPath": "github.com/garyburd/redigo/redis",
-			"Rev": "9d4db5d1dbeff473d50e1bb82f5405c8cca0f0ac"
-		},
-		{
-			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-134-g184178f",
-			"Rev": "184178ffc6b2f7b86b8b99c2a411de8771708a0a"
-		},
-		{
 			"ImportPath": "github.com/go-sql-driver/mysql",
 			"Comment": "v1.2-118-g3dd7008",
 			"Rev": "3dd7008ac1529aca1bcd8a9db75228a71ba23cac"
@@ -68,6 +45,11 @@
 			"Rev": "b6bcae186ac3099dba8fafce125dc930393f1e5e"
 		},
 		{
+			"ImportPath": "github.com/husobee/vestigo",
+			"Comment": "v1-1-g166c1cf",
+			"Rev": "166c1cf9b80d058dec33f1e1bb979af309b898a9"
+		},
+		{
 			"ImportPath": "github.com/jmoiron/sqlx",
 			"Comment": "sqlx-v1.1-44-gae682dc",
 			"Rev": "ae682dc5c71d087ef97d506ec543320fdd7b0ff1"
@@ -77,6 +59,10 @@
 			"Rev": "9a4a02dbe491bef4bab3c24fd9f3087d6c4c6690"
 		},
 		{
+			"ImportPath": "github.com/justinas/alice",
+			"Rev": "82db91fe6d1db4c070fed544cb5d0b5cc08fe276"
+		},
+		{
 			"ImportPath": "github.com/kennygrant/sanitize",
 			"Rev": "bf9c39a678d8e26aeee60d5fe733cad47a7a6871"
 		},
@@ -84,19 +70,6 @@
 			"ImportPath": "github.com/lib/pq",
 			"Comment": "go1.0-cutoff-59-gb269bd0",
 			"Rev": "b269bd035a727d6c1081f76e7a239a1b00674c40"
-		},
-		{
-			"ImportPath": "github.com/martini-contrib/binding",
-			"Rev": "8aaceec3b52c275477f32c95ea5c6e8ccaba04c5"
-		},
-		{
-			"ImportPath": "github.com/martini-contrib/sessions",
-			"Rev": "fa13114fbcf036dff8185d728651d85fcef772db"
-		},
-		{
-			"ImportPath": "github.com/martini-contrib/strict",
-			"Comment": "0.1.0",
-			"Rev": "44893ecfb18d76bd04dcad6a0edd4356eaa31358"
 		},
 		{
 			"ImportPath": "github.com/mattn/go-sqlite3",
