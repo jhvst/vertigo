@@ -13,8 +13,7 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
 
 	"github.com/9uuso/excerpt"
 	"github.com/PuerkitoBio/goquery"
@@ -148,11 +147,11 @@ func TestSavingSettingsViaInstallationWizard(t *testing.T) {
 			settings.Hostname = "http://example.com"
 			settings.Name = "Foo's blog"
 			settings.Description = "Foo's test blog"
-			settings.Mailer.Login = os.Getenv("SMTP_LOGIN")
-			settings.Mailer.Password = os.Getenv("SMTP_PASSWORD")
+			settings.MailerLogin = os.Getenv("SMTP_LOGIN")
+			settings.MailerPassword = os.Getenv("SMTP_PASSWORD")
 			port, _ := strconv.Atoi(os.Getenv("SMTP_PORT"))
-			settings.Mailer.Port = port
-			settings.Mailer.Hostname = os.Getenv("SMTP_SERVER")
+			settings.MailerPort = port
+			settings.MailerHostname = os.Getenv("SMTP_SERVER")
 			payload, _ := json.Marshal(settings)
 			request, _ := http.NewRequest("POST", "/api/installation", bytes.NewReader(payload))
 			request.Header.Set("Content-Type", "application/json")
@@ -168,10 +167,10 @@ func TestSettingValues(t *testing.T) {
 		So(Settings.Hostname, ShouldEqual, settings.Hostname)
 		So(Settings.Name, ShouldEqual, settings.Name)
 		So(Settings.Description, ShouldEqual, settings.Description)
-		So(Settings.Mailer.Login, ShouldEqual, settings.Mailer.Login)
-		So(Settings.Mailer.Password, ShouldEqual, settings.Mailer.Password)
-		So(Settings.Mailer.Port, ShouldEqual, settings.Mailer.Port)
-		So(Settings.Mailer.Hostname, ShouldEqual, settings.Mailer.Hostname)
+		So(Settings.MailerLogin, ShouldEqual, settings.MailerLogin)
+		So(Settings.MailerPassword, ShouldEqual, settings.MailerPassword)
+		So(Settings.MailerPort, ShouldEqual, settings.MailerPort)
+		So(Settings.MailerHostname, ShouldEqual, settings.MailerHostname)
 		So(Settings.AllowRegistrations, ShouldBeTrue)
 	})
 }
@@ -183,10 +182,11 @@ func TestManipulatingSettings(t *testing.T) {
 		Convey("should save the changes to disk", func() {
 			settings = *Settings
 			settings.Name = "Juuso's Blog"
-			err := settings.Save()
+			s, err := settings.Update()
 			if err != nil {
 				panic(err)
 			}
+			Settings = s
 		})
 
 		Convey("frontpage's <title> should now be 'Juuso's Blog'", func() {
@@ -356,7 +356,7 @@ func TestUserSignin(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			// i assure, nothing else worked
-			sessioncookie = strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "user="), ";")[0]
+			sessioncookie = strings.Split(strings.TrimLeft(recorder.HeaderMap["Set-Cookie"][0], "id="), ";")[0]
 		})
 	})
 }
@@ -373,7 +373,7 @@ func TestUserControlPanel(t *testing.T) {
 	Convey("with authentication, it should succeed", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/user", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
@@ -392,7 +392,7 @@ func TestSessionRedirect(t *testing.T) {
 	Convey("with authentication, it should redirect", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/user/login", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 302)
@@ -403,15 +403,15 @@ func TestPostCreationPage(t *testing.T) {
 
 	Convey("without authentication, it should 401", t, func() {
 		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/post/new", nil)
+		request, _ := http.NewRequest("GET", "/posts/new", nil)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 401)
 	})
 
 	Convey("with authentication, it should 200 OK", t, func() {
 		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/post/new", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		request, _ := http.NewRequest("GET", "/posts/new", nil)
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
@@ -427,7 +427,7 @@ func testCreatePostRequest(t *testing.T, payload []byte, p Post) {
 	Convey("with authentication and valid data, it should 200 OK", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", "/api/post", bytes.NewReader(payload))
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		request.Header.Set("Content-Type", "application/json")
 		server.ServeHTTP(recorder, request)
@@ -489,23 +489,23 @@ func TestReadPost(t *testing.T) {
 	})
 }
 
-func TestReadPostSpecialCases(t *testing.T) {
+// func TestReadPostSpecialCases(t *testing.T) {
 
-	Convey("should return error when accessing slug called `new`", t, func() {
-		var recorder = httptest.NewRecorder()
-		request, _ := http.NewRequest("GET", "/api/post/new", nil)
-		server.ServeHTTP(recorder, request)
-		So(recorder.Code, ShouldEqual, 400)
-		So(recorder.Body.String(), ShouldEqual, `{"error":"There can't be a post called 'new'."}`)
-	})
-}
+// 	Convey("should return error when accessing slug called `new`", t, func() {
+// 		var recorder = httptest.NewRecorder()
+// 		request, _ := http.NewRequest("GET", "/api/post/new", nil)
+// 		server.ServeHTTP(recorder, request)
+// 		So(recorder.Code, ShouldEqual, 400)
+// 		So(recorder.Body.String(), ShouldEqual, `{"error":"There can't be a post called 'new'."}`)
+// 	})
+// }
 
 func TestPublishPost(t *testing.T) {
 
 	Convey("publishing post which does not exist", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/api/post/foobar/publish", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 404)
@@ -521,7 +521,7 @@ func TestPublishPost(t *testing.T) {
 	Convey("with session data should return HTTP 200", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Body.String(), ShouldEqual, `{"success":"Post published"}`)
@@ -534,7 +534,7 @@ func TestUnpublishPost(t *testing.T) {
 	Convey("unpublishing post which does not exist", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/api/post/foobar/unpublish", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 404)
@@ -550,7 +550,7 @@ func TestUnpublishPost(t *testing.T) {
 	Convey("with session data should return HTTP 200", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/unpublish", post.Slug), nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
@@ -648,7 +648,7 @@ func TestPostEditPage(t *testing.T) {
 	Convey("should return 200 OK with authorization", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/post/%s/edit", post.Slug), nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
@@ -680,7 +680,7 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 	Convey("should return 401 with bad authorization", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", fmt.Sprintf("/api/post/%s/edit", post.Slug), bytes.NewReader(payload))
-		cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: malformedsessioncookie}
 		request.AddCookie(cookie)
 		request.Header.Set("Content-Type", "application/json")
 		server.ServeHTTP(recorder, request)
@@ -691,7 +691,7 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 	Convey("should return 404 with non-existent post", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", "/api/post/foobar/edit", bytes.NewReader(payload))
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		request.Header.Set("Content-Type", "application/json")
 		server.ServeHTTP(recorder, request)
@@ -702,7 +702,7 @@ func testUpdatePostAPI(t *testing.T, payload []byte) {
 	Convey("should return 200 with successful authorization", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", fmt.Sprintf("/api/post/%s/edit", post.Slug), bytes.NewReader(payload))
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		request.Header.Set("Content-Type", "application/json")
 		server.ServeHTTP(recorder, request)
@@ -740,7 +740,7 @@ func TestPostAfterUpdating(t *testing.T) {
 	Convey("update should return HTTP 200", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/publish", post.Slug), nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Body.String(), ShouldEqual, `{"success":"Post published"}`)
@@ -786,7 +786,7 @@ func testUpdatePostFrontend(t *testing.T, payload string) {
 	Convey("should return 302 with successful authorization", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("POST", fmt.Sprintf("/post/%s/edit", post.Slug), strings.NewReader(payload))
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 		server.ServeHTTP(recorder, request)
@@ -858,7 +858,7 @@ func TestControlPanelListing(t *testing.T) {
 	Convey("should list both posts", t, func() {
 		var recorder = httptest.NewRecorder()
 		request, _ := http.NewRequest("GET", "/user", nil)
-		cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+		cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 		request.AddCookie(cookie)
 		server.ServeHTTP(recorder, request)
 		So(recorder.Code, ShouldEqual, 200)
@@ -892,7 +892,7 @@ func TestDeletePost(t *testing.T) {
 		Convey("it should return 401 with malformed sessioncookie", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/delete", post.Slug), nil)
-			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: malformedsessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
@@ -903,7 +903,7 @@ func TestDeletePost(t *testing.T) {
 		Convey("it should return 404 when trying to delete non-existent post", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/post/foobar/delete", nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
@@ -914,16 +914,14 @@ func TestDeletePost(t *testing.T) {
 		Convey("it should return 200 with successful sessioncookies", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", fmt.Sprintf("/api/post/%s/delete", post.Slug), nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			So(recorder.Body.String(), ShouldEqual, `{"success":"Post deleted"}`)
-			if *Driver == "sqlite3" {
-				// SQLite's re-assigns ID if one is removed
-				post.ID--
-			}
+			// SQLite's re-assigns ID if one is removed
+			post.ID--
 		})
 	})
 
@@ -945,7 +943,7 @@ func TestReadSettings(t *testing.T) {
 		Convey("reading with malformed sessioncookies it should return 401", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/settings", nil)
-			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: malformedsessioncookie}
 			request.AddCookie(cookie)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 401)
@@ -955,7 +953,7 @@ func TestReadSettings(t *testing.T) {
 		Convey("reading with sessioncookies it should return 200", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/settings", nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -982,7 +980,7 @@ func TestReadSettings(t *testing.T) {
 		Convey("with malformed sessioncookies it should return 401", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/user/settings", nil)
-			cookie := &http.Cookie{Name: "user", Value: malformedsessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: malformedsessioncookie}
 			request.AddCookie(cookie)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 401)
@@ -991,7 +989,7 @@ func TestReadSettings(t *testing.T) {
 		Convey("with successful sessioncookies it should return 200", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/user/settings", nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1033,7 +1031,7 @@ func testUpdateSettings(t *testing.T, payload []byte, s Vertigo) {
 		Convey("with successful sessioncookies", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("POST", "/api/settings", bytes.NewReader(payload))
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
@@ -1104,7 +1102,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for the latest post should return it", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(fmt.Sprintf(`{"query": "%s"}`, post.Title)))
+			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(fmt.Sprintf(`{"query": "%s"}`, post.Title)))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1129,7 +1127,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for non-existent post should return empty JSON array", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/post/search", strings.NewReader(`{"query": "foobar"}`))
+			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(`{"query": "foobar"}`))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1141,7 +1139,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for the latest post using title", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(fmt.Sprintf(`query=%s`, post.Title)))
+			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(fmt.Sprintf(`query=%s`, post.Title)))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1152,7 +1150,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for the latest post using content", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foo`))
+			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(`query=foo`))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1163,7 +1161,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching with a query which is not container in any post", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/post/search", strings.NewReader(`query=foofoobarbar`))
+			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(`query=foofoobarbar`))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1343,7 +1341,7 @@ func TestPostSecurity(t *testing.T) {
 		Convey("updating post of another user", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("POST", "/api/post/"+post.Slug+"/edit", strings.NewReader(`{"title": "First post edited twice", "markdown": "This is an EDITED example post with HTML elements like **bold** and *italics* in place."}`))
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
@@ -1354,7 +1352,7 @@ func TestPostSecurity(t *testing.T) {
 		Convey("publishing post of another user", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/post/"+post.Slug+"/publish", nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 401)
@@ -1364,7 +1362,7 @@ func TestPostSecurity(t *testing.T) {
 		Convey("deleting post of another user", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("GET", "/api/post/"+post.Slug+"/delete", nil)
-			cookie := &http.Cookie{Name: "user", Value: sessioncookie}
+			cookie := &http.Cookie{Name: "id", Value: sessioncookie}
 			request.AddCookie(cookie)
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)

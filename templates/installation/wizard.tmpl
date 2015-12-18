@@ -25,25 +25,25 @@
 		
 		<label>SMTP Login</label>
 		<p>Address from which you want to send mail from.</p>
-		<input name="login" placeholder="postmaster@example.com" value="{{env "SMTP_LOGIN"}}">
+		<input name="mailerlogin" placeholder="postmaster@example.com" value="{{env "SMTP_LOGIN"}}">
 
 		<br><br>
 
 		<label>SMTP Password</label>
 		<p>Password for the address you gave above.</p>
-		<input name="password" value="{{env "SMTP_PASSWORD"}}">
+		<input type="password" name="mailerpassword" value="{{env "SMTP_PASSWORD"}}">
 
 		<br><br>
 
 		<label>SMTP Port</label>
 		<p>On some occasions this might be 25 instead.</p>
-		<input name="port" value="587" value="{{env "SMTP_PORT"}}">
+		<input name="mailerport" value="587" value="{{env "SMTP_PORT"}}">
 
 		<br><br>
 
 		<label>SMTP Hostname</label>
 		<p>SMTP server address.</p>
-		<input name="smtp-hostname" placeholder="smtp.example.org" value="{{env "SMTP_SERVER"}}">
+		<input name="mailerhostname" placeholder="smtp.example.org" value="{{env "SMTP_SERVER"}}">
 
 		<br><br>
 

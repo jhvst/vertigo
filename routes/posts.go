@@ -2,19 +2,35 @@ package routes
 
 import (
 	"bufio"
+	"errors"
 	"log"
 	"net/http"
 	"strings"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/misc"
-	"github.com/9uuso/vertigo/render"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
+	. "vertigo/misc"
+	"vertigo/render"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/sessions"
+	"github.com/gorilla/context"
+	"github.com/husobee/vestigo"
 )
+
+func GetPost(r *http.Request) (Post, error) {
+	rv, ok := context.GetOk(r, "post")
+	if !ok {
+		return Post{}, errors.New("context not set")
+	}
+	return rv.(Post), nil
+}
+
+func GetSearch(r *http.Request) (Search, error) {
+	rv, ok := context.GetOk(r, "search")
+	if !ok {
+		return Search{}, errors.New("context not set")
+	}
+	return rv.(Search), nil
+}
 
 // Homepage route fetches all posts from database and renders them according to "home.tmpl".
 // Normally you'd use this function as your "/" route.
@@ -90,19 +106,31 @@ func (search Search) Get() (Search, error) {
 
 // SearchPost is a route which returns all posts and aggregates the ones which contain
 // the POSTed search query in either Title or Content field.
-func SearchPost(w http.ResponseWriter, r *http.Request, search Search) {
-	search, err := search.Get()
+func SearchPost(w http.ResponseWriter, r *http.Request) {
+
+	search, err := GetSearch(r)
+	if err != nil {
+		log.Println("route SearchPost, context GetSearch:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	search, err = search.Get()
 	if err != nil {
 		log.Println("route SearchPost, search.Get:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, search.Posts)
 		return
-	case "post":
+	case "posts":
 		render.R.HTML(w, 200, "search", search.Posts)
+		return
+	default:
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
 }
@@ -110,8 +138,33 @@ func SearchPost(w http.ResponseWriter, r *http.Request, search Search) {
 // CreatePost is a route which creates a new post according to the posted data.
 // API renderponse contains the created post object and normal request redirects to "/user" page.
 // Does not publish the post automatically. See PublishPost for more.
-func CreatePost(w http.ResponseWriter, r *http.Request, s sessions.Session, post Post) {
-	post, err := post.Insert(s)
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+
+	post, err := GetPost(r)
+	if err != nil {
+		log.Println("route CreatePost, context GetPost:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	var user User
+	id, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route CreatePost, SessionGetValue:", ok)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+		return
+	}
+	user.ID = id
+	user, err = user.Get()
+	if err != nil {
+		log.Println("route CreatePost, user.Get:", err)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", err)
+		return
+	}
+
+	post, err = post.Insert(user)
 	if err != nil {
 		log.Println("route CreatePost, post.Insert:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
@@ -121,7 +174,7 @@ func CreatePost(w http.ResponseWriter, r *http.Request, s sessions.Session, post
 	case "api":
 		render.R.JSON(w, 200, post)
 		return
-	case "post":
+	case "posts":
 		http.Redirect(w, r, "/user", 302)
 		return
 	}
@@ -148,13 +201,14 @@ func ReadPosts(w http.ResponseWriter, r *http.Request) {
 
 // ReadPost is a route which returns post with given post.Slug.
 // Returns post data on JSON call and displays a formatted page on frontend.
-func ReadPost(w http.ResponseWriter, r *http.Request, s sessions.Session, params martini.Params) {
+func ReadPost(w http.ResponseWriter, r *http.Request) {
+	log.Println("url query:", r.URL.Query())
 	var post Post
-	if params["slug"] == "new" {
+	if vestigo.Param(r, "slug") == "new" {
 		render.R.JSON(w, 400, map[string]interface{}{"error": "There can't be a post called 'new'."})
 		return
 	}
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route ReadPost, post.Get:", err)
@@ -179,9 +233,9 @@ func ReadPost(w http.ResponseWriter, r *http.Request, s sessions.Session, params
 // EditPost is a route which returns a post object to be displayed and edited on frontend.
 // Not available for JSON API.
 // Analogous to ReadPost. Could be replaced at some point.
-func EditPost(w http.ResponseWriter, r *http.Request, params martini.Params) {
+func EditPost(w http.ResponseWriter, r *http.Request) {
 	var post Post
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route EditPost, post.Get:", err)
@@ -193,9 +247,10 @@ func EditPost(w http.ResponseWriter, r *http.Request, params martini.Params) {
 
 // UpdatePost is a route which updates a post defined by martini parameter "title" with posted data.
 // Requirender session cookie. JSON request returns the updated post object, frontend call will redirect to "/user".
-func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session, entry Post) {
+func UpdatePost(w http.ResponseWriter, r *http.Request) {
+
 	var post Post
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route UpdatePost, post.Get:", err)
@@ -207,13 +262,29 @@ func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 		return
 	}
 
-	post, err = post.Update(s, entry)
+	id, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route UpdatePost, SessionGetValue:", ok)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+		return
+	}
+	if post.Author != id {
+		log.Println("route UpdatePost, post.Author and id mismatch")
+		render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
+	entry, err := GetPost(r)
+	if err != nil {
+		log.Println("route UpdatePost, context GetPost:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	post, err = post.Update(entry)
 	if err != nil {
 		log.Println("route UpdatePost, post.Update:", err)
-		if err.Error() == "unauthorized" {
-			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
-			return
-		}
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -226,15 +297,16 @@ func UpdatePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 		http.Redirect(w, r, "/user", 302)
 		return
 	}
+
 }
 
 // PublishPost is a route which publishes a post and therefore making it appear on frontpage and search.
 // JSON request returns `HTTP 200 {"success": "Post published"}` on success. Frontend call will redirect to
 // published page.
 // Requirender active session cookie.
-func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
+func PublishPost(w http.ResponseWriter, r *http.Request) {
 	var post Post
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route PublishPost, post.Get:", err)
@@ -246,10 +318,23 @@ func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, 
 		return
 	}
 
+	id, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route PublishPost, SessionGetValue:", ok)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+		return
+	}
+	if post.Author != id {
+		log.Println("route PublishPost, post.Author and id mismatch")
+		render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
 	var entry Post
 	entry = post
 	entry.Published = true
-	post, err = post.Update(s, entry)
+	post, err = post.Update(entry)
 	if err != nil {
 		log.Println("route PublishPost, post.Update:", err)
 		if err.Error() == "unauthorized" {
@@ -275,9 +360,9 @@ func PublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, 
 // user control panel.
 // Requirender active session cookie.
 // The route is anecdotal to route PublishPost().
-func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
+func UnpublishPost(w http.ResponseWriter, r *http.Request) {
 	var post Post
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route UnpublishPost, post.Get:", err)
@@ -289,13 +374,23 @@ func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params
 		return
 	}
 
-	err = post.Unpublish(s)
+	id, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route UnpublishPost, SessionGetValue:", ok)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+		return
+	}
+
+	if post.Author != id {
+		log.Println("route UnpublishPost, author mismatch")
+		render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
+	err = post.Unpublish()
 	if err != nil {
 		log.Println("route UnpublishPost, post.Unpublish:", err)
-		if err.Error() == "unauthorized" {
-			render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
-			return
-		}
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -314,9 +409,9 @@ func UnpublishPost(w http.ResponseWriter, r *http.Request, params martini.Params
 // JSON request returns `HTTP 200 {"success": "Post deleted"}` on success. Frontend call will redirect to
 // "/user" page on successful request.
 // Requirender active session cookie.
-func DeletePost(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
+func DeletePost(w http.ResponseWriter, r *http.Request) {
 	var post Post
-	post.Slug = params["slug"]
+	post.Slug = vestigo.Param(r, "slug")
 	post, err := post.Get()
 	if err != nil {
 		log.Println("route DeletePost, post.Get:", err)
@@ -327,7 +422,21 @@ func DeletePost(w http.ResponseWriter, r *http.Request, params martini.Params, s
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
-	err = post.Delete(s)
+
+	id, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route DeletePost, SessionGetValue:", ok)
+		SessionDelete(w, r, "id")
+		render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+		return
+	}
+	if post.Author != id {
+		log.Println("route DeletePost, author mismatch")
+		render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
+		return
+	}
+
+	err = post.Delete()
 	if err != nil {
 		log.Println("route DeletePost, post.Delete:", err)
 		if err.Error() == "unauthorized" {

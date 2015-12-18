@@ -1,21 +1,29 @@
 package routes
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/misc"
-	"github.com/9uuso/vertigo/render"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
+	. "vertigo/misc"
+	"vertigo/render"
 
-	"github.com/martini-contrib/sessions"
+	"github.com/gorilla/context"
 )
 
+func GetSettings(r *http.Request) (Vertigo, error) {
+	rv, ok := context.GetOk(r, "settings")
+	if !ok {
+		return Vertigo{}, errors.New("context not set")
+	}
+	return rv.(Vertigo), nil
+}
+
 // ReadSettings is a route which reads the local settings.json file.
-func ReadSettings(w http.ResponseWriter, r *http.Request, s sessions.Session) {
+func ReadSettings(w http.ResponseWriter, r *http.Request) {
 	var safesettings Vertigo
 	safesettings = *Settings
 	safesettings.CookieHash = ""
@@ -30,45 +38,53 @@ func ReadSettings(w http.ResponseWriter, r *http.Request, s sessions.Session) {
 }
 
 // UpdateSettings is a route which updates the local .json settings file.
-func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s sessions.Session) {
-	if Settings.Firstrun == false {
-		var user User
-		user, err := user.Session(s)
+func UpdateSettings(w http.ResponseWriter, r *http.Request) {
+
+	settings, err := GetSettings(r)
+	if err != nil {
+		log.Println("route UpdateSettings, settings context:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	if Settings.Firstrun {
+
+		settings.Hostname = strings.TrimRight(settings.Hostname, "/")
+		_, err := url.Parse(settings.Hostname)
 		if err != nil {
-			log.Println("route UpdateSettings, user.Session:", err)
-			render.R.JSON(w, 406, map[string]interface{}{"error": "You are not allowed to change the settings this time."})
-			return
-		}
-		settings.CookieHash = Settings.CookieHash
-		settings.Firstrun = Settings.Firstrun
-		err = settings.Save()
-		if err != nil {
-			log.Println("route UpdateSettings, firstrun settings.Save:", err)
+			log.Println("route UpdateSettings, url.Parse:", err)
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
+		settings.AllowRegistrations = true
+
+		Settings, err = settings.Insert()
+		if err != nil {
+			log.Println("route UpdateSettings, settings.Save:", err)
+			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+			return
+		}
+
 		switch Root(r) {
 		case "api":
 			render.R.JSON(w, 200, map[string]interface{}{"success": "Settings were successfully saved"})
 			return
 		case "user":
-			http.Redirect(w, r, "/user", 302)
+			http.Redirect(w, r, "/user/register", 302)
 			return
 		}
 	}
-	settings.Hostname = strings.TrimRight(settings.Hostname, "/")
-	u, err := url.Parse(settings.Hostname)
-	if err != nil {
-		log.Println("route UpdateSettings, url.Parse:", err)
-		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+
+	_, ok := SessionGetValue(r, "id")
+	if !ok {
+		log.Println("route UpdateSettings, SessionGetValue:", ok)
+		render.R.JSON(w, 401, map[string]interface{}{"error": "Unauthorized"})
 		return
 	}
-	settings.URL = *u
-	settings.Firstrun = false
-	settings.AllowRegistrations = true
-	err = settings.Save()
+
+	Settings, err = settings.Update()
 	if err != nil {
-		log.Println("route UpdateSettings, settings.Save:", err)
+		log.Println("route UpdateSettings, firstrun settings.Save:", err)
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
@@ -77,7 +93,7 @@ func UpdateSettings(w http.ResponseWriter, r *http.Request, settings Vertigo, s 
 		render.R.JSON(w, 200, map[string]interface{}{"success": "Settings were successfully saved"})
 		return
 	case "user":
-		http.Redirect(w, r, "/user/register", 302)
+		http.Redirect(w, r, "/user", 302)
 		return
 	}
 }

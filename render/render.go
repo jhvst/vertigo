@@ -5,12 +5,16 @@ import (
 	"os"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
 
 	"github.com/9uuso/timezone"
 	unrolled "github.com/unrolled/render"
 )
+
+var R *unrolled.Render = unrolled.New(unrolled.Options{
+	Funcs:  []template.FuncMap{helpers},
+	Layout: "layout",
+})
 
 var helpers = template.FuncMap{
 	// unescape unescapes HTML of s.
@@ -66,14 +70,4 @@ var helpers = template.FuncMap{
 	"registerationsallowed": func() bool {
 		return Settings.AllowRegistrations
 	},
-}
-
-var R *unrolled.Render
-
-func init() {
-	r := unrolled.New(unrolled.Options{
-		Funcs:  []template.FuncMap{helpers},
-		Layout: "layout",
-	})
-	R = r
 }

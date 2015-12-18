@@ -1,24 +1,40 @@
 package routes
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/misc"
-	"github.com/9uuso/vertigo/render"
-	. "github.com/9uuso/vertigo/settings"
+	. "vertigo/databases/sqlx"
+	. "vertigo/misc"
+	"vertigo/render"
 
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/sessions"
+	"github.com/gorilla/context"
+	"github.com/husobee/vestigo"
 	"github.com/pborman/uuid"
 )
+
+func GetUser(r *http.Request) (User, error) {
+	rv, ok := context.GetOk(r, "user")
+	if !ok {
+		return User{}, errors.New("context not set")
+	}
+	return rv.(User), nil
+}
 
 // CreateUser is a route which creates a new user struct according to posted parameters.
 // Requires session cookie.
 // Returns created user struct for API requests and redirects to "/user" on frontend ones.
-func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user User) {
+func CreateUser(w http.ResponseWriter, r *http.Request) {
+
+	user, err := GetUser(r)
+	if err != nil {
+		log.Println("route CreateUser, user context:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
 	if Settings.AllowRegistrations == false {
 		log.Println("Denied a new registration.")
 		switch Root(r) {
@@ -30,7 +46,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 			return
 		}
 	}
-	user, err := user.Insert()
+	user, err = user.Insert()
 	if err != nil {
 		log.Println("route CreateUser, user.Insert:", err)
 		if err.Error() == "user email exists" {
@@ -50,14 +66,14 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+
+	SessionSetValue(w, r, "id", user.ID)
+
 	switch Root(r) {
 	case "api":
-		s.Set("user", user.ID)
-		user.Password = ""
 		render.R.JSON(w, 200, user)
 		return
 	case "user":
-		s.Set("user", user.ID)
 		http.Redirect(w, r, "/user", 302)
 		return
 	}
@@ -66,7 +82,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 // DeleteUser is a route which deletes a user from database according to session cookie.
 // The function calls Login function inside, so it also requires password in POST data.
 // Currently unavailable function on both API and frontend side.
-// func DeleteUser(req *http.Request, s sessions.Session, user User) {
+// func DeleteUser(req *http.Request, user User) {
 // 	user, err := user.Login()
 // 	if err != nil {
 // 		log.Println(err)
@@ -95,11 +111,11 @@ func CreateUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user
 // ReadUser is a route which fetches user according to parameter "id" on API side and according to retrieved
 // session cookie on frontend side.
 // Returns user struct with all posts merged to object on API call. Frontend call will render user "home" page, "user/index.tmpl".
-func ReadUser(w http.ResponseWriter, r *http.Request, params martini.Params, s sessions.Session) {
+func ReadUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	switch Root(r) {
 	case "api":
-		id, err := strconv.Atoi(params["id"])
+		id, err := strconv.Atoi(vestigo.Param(r, "id"))
 		if err != nil {
 			log.Println("route ReadUser, strconv.Atoi:", err)
 			render.R.JSON(w, 400, map[string]interface{}{"error": "The user ID could not be parsed from the request URL."})
@@ -123,10 +139,19 @@ func ReadUser(w http.ResponseWriter, r *http.Request, params martini.Params, s s
 		render.R.JSON(w, 200, user)
 		return
 	case "user":
-		user, err := user.Session(s)
+		var user User
+		id, ok := SessionGetValue(r, "id")
+		if !ok {
+			log.Println("route ReadUser, SessionGetValue:", ok)
+			SessionDelete(w, r, "id")
+			render.R.HTML(w, 500, "error", "Session could not be fetched. Please log in again.")
+			return
+		}
+		user.ID = id
+		user, err := user.Get()
 		if err != nil {
-			log.Println("route ReadUser, user.Session:", err)
-			s.Set("user", -1)
+			log.Println("route ReadUser, user.Get:", err)
+			SessionDelete(w, r, "id")
 			render.R.HTML(w, 500, "error", err)
 			return
 		}
@@ -169,7 +194,15 @@ func ReadUsers(w http.ResponseWriter, r *http.Request) {
 // user's ID encrypted, which is the primary key used in database table.
 // When called by API it responds with user struct.
 // On frontend call it redirects the client to "/user" page.
-func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user User) {
+func LoginUser(w http.ResponseWriter, r *http.Request) {
+
+	user, err := GetUser(r)
+	if err != nil {
+		log.Println("route LoginUser, user context:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
 	switch Root(r) {
 	case "api":
 		user, err := user.Login()
@@ -186,7 +219,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
-		s.Set("user", user.ID)
+
+		SessionSetValue(w, r, "id", user.ID)
+
 		user.Password = ""
 		render.R.JSON(w, 200, user)
 		return
@@ -205,7 +240,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 			render.R.HTML(w, 500, "user/login", "Internal server error. Please try again.")
 			return
 		}
-		s.Set("user", user.ID)
+
+		SessionSetValue(w, r, "id", user.ID)
+
 		http.Redirect(w, r, "/user", 302)
 		return
 	}
@@ -213,8 +250,16 @@ func LoginUser(w http.ResponseWriter, r *http.Request, s sessions.Session, user 
 
 // RecoverUser is a route of the first step of account recovery, which sends out the recovery
 // email etc. associated function calls.
-func RecoverUser(w http.ResponseWriter, r *http.Request, user User) {
-	err := user.Recover()
+func RecoverUser(w http.ResponseWriter, r *http.Request) {
+
+	user, err := GetUser(r)
+	if err != nil {
+		log.Println("route CreateUser, user context:", err)
+		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
+		return
+	}
+
+	err = user.Recover()
 	if err != nil {
 		log.Println("route RecoverUser, user.Recover:", err)
 		if err.Error() == "not found" {
@@ -236,14 +281,17 @@ func RecoverUser(w http.ResponseWriter, r *http.Request, user User) {
 
 // ResetUserPassword is a route which is called when accessing the page generated dispatched with
 // account recovery emails.
-func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Params, user User) {
-	id, err := strconv.Atoi(params["id"])
+func ResetUserPassword(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.Atoi(vestigo.Param(r, "id"))
 	if err != nil {
 		log.Println("route ResetUserPassword, strconv.Atoi:", err)
 		render.R.JSON(w, 400, map[string]interface{}{"error": "User ID could not be parsed from request URL."})
 		return
 	}
+
+	var user User
 	user.ID = int64(id)
+
 	entry, err := user.Get()
 	if err != nil {
 		log.Println("route ResetUserPassword, user.Get:", err)
@@ -254,17 +302,19 @@ func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Pa
 		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 		return
 	}
+
 	// this ensures that accounts won't be compromised by posting recovery string as empty,
 	// which would otherwise result in succesful password reset
-	UUID := uuid.Parse(params["recovery"])
+	UUID := uuid.Parse(vestigo.Param(r, "recovery"))
 	if UUID == nil {
 		log.Println("route ResetUserPassword, uuid.Parse:", err)
 		log.Println("there was a problem trying to verify password reset UUID for", entry.Email)
 		render.R.JSON(w, 400, map[string]interface{}{"error": "Could not parse UUID from the request."})
 		return
 	}
-	if entry.Recovery == params["recovery"] {
-		entry.Password = user.Password
+	if entry.Recovery == vestigo.Param(r, "recovery") {
+		newpassword := context.Get(r, "newpassword").(string)
+		entry.Password = newpassword
 		_, err = user.PasswordReset(entry)
 		if err != nil {
 			log.Println("route ResetUserPassword, user.PasswordReset:", err)
@@ -284,8 +334,8 @@ func ResetUserPassword(w http.ResponseWriter, r *http.Request, params martini.Pa
 
 // LogoutUser is a route which deletes session cookie "user", from the given client.
 // On API call responds with HTTP 200 body and on frontend the client is redirected to homepage "/".
-func LogoutUser(w http.ResponseWriter, r *http.Request, s sessions.Session) {
-	s.Delete("user")
+func LogoutUser(w http.ResponseWriter, r *http.Request) {
+	SessionDelete(w, r, "id")
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "You've been logged out."})

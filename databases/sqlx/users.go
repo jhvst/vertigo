@@ -3,13 +3,10 @@ package sqlx
 import (
 	"errors"
 	"log"
-	"strconv"
 	"time"
 
-	. "github.com/9uuso/vertigo/crypto"
-	. "github.com/9uuso/vertigo/email"
+	. "vertigo/crypto"
 
-	"github.com/martini-contrib/sessions"
 	"github.com/pborman/uuid"
 )
 
@@ -73,8 +70,7 @@ func (user User) Recover() error {
 		return err
 	}
 
-	id := strconv.Itoa(int(user.ID))
-	err = SendRecoveryEmail(id, user.Name, user.Email, user.Recovery)
+	err = user.SendRecoveryEmail()
 	if err != nil {
 		return err
 	}
@@ -172,23 +168,6 @@ func (user User) GetByEmail() (User, error) {
 	}
 	user.Posts = posts
 	return user, nil
-}
-
-// Session or user.Session returns user.ID from client session cookie.
-// The returned object has post data merged.
-func (user User) Session(s sessions.Session) (User, error) {
-	data := s.Get("user")
-	id, exists := data.(int64)
-	if exists {
-		var user User
-		user.ID = id
-		user, err := user.Get()
-		if err != nil {
-			return user, err
-		}
-		return user, nil
-	}
-	return user, errors.New("unauthorized")
 }
 
 // Insert or user.Insert inserts a new User struct into the database.

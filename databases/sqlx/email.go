@@ -1,5 +1,4 @@
-// Package email handles password recovery. Makes use of standard library's net/smtp package.
-package email
+package sqlx
 
 import (
 	"bytes"
@@ -7,9 +6,8 @@ import (
 	"fmt"
 	"net/mail"
 	"net/smtp"
+	"strconv"
 	"text/template"
-
-	. "github.com/9uuso/vertigo/settings"
 )
 
 // Email holds data of email sender and recipient for easier handling in templates.
@@ -27,8 +25,6 @@ type RecipientStruct struct {
 	RecoveryKey string
 }
 
-// RecoveryTemplate is the text template used when sending recovery emails.
-// The structure passed to it is type Email.
 var RecoveryTemplate = `Hello {{ .Recipient.Name }}
 
 Somebody requested password recovery on this email.
@@ -37,15 +33,15 @@ You may reset your password through this link: {{ .Host }}/user/reset/{{ .Recipi
 
 // SendRecoveryEmail dispatches predefined recovery email to recipient defined in parameters.
 // Makes use of https://gist.github.com/andelf/5004821
-func SendRecoveryEmail(id, name, address, recovery string) error {
+func (user User) SendRecoveryEmail() error {
 
 	var email Email
-	email.Sender = Settings.Mailer.Login
-	email.Host = Settings.URL.String()
-	email.Recipient.ID = id
-	email.Recipient.Name = name
-	email.Recipient.Address = address
-	email.Recipient.RecoveryKey = recovery
+	email.Sender = Settings.MailerLogin
+	email.Host = Settings.Hostname
+	email.Recipient.ID = strconv.Itoa(int(user.ID))
+	email.Recipient.Name = user.Name
+	email.Recipient.Address = user.Email
+	email.Recipient.RecoveryKey = user.Recovery
 
 	from := mail.Address{
 		Name:    Settings.Name,
@@ -84,13 +80,13 @@ func SendRecoveryEmail(id, name, address, recovery string) error {
 
 	auth := smtp.PlainAuth(
 		"",
-		Settings.Mailer.Login,
-		Settings.Mailer.Password,
-		Settings.Mailer.Hostname,
+		Settings.MailerLogin,
+		Settings.MailerPassword,
+		Settings.MailerHostname,
 	)
 
 	err = smtp.SendMail(
-		fmt.Sprintf("%s:%d", Settings.Mailer.Hostname, Settings.Mailer.Port),
+		fmt.Sprintf("%s:%d", Settings.MailerHostname, Settings.MailerPort),
 		auth,
 		from.Address,
 		[]string{to.Address},
