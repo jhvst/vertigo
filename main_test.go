@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	. "vertigo/databases/sqlx"
+	. "github.com/9uuso/vertigo/databases/sqlx"
 
 	"github.com/9uuso/excerpt"
 	"github.com/PuerkitoBio/goquery"

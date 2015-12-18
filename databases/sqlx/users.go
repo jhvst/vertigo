@@ -5,7 +5,7 @@ import (
 	"log"
 	"time"
 
-	. "vertigo/crypto"
+	. "github.com/9uuso/vertigo/crypto"
 
 	"github.com/pborman/uuid"
 )

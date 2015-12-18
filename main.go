@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	. "vertigo/databases/sqlx"
-	. "vertigo/misc"
-	"vertigo/render"
-	. "vertigo/routes"
+	. "github.com/9uuso/vertigo/databases/sqlx"
+	. "github.com/9uuso/vertigo/misc"
+	"github.com/9uuso/vertigo/render"
+	. "github.com/9uuso/vertigo/routes"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"

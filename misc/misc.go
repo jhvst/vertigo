@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"strings"
 
-	. "vertigo/databases/sqlx"
-	"vertigo/render"
+	. "github.com/9uuso/vertigo/databases/sqlx"
+	"github.com/9uuso/vertigo/render"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"
