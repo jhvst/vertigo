@@ -1,6 +1,5 @@
-// Package misc contains bunch of miscful helpers,
-// which cannot easily be associated to any other package.
-package misc
+// Package session contains session functions.
+package session
 
 import (
 	"net/http"
@@ -39,7 +38,7 @@ func SessionGetValue(r *http.Request, key string) (value int64, ok bool) {
 	if ok {
 		return token.(int64), true
 	}
-	return -1, false
+	return 0, false
 }
 
 func SessionSetValue(w http.ResponseWriter, r *http.Request, key string, value int64) {

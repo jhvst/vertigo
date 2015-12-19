@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/misc"
+	. "github.com/9uuso/vertigo/session"
 	"github.com/9uuso/vertigo/render"
 	. "github.com/9uuso/vertigo/routes"
 
