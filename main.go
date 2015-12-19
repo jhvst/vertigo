@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"strconv"
+	"strings"
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
 	"github.com/9uuso/vertigo/render"
@@ -245,6 +246,25 @@ func staticFile(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "static/"+r.URL.Path[1:])
 }
 
+func staticResource(w http.ResponseWriter, r *http.Request) {
+	file := r.URL.Path
+	s := http.Dir("static")
+
+	f, err := s.Open(strings.TrimPrefix(file, "/static"))
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		http.Error(w, "not found", http.StatusNotFound)
+		return
+	}
+	http.ServeContent(w, r, file, fi.ModTime(), f)
+}
+
 func NewServer() *vestigo.Router {
 
 	protectedHandler := alice.New(session, ProtectedPage)
@@ -265,6 +285,7 @@ func NewServer() *vestigo.Router {
 	r.Get("/browserconfig.xml", staticFile)
 	r.Get("/tile-wide.png", staticFile)
 	r.Get("/tile.png", staticFile)
+	r.Get("/static/*", staticResource)
 	// Please note that `/new` route has to be before the `/:slug` route. Otherwise the program will try
 	// to fetch for Post named "new".
 	// For now I'll keep it this way to streamline route naming.
