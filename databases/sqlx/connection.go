@@ -93,33 +93,33 @@ CREATE TABLE "settings" (
     "mailerhostname" varchar(255)
 );`
 
-var mysql = `
-CREATE DATABASE vertigo;
-USE vertigo;
+// var mysql = `
+// CREATE DATABASE vertigo;
+// USE vertigo;
 
-CREATE TABLE IF NOT EXISTS users (
-    id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    name varchar(255) NOT NULL,
-    recovery char(36) NOT NULL DEFAULT "",
-    digest blob NOT NULL,
-    email varchar(255) NOT NULL UNIQUE,
-    location varchar(255) NOT NULL DEFAULT "UTC"
-);
+// CREATE TABLE IF NOT EXISTS users (
+//     id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
+//     name varchar(255) NOT NULL,
+//     recovery char(36) NOT NULL DEFAULT "",
+//     digest blob NOT NULL,
+//     email varchar(255) NOT NULL UNIQUE,
+//     location varchar(255) NOT NULL DEFAULT "UTC"
+// );
 
-CREATE TABLE IF NOT EXISTS posts (
-    id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    title varchar(255) NOT NULL,
-    content text NOT NULL,
-    markdown text NOT NULL,
-    slug varchar(255) NOT NULL,
-    author integer NOT NULL,
-    excerpt varchar(255) NOT NULL,
-    viewcount integer unsigned NOT NULL DEFAULT 0,
-    published bool NOT NULL DEFAULT false,
-    created integer unsigned NOT NULL,
-    updated integer unsigned NOT NULL,
-    timeoffset integer NOT NULL DEFAULT 0
-);`
+// CREATE TABLE IF NOT EXISTS posts (
+//     id integer NOT NULL AUTO_INCREMENT PRIMARY KEY,
+//     title varchar(255) NOT NULL,
+//     content text NOT NULL,
+//     markdown text NOT NULL,
+//     slug varchar(255) NOT NULL,
+//     author integer NOT NULL,
+//     excerpt varchar(255) NOT NULL,
+//     viewcount integer unsigned NOT NULL DEFAULT 0,
+//     published bool NOT NULL DEFAULT false,
+//     created integer unsigned NOT NULL,
+//     updated integer unsigned NOT NULL,
+//     timeoffset integer NOT NULL DEFAULT 0
+// );`
 
 func Drop() {
 	db.MustExec("DROP TABLE users")
@@ -141,8 +141,8 @@ func connect(driver, source string) {
 	switch driver {
 	case "sqlite3":
 		schema = sqlite3
-	case "mysql":
-		schema = mysql
+	/*case "mysql":
+	schema = mysql*/
 	case "postgres":
 		schema = postgres
 	}
@@ -165,7 +165,7 @@ func init() {
 		if err != nil {
 			log.Fatal("database url parameter could not be parsed")
 		}
-		if u.Scheme != "postgres" && u.Scheme != "mysql" {
+		if u.Scheme != "postgres" /* && u.Scheme != "mysql" */ {
 			log.Fatal("unsupported database type")
 		}
 		connect(u.Scheme, os.Getenv("DATABASE_URL"))
