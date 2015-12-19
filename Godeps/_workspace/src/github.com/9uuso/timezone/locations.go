@@ -105,7 +105,7 @@ var Locations = []Timezone{
 	{"America/Chicago", "US", "United States"},
 	{"America/Chihuahua", "MX", "Mexico"},
 	{"America/Coral_Harbour", "CA", "Canada"},
-	{"America/Cordoba", "ES", "Spain"},
+	{"America/Cordoba", "AR", "Argentina"},
 	{"America/Costa_Rica", "CR", "Costa Rica"},
 	{"America/Creston", "CA", "Canada"},
 	{"America/Cuiaba", "BR", "Brazil"},

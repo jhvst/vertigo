@@ -59,7 +59,7 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
@@ -84,7 +84,7 @@ r := render.New(render.Options{
     AssetNames: func() []string { // Return a list of asset names for the Asset function
       return []string{"filename.tmpl"}
     },
-    Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template.
+    Layout: "layout", // Specify a layout template. Layouts can call {{ yield }} to render the current template or {{ block "css" }} to render a block from the current template
     Extensions: []string{".tmpl", ".html"}, // Specify extensions to load for templates.
     Funcs: []template.FuncMap{AppHelpers}, // Specify helper function maps for templates to access.
     Delims: render.Delims{"{[{", "}]}"}, // Sets delimiters to the specified strings.
@@ -97,6 +97,8 @@ r := render.New(render.Options{
     IsDevelopment: true, // Render will now recompile the templates on every HTML response.
     UnEscapeHTML: true, // Replace ensure '&<>' are output correctly (JSON only).
     StreamingJSON: true, // Streams the JSON response via json.Encoder.
+    RequireBlocks: true, // Return an error if a template is missing a block used in a layout.
+    DisableHTTPErrorRendering: true, // Disables automatic rendering of http.StatusInternalServerError when an error occurs.
 })
 // ...
 ~~~
@@ -126,6 +128,8 @@ r := render.New(render.Options{
     IsDevelopment: false,
     UnEscapeHTML: false,
     StreamingJSON: false,
+    RequireBlocks: false,
+    DisableHTTPErrorRendering: false,
 })
 ~~~
 
@@ -160,7 +164,7 @@ You can also load templates from memory by providing the Asset and AssetNames op
 e.g. when generating an asset file using [go-bindata](https://github.com/jteeuwen/go-bindata).
 
 ### Layouts
-Render provides a `yield` function for layouts to access:
+Render provides `yield` and `block` functions for layouts to access:
 ~~~ go
 // ...
 r := render.New(render.Options{
@@ -174,10 +178,16 @@ r := render.New(render.Options{
 <html>
   <head>
     <title>My Layout</title>
+    <!-- Render the block template called `css-$current_template` here -->
+    {{ block "css" }}
   </head>
   <body>
+    <!-- render the block template called `header-$current_template` here -->
+    {{ block "header" }}
     <!-- Render the current template here -->
     {{ yield }}
+    <!-- render the block template called `footer-$current_template` here -->
+    {{ block "footer" }}
   </body>
 </html>
 ~~~
@@ -194,6 +204,23 @@ r := render.New(render.Options{
   </body>
 </html>
 ~~~
+
+Blocks are defined by individual templates as seen below. The block template's
+name needs to be defined as "{block name}-{template name}".
+~~~ html
+<!-- templates/home.tmpl -->
+{{ define "header-home" }}
+<h1>Home</h1>
+{{ end }}
+
+{{ define "footer-home"}}
+<p>The End</p>
+{{ end }}
+~~~
+
+By default, the template is not required to define all blocks referenced in the
+layout. If you want an error to be returned when a template does not define a
+block, set `Options.RequireBlocks = true`.
 
 ### Character Encodings
 Render will automatically set the proper Content-Type header based on which function you call. See below for an example of what the default settings would output (note that UTF-8 is the default, and binary data does not output the charset):
@@ -243,7 +270,7 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
@@ -299,10 +326,30 @@ func main() {
     mux.HandleFunc("/html", func(w http.ResponseWriter, req *http.Request) {
         // Assumes you have a template in ./templates called "example.tmpl"
         // $ mkdir -p templates && echo "<h1>Hello {{.}}.</h1>" > templates/example.tmpl
-        r.HTML(w, http.StatusOK, "example", nil)
+        r.HTML(w, http.StatusOK, "example", "World")
     })
 
     http.ListenAndServe("127.0.0.1:3000", mux)
+}
+~~~
+
+### Error Handling
+
+The rendering functions return any errors from the rendering engine.
+By default, they will also write the error to the HTTP response and set the status code to 500. You can disable
+this behavior so that you can handle errors yourself by setting
+`Options.DisableHTTPErrorRendering: true`.
+
+~~~go
+r := render.New(render.Options{
+  DisableHTTPErrorRendering: true,
+})
+
+//...
+
+err := r.HTML(w, http.StatusOK, "example", "World")
+if err != nil{
+  http.Redirect(w, r, "/my-custom-500", http.StatusFound)
 }
 ~~~
 
@@ -417,7 +464,7 @@ func main() {
 }
 ~~~
 
-### [Traffic](https://github.com/pilu/traffic/)
+### [Traffic](https://github.com/pilu/traffic)
 ~~~ go
 // main.go
 package main
@@ -440,30 +487,5 @@ func main() {
     })
 
     router.Run()
-}
-~~~
-
-### [Web.go](https://github.com/hoisie/web)
-~~~ go
-// main.go
-package main
-
-import (
-    "net/http"
-
-    "github.com/hoisie/web"
-    "github.com/unrolled/render"  // or "gopkg.in/unrolled/render.v1"
-)
-
-func main() {
-    r := render.New(render.Options{
-        IndentJSON: true,
-    })
-
-    web.Get("/(.*)", func(ctx *web.Context, val string) {
-        r.JSON(ctx, http.StatusOK, map[string]string{"welcome": "This is rendered JSON!"})
-    })
-
-    web.Run(":3000")
 }
 ~~~
