@@ -100,6 +100,7 @@ ul[role="post-container"] {
 }
 
 span[role="shortdate"] {
+	font-family: 'Roboto Mono';
 	text-transform: uppercase;
 	font-weight: 700;
 }
