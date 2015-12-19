@@ -85,14 +85,18 @@ func (search Search) Get() (Search, error) {
 			// since we are already in a for loop, we have to break the
 			// iteration here by going to label End to avoid showing a
 			// duplicate search result
+			//
+			// the condition after the OR operator limits searches to words basically
+			// for example, searching for foobarbarbar would match foobar, but for now
+			// we want to limit the searches to contain only the word foobar
 			for content.Scan() {
-				if jwd.Calculate(content.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, content.Text()) {
+				if jwd.Calculate(content.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, content.Text()+" ") {
 					search.Posts = append(search.Posts, post)
 					goto End
 				}
 			}
 			for title.Scan() {
-				if jwd.Calculate(title.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, title.Text()) {
+				if jwd.Calculate(title.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, title.Text()+" ") {
 					search.Posts = append(search.Posts, post)
 					goto End
 				}

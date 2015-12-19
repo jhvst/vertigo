@@ -1104,7 +1104,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for the latest post should return it", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(fmt.Sprintf(`{"query": "%s"}`, post.Title)))
+			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(fmt.Sprintf(`{"query": "%s"}`, "Markdown")))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1129,7 +1129,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for non-existent post should return empty JSON array", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(`{"query": "foobar"}`))
+			request, _ := http.NewRequest("POST", "/api/posts/search", strings.NewReader(`{"query": "fizzbar"}`))
 			request.Header.Set("Content-Type", "application/json")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1141,7 +1141,7 @@ func TestSearch(t *testing.T) {
 
 		Convey("searching for the latest post using title", func() {
 			var recorder = httptest.NewRecorder()
-			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(fmt.Sprintf(`query=%s`, post.Title)))
+			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(fmt.Sprintf(`query=%s`, "Markdown")))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
@@ -1161,7 +1161,7 @@ func TestSearch(t *testing.T) {
 			So(sel, ShouldEqual, post.Title)
 		})
 
-		Convey("searching with a query which is not container in any post", func() {
+		Convey("searching with a query which is not contained in any post", func() {
 			var recorder = httptest.NewRecorder()
 			request, _ := http.NewRequest("POST", "/posts/search", strings.NewReader(`query=foofoobarbar`))
 			request.Header.Set("Content-Type", "application/x-www-form-urlencoded")
