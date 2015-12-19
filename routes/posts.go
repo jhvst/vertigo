@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/session"
 	"github.com/9uuso/vertigo/render"
+	. "github.com/9uuso/vertigo/session"
 
 	"github.com/9uuso/go-jaro-winkler-distance"
 	"github.com/gorilla/context"
