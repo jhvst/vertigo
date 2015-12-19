@@ -2,7 +2,7 @@
 <h2>Users</h2>
 
 <pre><code class="go">type User struct {
-	ID       int64  `json:"id" gorm:"primary_key:yes"`
+	ID       int64  `json:"id"`
 	Name     string `json:"name" form:"name"`
 	Password string `json:"password,omitempty" form:"password" sql:"-"`
 	Recovery string `json:"-"`
@@ -45,7 +45,7 @@
 <h2>Posts</h2>
 
 <pre><code class="go">type Post struct {
-	ID        int64  `json:"id" gorm:"primary_key:yes"`
+	ID        int64  `json:"id"`
 	Title     string `json:"title" form:"title" binding:"required"`
 	Content   string `json:"content" form:"content" sql:"type:text"`
 	Markdown  string `json:"markdown" form:"markdown" sql:"type:text"`

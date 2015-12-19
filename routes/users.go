@@ -72,10 +72,8 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, user)
-		return
 	case "user":
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
 }
 
@@ -115,13 +113,13 @@ func ReadUser(w http.ResponseWriter, r *http.Request) {
 	var user User
 	switch Root(r) {
 	case "api":
-		id, err := strconv.Atoi(vestigo.Param(r, "id"))
+		id, err := strconv.ParseInt(vestigo.Param(r, "id"), 10, 64)
 		if err != nil {
 			log.Println("route ReadUser, strconv.Atoi:", err)
 			render.R.JSON(w, 400, map[string]interface{}{"error": "The user ID could not be parsed from the request URL."})
 			return
 		}
-		user.ID = int64(id)
+		user.ID = id
 		user, err := user.Get()
 		if err != nil {
 			log.Println("route ReadUser, user.Get:", err)
@@ -142,9 +140,7 @@ func ReadUser(w http.ResponseWriter, r *http.Request) {
 			user.Posts = p
 		}
 		render.R.JSON(w, 200, user)
-		return
 	case "user":
-		var user User
 		id, ok := SessionGetValue(r, "id")
 		if !ok {
 			log.Println("route ReadUser, SessionGetValue:", ok)
@@ -161,7 +157,6 @@ func ReadUser(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		render.R.HTML(w, 200, "user/index", user)
-		return
 	}
 }
 
@@ -180,16 +175,14 @@ func ReadUsers(w http.ResponseWriter, r *http.Request) {
 		render.R.JSON(w, 200, users)
 		return
 	}
-	for _, user := range users {
+	for i, user := range users {
 		published := make([]Post, 0)
-		if len(user.Posts) == 0 {
-			for _, post := range user.Posts {
-				if post.Published {
-					published = append(published, post)
-				}
+		for _, post := range user.Posts {
+			if post.Published {
+				published = append(published, post)
 			}
 		}
-		user.Posts = published
+		users[i].Posts = published
 	}
 	render.R.JSON(w, 200, users)
 }
@@ -224,12 +217,9 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
-
 		SessionSetValue(w, r, "id", user.ID)
-
 		user.Password = ""
 		render.R.JSON(w, 200, user)
-		return
 	case "user":
 		user, err := user.Login()
 		if err != nil {
@@ -245,11 +235,8 @@ func LoginUser(w http.ResponseWriter, r *http.Request) {
 			render.R.HTML(w, 500, "user/login", "Internal server error. Please try again.")
 			return
 		}
-
 		SessionSetValue(w, r, "id", user.ID)
-
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
 }
 
@@ -277,10 +264,8 @@ func RecoverUser(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "We've sent you a link to your email which you may use you reset your password."})
-		return
 	case "user":
 		http.Redirect(w, r, "/user/login", 302)
-		return
 	}
 }
 
@@ -329,10 +314,8 @@ func ResetUserPassword(w http.ResponseWriter, r *http.Request) {
 		switch Root(r) {
 		case "api":
 			render.R.JSON(w, 200, map[string]interface{}{"success": "Password was updated successfully."})
-			return
 		case "user":
 			http.Redirect(w, r, "/user/login", 302)
-			return
 		}
 	}
 }
@@ -344,9 +327,7 @@ func LogoutUser(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "You've been logged out."})
-		return
 	case "user":
 		http.Redirect(w, r, "/", 302)
-		return
 	}
 }

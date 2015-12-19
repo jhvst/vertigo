@@ -149,9 +149,8 @@ func (user User) Get() (User, error) {
 		if err.Error() == "sql: no rows in result set" {
 			user.Posts = make([]Post, 0)
 			return user, nil
-		} else {
-			return user, err
 		}
+		return user, err
 	}
 	user.Posts = posts
 	return user, nil
@@ -181,9 +180,8 @@ func (user User) GetByEmail() (User, error) {
 		if err.Error() == "sql: no rows in result set" {
 			user.Posts = make([]Post, 0)
 			return user, nil
-		} else {
-			return user, err
 		}
+		return user, err
 	}
 	user.Posts = posts
 	return user, nil

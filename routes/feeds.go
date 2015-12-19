@@ -53,7 +53,7 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 			Title:       post.Title,
 			Link:        &feeds.Link{Href: Settings.Hostname + "/post/" + post.Slug},
 			Description: post.Excerpt,
-			Author:      &feeds.Author{user.Name, user.Email},
+			Author:      &feeds.Author{Name: user.Name, Email: user.Email},
 			Created:     time.Unix(post.Created, 0),
 		}
 

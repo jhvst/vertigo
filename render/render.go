@@ -11,7 +11,7 @@ import (
 	unrolled "github.com/unrolled/render"
 )
 
-var R *unrolled.Render = unrolled.New(unrolled.Options{
+var R = unrolled.New(unrolled.Options{
 	Funcs:  []template.FuncMap{helpers},
 	Layout: "layout",
 })

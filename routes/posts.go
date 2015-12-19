@@ -131,13 +131,8 @@ func SearchPost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, search.Posts)
-		return
 	case "posts":
 		render.R.HTML(w, 200, "search", search.Posts)
-		return
-	default:
-		render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
-		return
 	}
 }
 
@@ -179,10 +174,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, post)
-		return
 	case "posts":
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
 }
 
@@ -229,10 +222,8 @@ func ReadPost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, post)
-		return
 	case "post":
 		render.R.HTML(w, 200, "post/display", post)
-		return
 	}
 }
 
@@ -298,12 +289,9 @@ func UpdatePost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, post)
-		return
 	case "post":
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
-
 }
 
 // PublishPost is a route which publishes a post and therefore making it appear on frontpage and search.
@@ -354,10 +342,8 @@ func PublishPost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "Post published"})
-		return
 	case "post":
 		http.Redirect(w, r, "/post/"+post.Slug, 302)
-		return
 	}
 }
 
@@ -404,10 +390,8 @@ func UnpublishPost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "Post unpublished"})
-		return
 	case "post":
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
 }
 
@@ -455,9 +439,7 @@ func DeletePost(w http.ResponseWriter, r *http.Request) {
 	switch Root(r) {
 	case "api":
 		render.R.JSON(w, 200, map[string]interface{}{"success": "Post deleted"})
-		return
 	case "post":
 		http.Redirect(w, r, "/user", 302)
-		return
 	}
 }

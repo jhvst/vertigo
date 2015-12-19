@@ -1,4 +1,4 @@
-// Package gorm is PostgreSQL and SQLite database access layer (DAL) for users and posts.
+// Package sqlx is PostgreSQL and SQLite database access layer (DAL) for users and posts.
 //
 // The package contains three files:
 // * connection.go, which handles the actual database connection as singleton
