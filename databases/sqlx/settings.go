@@ -25,7 +25,7 @@ type Vertigo struct {
 
 /*
 
-Settings is the global variable which holds settings stored in the settings.json file.
+Settings is the global variable which holds site-wide settings.
 After importing the package, you can manipulate the variable using the Settings keyword.
 Although, as mentioned in the Vertigo struct, be careful when dealing with the Firstrun and CookieHash values.
 Rewriting Firstrun to true will render installation wizard on homepage, letting anyone redeclare your settings.
@@ -68,10 +68,9 @@ CookieHash on the other hand will return the secret hash used to sign your cooki
 
 */
 
-// Insert or settings.Insert inserts Post object into database.
-// Requires active session cookie
-// Fills settings.Author, settings.Created, settings.Edited, settings.Excerpt, settings.Slug and settings.Published automatically.
-// Returns Post and error object.
+// Insert or settings.Insert inserts Vertigo settings object into database.
+// Fills settings.ID, settings.CookieHash and settings.FirstRun automatically.
+// Returns *Vertigo and error object.
 func (settings Vertigo) Insert() (*Vertigo, error) {
 	settings.ID = 1
 	settings.CookieHash = uuid.New()
@@ -84,9 +83,8 @@ func (settings Vertigo) Insert() (*Vertigo, error) {
 	return &settings, nil
 }
 
-// Get or user.Get returns user according to given user.Slug.
-// Requires session session as a parameter.
-// Returns Ad and error object.
+// Get or settings.Get returns settings saved to database.
+// Returns Vertigo and error object.
 func (settings Vertigo) Get() (Vertigo, error) {
 	var v Vertigo
 	v.ID = 1
@@ -101,9 +99,8 @@ func (settings Vertigo) Get() (Vertigo, error) {
 	return v, nil
 }
 
-// Update or settings.Update updates parameter "entry" with data given in parameter "settings".
-// Requires active session cookie.
-// Returns updated Post object and an error object.
+// Update or settings.Update writes changes made to global settings variable into database.
+// Returns *Vertigo and an error object.
 func (settings Vertigo) Update() (*Vertigo, error) {
 	settings.ID = 1
 	settings.Firstrun = false
@@ -117,8 +114,8 @@ func (settings Vertigo) Update() (*Vertigo, error) {
 	return &settings, nil
 }
 
-// VertigoSettings populates the global namespace with data from settings.json.
-// If the file does not exist, it creates it.
+// VertigoSettings populates the global Settings object with data from database.
+// If no records exist, it creates one.
 func VertigoSettings() *Vertigo {
 	var settings Vertigo
 	settings, err := settings.Get()

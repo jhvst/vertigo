@@ -16,6 +16,7 @@ import (
 	"github.com/husobee/vestigo"
 )
 
+// GetPost() returns binded Post from POST data
 func GetPost(r *http.Request) (Post, error) {
 	rv, ok := context.GetOk(r, "post")
 	if !ok {
@@ -24,6 +25,7 @@ func GetPost(r *http.Request) (Post, error) {
 	return rv.(Post), nil
 }
 
+// GetSearch() returns binded Search from POST data
 func GetSearch(r *http.Request) (Search, error) {
 	rv, ok := context.GetOk(r, "search")
 	if !ok {
