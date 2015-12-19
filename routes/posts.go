@@ -84,13 +84,13 @@ func (search Search) Get() (Search, error) {
 			// iteration here by going to label End to avoid showing a
 			// duplicate search result
 			for content.Scan() {
-				if jwd.Calculate(content.Text(), search.Query) >= 0.9 {
+				if jwd.Calculate(content.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, content.Text()) {
 					search.Posts = append(search.Posts, post)
 					goto End
 				}
 			}
 			for title.Scan() {
-				if jwd.Calculate(title.Text(), search.Query) >= 0.9 {
+				if jwd.Calculate(title.Text(), search.Query) >= 0.9 || strings.Contains(search.Query, title.Text()) {
 					search.Posts = append(search.Posts, post)
 					goto End
 				}
