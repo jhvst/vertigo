@@ -147,7 +147,7 @@ func connect(driver, source string) {
 		schema = postgres
 	}
 
-	conn.MustExec(schema)
+	conn.Exec(schema)
 
 	log.Println("sqlx: using", driver)
 
