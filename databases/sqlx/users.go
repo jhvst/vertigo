@@ -5,9 +5,8 @@ import (
 	"log"
 	"time"
 
-	. "github.com/9uuso/vertigo/crypto"
-
 	"github.com/pborman/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User struct holds all relevant data for representing user accounts on Vertigo.
@@ -22,6 +21,26 @@ type User struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Posts    []Post `json:"posts"`
 	Location string `json:"location" form:"location"`
+}
+
+// GenerateHash generates bcrypt hash from plaintext password
+func GenerateHash(password string) ([]byte, error) {
+	hex := []byte(password)
+	hashedPassword, err := bcrypt.GenerateFromPassword(hex, 10)
+	if err != nil {
+		return hashedPassword, err
+	}
+	return hashedPassword, nil
+}
+
+// CompareHash compares bcrypt password with a plaintext one. Returns true if passwords match
+// and false if they do not.
+func CompareHash(digest []byte, password string) bool {
+	hex := []byte(password)
+	if err := bcrypt.CompareHashAndPassword(digest, hex); err == nil {
+		return true
+	}
+	return false
 }
 
 // Login or user.Login is a function which retrieves user according to given .Email field.
