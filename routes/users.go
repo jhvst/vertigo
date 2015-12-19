@@ -132,6 +132,11 @@ func ReadUser(w http.ResponseWriter, r *http.Request) {
 			render.R.JSON(w, 500, map[string]interface{}{"error": "Internal server error"})
 			return
 		}
+		for i, post := range user.Posts {
+			if !post.Published {
+				user.Posts = append(user.Posts[:i], user.Posts[i+1:]...)
+			}
+		}
 		if len(user.Posts) == 0 {
 			p := make([]Post, 0)
 			user.Posts = p
