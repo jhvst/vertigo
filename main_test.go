@@ -920,8 +920,10 @@ func TestDeletePost(t *testing.T) {
 			server.ServeHTTP(recorder, request)
 			So(recorder.Code, ShouldEqual, 200)
 			So(recorder.Body.String(), ShouldEqual, `{"success":"Post deleted"}`)
-			// SQLite's re-assigns ID if one is removed
-			post.ID--
+			if *Driver == "sqlite3" {
+				// SQLite's re-assigns ID if one is removed
+				post.ID--
+			}
 		})
 	})
 

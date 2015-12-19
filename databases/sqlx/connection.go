@@ -80,15 +80,15 @@ CREATE TABLE "posts" (
 );
 
 CREATE TABLE "settings" (
-    "id" serial NOT NULL PRIMARY KEY DEFAULT '1',
+    "id" serial NOT NULL PRIMARY KEY,
     "name" varchar(255) NOT NULL,
     "hostname" varchar(255) NOT NULL,
     "firstrun" bool NOT NULL DEFAULT true,
-    "cookiehash" string NOT NULL,
+    "cookiehash" bytea NOT NULL,
     "allowregistrations" bool NOT NULL DEFAULT true,
     "description" varchar(255) NOT NULL,
     "mailerlogin" varchar(255),
-    "mailerport" integer unsigned NOT NULL DEFAULT 587,
+    "mailerport" integer NOT NULL DEFAULT 587,
     "mailerpassword" varchar(255),
     "mailerhostname" varchar(255)
 );`
@@ -147,7 +147,7 @@ func connect(driver, source string) {
 		schema = postgres
 	}
 
-	conn.Exec(schema)
+	conn.MustExec(schema)
 
 	log.Println("sqlx: using", driver)
 
