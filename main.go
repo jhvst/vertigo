@@ -283,6 +283,8 @@ func NewServer() *vestigo.Router {
 	r.Get("/apple-touch-icon.png", staticFile)
 	r.Get("/favicon.ico", staticFile)
 	r.Get("/browserconfig.xml", staticFile)
+	r.Get("/crossdomain.xml", staticFile)
+	r.Get("/robots.txt", staticFile)
 	r.Get("/tile-wide.png", staticFile)
 	r.Get("/tile.png", staticFile)
 	r.Get("/static/*", staticResource)
