@@ -7,7 +7,6 @@ import (
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
 	"github.com/9uuso/vertigo/render"
-	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/gorilla/feeds"
 )
@@ -20,7 +19,7 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 
 	feed := &feeds.Feed{
 		Title:       Settings.Name,
-		Link:        &feeds.Link{Href: Settings.URL.String()},
+		Link:        &feeds.Link{Href: Settings.Hostname},
 		Description: Settings.Description,
 	}
 
@@ -52,9 +51,9 @@ func ReadFeed(w http.ResponseWriter, r *http.Request) {
 		// However, the package panics if too few values are exported, so that will do.
 		item := &feeds.Item{
 			Title:       post.Title,
-			Link:        &feeds.Link{Href: Settings.URL.String() + "/post/" + post.Slug},
+			Link:        &feeds.Link{Href: Settings.Hostname + "/post/" + post.Slug},
 			Description: post.Excerpt,
-			Author:      &feeds.Author{user.Name, user.Email},
+			Author:      &feeds.Author{Name: user.Name, Email: user.Email},
 			Created:     time.Unix(post.Created, 0),
 		}
 

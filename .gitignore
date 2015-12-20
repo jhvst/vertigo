@@ -22,5 +22,4 @@ _testmain.go
 *.exe
 *.test
 vertigo
-settings.json
 vertigo.db

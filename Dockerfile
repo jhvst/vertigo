@@ -8,6 +8,6 @@ RUN go get github.com/tools/godep && go get -u github.com/9uuso/vertigo && cd /g
 
 WORKDIR /go/src/github.com/9uuso/vertigo
 
-ENTRYPOINT PORT="80" MARTINI_ENV="production" vertigo
+ENTRYPOINT PORT="80" vertigo
 
 EXPOSE 80

@@ -7,7 +7,6 @@ import (
 
 	"github.com/9uuso/excerpt"
 	"github.com/9uuso/timezone"
-	"github.com/martini-contrib/sessions"
 	"github.com/russross/blackfriday"
 	slug "github.com/shurcooL/sanitized_anchor_name"
 )
@@ -36,12 +35,7 @@ type Post struct {
 // Requires active session cookie
 // Fills post.Author, post.Created, post.Edited, post.Excerpt, post.Slug and post.Published automatically.
 // Returns Post and error object.
-func (post Post) Insert(s sessions.Session) (Post, error) {
-	var user User
-	user, err := user.Session(s)
-	if err != nil {
-		return post, err
-	}
+func (post Post) Insert(user User) (Post, error) {
 	_, offset, err := timezone.Offset(user.Location)
 	if err != nil {
 		return post, err
@@ -84,67 +78,43 @@ func (post Post) Get() (Post, error) {
 // Update or post.Update updates parameter "entry" with data given in parameter "post".
 // Requires active session cookie.
 // Returns updated Post object and an error object.
-func (post Post) Update(s sessions.Session, entry Post) (Post, error) {
-	var user User
-	user, err := user.Session(s)
+func (post Post) Update(entry Post) (Post, error) {
+	entry.ID = post.ID
+	entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
+	entry.Excerpt = excerpt.Make(entry.Content, 15)
+	entry.Slug = slug.Create(entry.Title)
+	entry.Updated = time.Now().UTC().Round(time.Second).Unix()
+	_, err := db.NamedExec(
+		"UPDATE posts SET title = :title, content = :content, markdown = :markdown, slug = :slug, excerpt = :excerpt, published = :published, updated = :updated WHERE id = :id",
+		entry)
 	if err != nil {
 		return post, err
 	}
-	if post.Author == user.ID {
-		entry.ID = post.ID
-		entry.Content = string(blackfriday.MarkdownCommon([]byte(entry.Markdown)))
-		entry.Excerpt = excerpt.Make(entry.Content, 15)
-		entry.Slug = slug.Create(entry.Title)
-		entry.Updated = time.Now().UTC().Round(time.Second).Unix()
-		_, err := db.NamedExec(
-			"UPDATE posts SET title = :title, content = :content, markdown = :markdown, slug = :slug, excerpt = :excerpt, published = :published, updated = :updated WHERE id = :id",
-			entry)
-		if err != nil {
-			return post, err
-		}
-		entry.Viewcount = post.Viewcount
-		entry.Created = post.Created
-		entry.TimeOffset = post.TimeOffset
-		entry.Author = post.Author
-		return entry, nil
-	}
-	return post, errors.New("unauthorized")
+	entry.Viewcount = post.Viewcount
+	entry.Created = post.Created
+	entry.TimeOffset = post.TimeOffset
+	entry.Author = post.Author
+	return entry, nil
 }
 
-func (post Post) Unpublish(s sessions.Session) error {
-	var user User
-	user, err := user.Session(s)
+func (post Post) Unpublish() error {
+	post.Published = false
+	_, err := db.NamedExec("UPDATE posts SET published = :published WHERE id = :id", post)
 	if err != nil {
 		return err
 	}
-	if post.Author == user.ID {
-		post.Published = false
-		_, err := db.NamedExec("UPDATE posts SET published = :published WHERE id = :id", post)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return errors.New("unauthorized")
+	return nil
 }
 
 // Delete or post.Delete deletes a post according to post.Slug.
 // Requires session cookie.
 // Returns error object.
-func (post Post) Delete(s sessions.Session) error {
-	var user User
-	user, err := user.Session(s)
+func (post Post) Delete() error {
+	_, err := db.NamedExec("DELETE FROM posts WHERE id = :id", post)
 	if err != nil {
 		return err
 	}
-	if post.Author == user.ID {
-		_, err := db.NamedExec("DELETE FROM posts WHERE id = :id", post)
-		if err != nil {
-			return err
-		}
-		return nil
-	}
-	return errors.New("unauthorized")
+	return nil
 }
 
 // GetAll or user.GetAll returns all user in database.
@@ -170,7 +140,6 @@ func (post Post) GetAll() ([]Post, error) {
 }
 
 // Update or user.Update updates parameter "entry" with data given in parameter "user".
-// Requires active session cookie.
 // Returns updated Ad object and an error object.
 func (post Post) Increment() {
 	post.Viewcount += 1

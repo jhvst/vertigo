@@ -6,11 +6,15 @@ import (
 	"time"
 
 	. "github.com/9uuso/vertigo/databases/sqlx"
-	. "github.com/9uuso/vertigo/settings"
 
 	"github.com/9uuso/timezone"
 	unrolled "github.com/unrolled/render"
 )
+
+var R = unrolled.New(unrolled.Options{
+	Funcs:  []template.FuncMap{helpers},
+	Layout: "layout",
+})
 
 var helpers = template.FuncMap{
 	// unescape unescapes HTML of s.
@@ -52,7 +56,7 @@ var helpers = template.FuncMap{
 		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Monday, January 2, 2006 3:04PM (-0700 GMT)")
 	},
 	"shortdate": func(d int64, offset int) string {
-		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("Jan 02 2006")
+		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("02 Jan 2006")
 	},
 	// env returns environment variable of s.
 	"env": func(s string) string {
@@ -66,14 +70,4 @@ var helpers = template.FuncMap{
 	"registerationsallowed": func() bool {
 		return Settings.AllowRegistrations
 	},
-}
-
-var R *unrolled.Render
-
-func init() {
-	r := unrolled.New(unrolled.Options{
-		Funcs:  []template.FuncMap{helpers},
-		Layout: "layout",
-	})
-	R = r
 }

@@ -19,7 +19,7 @@ With JSON API it's also easy to add your preferred JavaScript MVC on top of Vert
 - Installation wizard
 - JSON API
 - SQLite and PostgreSQL support
-- Search
+- Fuzzy search
 - Multiple account support
 - Auto-saving of posts to LocalStorage
 - RSS feeds
@@ -52,7 +52,7 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 2. `go get github.com/tools/godep && go get -u github.com/9uuso/vertigo`
 3. `git clone https://github.com/9uuso/vertigo`
 4. `cd vertigo && godep go build`
-5. `PORT="80" MARTINI_ENV="production" ./vertigo`
+5. `PORT="80" ./vertigo`
 
 ###Docker
 1. [Install docker](https://docs.docker.com/installation/)
@@ -62,7 +62,6 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 
 ###Environment variables
 * `PORT` - the HTTP server port
-* `MARTINI_ENV` - used by Martini to enable production optimizations such as template caching
 * `SMTP_LOGIN` - address from which you want to send mail from. Example: postmaster@example.com
 * `SMTP_PASSWORD` - Password for the mailbox defined with SMTP_LOGIN
 * `SMTP_PORT` - SMTP port which to use to send email. Defaults to 587.

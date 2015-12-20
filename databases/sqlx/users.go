@@ -3,14 +3,10 @@ package sqlx
 import (
 	"errors"
 	"log"
-	"strconv"
 	"time"
 
-	. "github.com/9uuso/vertigo/crypto"
-	. "github.com/9uuso/vertigo/email"
-
-	"github.com/martini-contrib/sessions"
 	"github.com/pborman/uuid"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // User struct holds all relevant data for representing user accounts on Vertigo.
@@ -25,6 +21,26 @@ type User struct {
 	Email    string `json:"email" form:"email" binding:"required"`
 	Posts    []Post `json:"posts"`
 	Location string `json:"location" form:"location"`
+}
+
+// GenerateHash generates bcrypt hash from plaintext password
+func GenerateHash(password string) ([]byte, error) {
+	hex := []byte(password)
+	hashedPassword, err := bcrypt.GenerateFromPassword(hex, 10)
+	if err != nil {
+		return hashedPassword, err
+	}
+	return hashedPassword, nil
+}
+
+// CompareHash compares bcrypt password with a plaintext one. Returns true if passwords match
+// and false if they do not.
+func CompareHash(digest []byte, password string) bool {
+	hex := []byte(password)
+	if err := bcrypt.CompareHashAndPassword(digest, hex); err == nil {
+		return true
+	}
+	return false
 }
 
 // Login or user.Login is a function which retrieves user according to given .Email field.
@@ -73,8 +89,7 @@ func (user User) Recover() error {
 		return err
 	}
 
-	id := strconv.Itoa(int(user.ID))
-	err = SendRecoveryEmail(id, user.Name, user.Email, user.Recovery)
+	err = user.SendRecoveryEmail()
 	if err != nil {
 		return err
 	}
@@ -134,9 +149,8 @@ func (user User) Get() (User, error) {
 		if err.Error() == "sql: no rows in result set" {
 			user.Posts = make([]Post, 0)
 			return user, nil
-		} else {
-			return user, err
 		}
+		return user, err
 	}
 	user.Posts = posts
 	return user, nil
@@ -166,29 +180,11 @@ func (user User) GetByEmail() (User, error) {
 		if err.Error() == "sql: no rows in result set" {
 			user.Posts = make([]Post, 0)
 			return user, nil
-		} else {
-			return user, err
 		}
+		return user, err
 	}
 	user.Posts = posts
 	return user, nil
-}
-
-// Session or user.Session returns user.ID from client session cookie.
-// The returned object has post data merged.
-func (user User) Session(s sessions.Session) (User, error) {
-	data := s.Get("user")
-	id, exists := data.(int64)
-	if exists {
-		var user User
-		user.ID = id
-		user, err := user.Get()
-		if err != nil {
-			return user, err
-		}
-		return user, nil
-	}
-	return user, errors.New("unauthorized")
 }
 
 // Insert or user.Insert inserts a new User struct into the database.
