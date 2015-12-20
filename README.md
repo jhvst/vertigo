@@ -72,7 +72,7 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 
 Using SQLite as database is simple and requires no additional parameters. You can run SQLite as so:
 
-`PORT="80" MARTINI_ENV="production" ./vertigo`
+`PORT="80" ./vertigo`
 
 ##Using Postgres
 
@@ -82,13 +82,13 @@ With Postgres you have two choices:
 
 Pass two flags, `driver` and `source`. The driver should always be `postgres` and the `source` should be [connection URL](http://www.postgresql.org/docs/current/static/libpq-connect.html#LIBPQ-CONNSTRING). For example:
 
-`PORT="80" MARTINI_ENV="production" ./vertigo -driver=postgres -source=examplesource@cloudhosting.com`
+`PORT="80" ./vertigo -driver=postgres -source=examplesource@cloudhosting.com`
 
 ###Environment variable
 
 Define environment variable `DATABASE_URL` with connection URL. After you have set `DATABASE_URL`, you can just Vertigo as you would with SQLite:
 
-`PORT="80" MARTINI_ENV="production" ./vertigo`
+`PORT="80" ./vertigo`
 
 ##Contribute
 

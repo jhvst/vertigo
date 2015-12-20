@@ -2,11 +2,13 @@
 <form method="post" action="/user/settings">
 	<fieldset>
 
+		<p>Fields with * are required.</p>		
+
 		<label>Allow new registrations</label>
 		<p>Below you can choose whether you'd like disable registration for new users.</p>
 		<input type="radio" name="allowregistrations" value="true"{{ if eq .AllowRegistrations true }} checked{{ end }}> Allow registrations
 		<br>
-		<input type="radio" name="allowregistrations" value="false"{{ if eq .AllowRegistrations false }} checked{{ end }}> Deny registrations
+		<input type="radio" name="allowregistrations" value="false"{{ if eq .AllowRegistrations false }} checked{{ end }}> Disallow registrations
 
 		<br><br>
 
@@ -14,12 +16,12 @@
 
 		<label>Hostname*</label>
 		<p>Used in RSS feeds and any emails that link back to your site. It should be absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
-		<input type="url" name="hostname" placeholder="http://example.com" required="required" value="{{ .Hostname }}">
+		<input name="hostname" placeholder="http://example.com" required="required" value="{{ .Hostname }}">
 
 		<br><br>
 
 		<label>Blog name*</label>
-		<p>Displayed on page header and browser tabs.</p>
+		<p>This is the text people see on their browser tabs when visiting your homepage.</p>
 		<input name="name" placeholder="Foo's Blog" required="required" value="{{ .Name }}">
 
 		<br><br>
@@ -31,33 +33,33 @@
 		<br><br>
 
 		<h3>SMTP settings</h3>
-		<p>Vertigo can use SMTP to send out password reminders. If you think there's no chance you could lose your password, then you don't have to fill these. You may also set these later, provided that you can login to the site or have access to the server settings file.</p>
+		<p>Vertigo can use SMTP to send out password reminders. You may skip everything below this if you think you can't lose your password.</p>
 
 		<label>SMTP Login</label>
 		<p>Address from which you want to send mail from.</p>
-		<input name="login" placeholder="postmaster@example.com" value="{{ .Mailer.Login }}">
+		<input name="mailerlogin" placeholder="postmaster@example.com" value="{{ .MailerLogin }}">
 
 		<br><br>
 
 		<label>SMTP Password</label>
-		<p>Password for the address you gave above.</p>
-		<input name="password" value="{{ .Mailer.Password }}">
+		<p>Password for the mail address you gave above.</p>
+		<input type="password" name="mailerpassword" value="{{ .MailerPassword }}">
 
 		<br><br>
 
 		<label>SMTP Port</label>
-		<p>Usually 587, but on some occasions it might be 25 instead.</p>
-		<input name="port" value="587" value="{{ .Mailer.Port }}">
+		<p>Sometimes this might be 25 instead.</p>
+		<input name="mailerport" value="587" value="{{ .MailerPort }}">
 
 		<br><br>
 
 		<label>SMTP Hostname</label>
 		<p>SMTP server address.</p>
-		<input name="smtp-hostname" placeholder="smtp.example.org" value="{{ .Mailer.Hostname }}">
+		<input name="mailerhostname" placeholder="smtp.example.org" value="{{ .MailerHostname }}">
 
 		<br><br>
 
-		<button type="submit">Submit</button>
+		<button type="submit">Save</button>
 
 	</fieldset>
 </form>

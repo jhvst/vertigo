@@ -4,6 +4,12 @@
 
 		<p>Fields with * are required.</p>
 
+		<label>Allow new registrations</label>
+		<p>You can change the preference once you have created first user by accessing settings from user home panel.</p>
+		<input type="radio" name="allowregistrations" value="true" checked disabled> Allow registrations
+		<br>
+		<input type="radio" name="allowregistrations" value="false" disabled> Disallow registrations		
+
 		<label>Hostname*</label>
 		<p>Used in RSS feeds and any emails that link back to your site. It should be absolute URL. Please include http:// or https:// and leave off any trailing forward slashes "/"</p>
 		<input type="url" name="hostname" placeholder="http://example.com" required="required">
@@ -23,29 +29,29 @@
 		<br><br>
 
 		<h3>SMTP settings</h3>
-		<p>Vertigo can use SMTP to send out password reminders. If you think there's no chance you could lose your password, then you don't have to fill these. You may also set these later, provided that you can login to the site or have access to the server settings file.</p>
+		<p>Vertigo can use SMTP to send out password reminders. You may skip everything below this if you think you can't lose your password.</p>
 		
 		<label>SMTP Login</label>
 		<p>Address from which you want to send mail from.</p>
-		<input name="login" placeholder="postmaster@example.com" value="{{env "SMTP_LOGIN"}}">
+		<input name="mailerlogin" placeholder="postmaster@example.com" value="{{env "SMTP_LOGIN"}}">
 
 		<br><br>
 
 		<label>SMTP Password</label>
 		<p>Password for the address you gave above.</p>
-		<input name="password" value="{{env "SMTP_PASSWORD"}}">
+		<input type="password" name="mailerpassword" value="{{env "SMTP_PASSWORD"}}">
 
 		<br><br>
 
 		<label>SMTP Port</label>
-		<p>Usually 587, but on some occasions it might be 25 instead.</p>
-		<input name="port" value="587" value="{{env "SMTP_PORT"}}">
+		<p>Sometimes this might be 25 instead.</p>
+		<input name="mailerport" value="587" value="{{env "SMTP_PORT"}}">
 
 		<br><br>
 
 		<label>SMTP Hostname</label>
 		<p>SMTP server address.</p>
-		<input name="smtp-hostname" placeholder="smtp.example.org" value="{{env "SMTP_SERVER"}}">
+		<input name="mailerhostname" placeholder="smtp.example.org" value="{{env "SMTP_SERVER"}}">
 
 		<br><br>
 
