@@ -58,6 +58,9 @@ var helpers = template.FuncMap{
 	"shortdate": func(d int64, offset int) string {
 		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("02 Jan 2006")
 	},
+	"iso8601": func(d int64, offset int) string {
+		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("2006-01-02T15:04:05+07:00")
+	},	
 	// env returns environment variable of s.
 	"env": func(s string) string {
 		return os.Getenv(s)
