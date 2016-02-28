@@ -1,0 +1,12 @@
+{
+	"comment": "",
+	"ignore": "",
+	"package": [
+		{
+			"path": "github.com/mattn/go-sqlite3",
+			"revision": "09d5c451710ef887470709463f4f04ff83e1e039",
+			"revisionTime": "2016-02-23T16:32:46+09:00",
+			"tree": true
+		}
+	]
+}
