@@ -10,7 +10,7 @@ The frontend code is powered by Go's `template/html` package, which is similar t
 
 Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top of Vertigo. This means that you can create users, submit posts and read data without writing a single line of Go code. For example, one could write a single page application on top of Vertigo just by using JavaScript. Whether you want to take that path or just edit the HTML template files found in `/templates/` is up to you.
 
-##Features
+## Features
 
 - Installation wizard
 - JSON API
@@ -22,25 +22,25 @@ Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top o
 - Password recovery
 - Markdown support
 
-##Demo
+## Demo
 
 See [my personal website](http://www.juusohaavisto.com/)
 
-##Installation
+## Installation
 
 Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
 
-###Downloading binaries
+### Downloading binaries
 
 See [GitHub releases](https://github.com/9uuso/vertigo/releases).
 
-###Heroku
+### Heroku
 
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/vertigo/wiki/Advanced-Heroku-deployment)
 
-###Source
+### Source
 
 1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
 2. `go get github.com/tools/godep`
@@ -48,14 +48,14 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 4. `cd vertigo && godep go build`
 5. `PORT="80" ./vertigo`
 
-###Docker
+### Docker
 1. [Install docker](https://docs.docker.com/installation/)
 2. `git clone https://github.com/9uuso/vertigo`
 3. `cd vertigo`
 4. `docker build -t "vertigo" .`
 5. `docker run -d -p 80:80 vertigo`
 
-###Environment variables
+### Environment variables
 * `PORT` - the HTTP server port
 * `SMTP_LOGIN` - address from which you want to send mail from. Example: postmaster@example.com
 * `SMTP_PASSWORD` - Password for the mailbox defined with SMTP_LOGIN
@@ -63,14 +63,14 @@ For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/ve
 * `SMTP_SERVER` - SMTP server hostname or IP address. Example: smtp.example.org
 * `DATABASE_URL` - database connection URL for PostgreSQL - if empty, SQLite will be used
 
-##Contribute
+## Contribute
 
 Contributions are welcome, but before creating a pull request, please run your code trough `go fmt` and [`golint`](https://github.com/golang/lint). If the changes introduce new features, please  add tests for them. Try to squash your commits into one big one instead many small, to avoid unnecessary CI runs.
 
-##Support
+## Support
 
 If you have any questions in mind, please file an issue.
 
-##License
+## License
 
 MIT
