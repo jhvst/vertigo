@@ -2,11 +2,11 @@
 # Workspace at /go
 FROM golang
 
-ADD . /go/src/github.com/9uuso/vertigo
+ADD . /go/src/github.com/toldjuuso/vertigo
 
-RUN cd /go/src/github.com/9uuso/vertigo && go build
+RUN cd /go/src/github.com/toldjuuso/vertigo && go build
 
-WORKDIR /go/src/github.com/9uuso/vertigo
+WORKDIR /go/src/github.com/toldjuuso/vertigo
 
 ENTRYPOINT PORT="80" vertigo
 

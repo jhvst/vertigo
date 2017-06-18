@@ -9,5 +9,5 @@
   "addons": [
     "heroku-postgresql"
   ],
-  "repository": "https://github.com/9uuso/vertigo"
+  "repository": "https://github.com/toldjuuso/vertigo"
 }

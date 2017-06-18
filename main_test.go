@@ -13,13 +13,13 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
+	. "github.com/toldjuuso/vertigo/databases/sqlx"
 
-	"github.com/9uuso/excerpt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/russross/blackfriday"
 	slug "github.com/shurcooL/sanitized_anchor_name"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/toldjuuso/excerpt"
 )
 
 var server = NewServer()

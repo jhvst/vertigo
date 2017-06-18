@@ -1,6 +1,6 @@
 vertigo
 =======
-[![Codeship Status for 9uuso/vertigo](https://img.shields.io/codeship/b2de9690-b16b-0132-08f1-3edef27c5b65/master.svg)](https://codeship.com/projects/69843) [![Deploy](https://img.shields.io/badge/heroku-deploy-green.svg)](https://heroku.com/deploy) [![GoDoc](https://godoc.org/github.com/9uuso/vertigo?status.svg)](https://godoc.org/github.com/9uuso/vertigo)
+[![Codeship Status for toldjuuso/vertigo](https://img.shields.io/codeship/b2de9690-b16b-0132-08f1-3edef27c5b65/master.svg)](https://codeship.com/projects/69843) [![Deploy](https://img.shields.io/badge/heroku-deploy-green.svg)](https://heroku.com/deploy) [![GoDoc](https://godoc.org/github.com/toldjuuso/vertigo?status.svg)](https://godoc.org/github.com/toldjuuso/vertigo)
 
 ![Vertigo](http://i.imgur.com/ZnAQR6I.gif)
 
@@ -22,34 +22,30 @@ Thanks to the JSON API, it is easy to add your preferred JavaScript MVC on top o
 - Password recovery
 - Markdown support
 
-## Demo
-
-See [my personal website](http://www.juusohaavisto.com/)
-
 ## Installation
 
 Note: By default the HTTP server starts on port 3000. This can changed by declaring `PORT` environment variable or by passing one with the binary execution command.
 
 ### Downloading binaries
 
-See [GitHub releases](https://github.com/9uuso/vertigo/releases).
+See [GitHub releases](https://github.com/toldjuuso/vertigo/releases).
 
 ### Heroku
 
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
-For advanced usage, see [Advanced Heroku deployment](https://github.com/9uuso/vertigo/wiki/Advanced-Heroku-deployment)
+For advanced usage, see [Advanced Heroku deployment](https://github.com/toldjuuso/vertigo/wiki/Advanced-Heroku-deployment)
 
 ### Source
 
-1. Install Go (I recommend using [gvm](https://github.com/moovweb/gvm))
-2. `git clone https://github.com/9uuso/vertigo`
+1. [Install Go](https://golang.org/doc/install)
+2. `git clone https://github.com/toldjuuso/vertigo`
 3. `cd vertigo && go build`
 4. `PORT="80" ./vertigo`
 
 ### Docker
 1. [Install docker](https://docs.docker.com/installation/)
-2. `git clone https://github.com/9uuso/vertigo`
+2. `git clone https://github.com/toldjuuso/vertigo`
 3. `cd vertigo`
 4. `docker build -t "vertigo" .`
 5. `docker run -d -p 80:80 vertigo`

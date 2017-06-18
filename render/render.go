@@ -5,9 +5,9 @@ import (
 	"os"
 	"time"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
+	. "github.com/toldjuuso/vertigo/databases/sqlx"
 
-	"github.com/9uuso/timezone"
+	"github.com/toldjuuso/timezone"
 	unrolled "github.com/unrolled/render"
 )
 
@@ -60,7 +60,7 @@ var helpers = template.FuncMap{
 	},
 	"iso8601": func(d int64, offset int) string {
 		return time.Unix(d, 0).UTC().In(time.FixedZone("", offset)).Format("2006-01-02T15:04:05+07:00")
-	},	
+	},
 	// env returns environment variable of s.
 	"env": func(s string) string {
 		return os.Getenv(s)

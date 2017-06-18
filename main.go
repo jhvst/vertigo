@@ -9,10 +9,10 @@ import (
 	"strconv"
 	"strings"
 
-	. "github.com/9uuso/vertigo/databases/sqlx"
-	"github.com/9uuso/vertigo/render"
-	. "github.com/9uuso/vertigo/routes"
-	. "github.com/9uuso/vertigo/session"
+	. "github.com/toldjuuso/vertigo/databases/sqlx"
+	"github.com/toldjuuso/vertigo/render"
+	. "github.com/toldjuuso/vertigo/routes"
+	. "github.com/toldjuuso/vertigo/session"
 
 	"github.com/gorilla/context"
 	"github.com/gorilla/sessions"

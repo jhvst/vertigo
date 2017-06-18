@@ -36,7 +36,7 @@ CookieHash on the other hand will return the secret hash used to sign your cooki
 	import (
 		"fmt"
 
-		"github.com/9uuso/vertigo/settings"
+		"github.com/toldjuuso/vertigo/settings"
 	)
 
 	func Foobar() {

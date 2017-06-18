@@ -5,10 +5,10 @@ import (
 	"log"
 	"time"
 
-	"github.com/9uuso/excerpt"
-	"github.com/9uuso/timezone"
 	"github.com/russross/blackfriday"
 	slug "github.com/shurcooL/sanitized_anchor_name"
+	"github.com/toldjuuso/excerpt"
+	"github.com/toldjuuso/timezone"
 )
 
 // Post struct contains all relevant data when it comes to posts. Most fields
